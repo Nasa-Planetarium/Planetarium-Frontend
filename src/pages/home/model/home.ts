@@ -282,3 +282,43 @@ export function frpCls(frp: number | null | undefined): "" | "fs-m" | "fs-s" {
 export function fireLabel(name: string, translated: string): string {
   return translated === name ? String(name).split(" ").slice(-2).join(" ") : (translated.split(",")[0] ?? translated).trim();
 }
+
+/**
+ * 그린 영역이 여러 지역에 걸칠 때의 달 합(목업 home.js 집계 시군 합과 같은 단순 합).
+ * 값 열(value·value_lo·value_hi·value_projected·raw_*)만 더한다. 지역별로만 뜻이 있는 배수·백분위·판정은 비운다(null) —
+ * 상태는 가장 앞 지역 것(근사 — 화면은 「집계 시군 …」 표시와 함께 쓴다).
+ */
+export function sumMonths(lists: readonly (readonly MonthRow[])[]): MonthRow[] {
+  const by = new Map<string, MonthRow[]>();
+  lists.forEach((L) => L.forEach((r) => {
+    const k = `${r.year}-${r.month}`;
+    const a = by.get(k);
+    if (a) a.push(r);
+    else by.set(k, [r]);
+  }));
+  const add = (rows: MonthRow[], f: (r: MonthRow) => number | null | undefined) => {
+    const v = rows.map(f).filter((x): x is number => typeof x === "number");
+    return v.length ? v.reduce((s, x) => s + x, 0) : null;
+  };
+  return [...by.values()]
+    .map((rows): MonthRow => {
+      const st = rows[0]!.status;
+      return {
+        year: rows[0]!.year,
+        month: rows[0]!.month,
+        value: add(rows, (r) => r.value),
+        value_lo: add(rows, (r) => r.value_lo),
+        value_hi: add(rows, (r) => r.value_hi),
+        value_projected: add(rows, (r) => r.value_projected),
+        as_of_date: rows[0]!.as_of_date ?? null,
+        raw_modis: add(rows, (r) => r.raw_modis),
+        raw_viirs: add(rows, (r) => r.raw_viirs),
+        status: st,
+        verdict: null,
+        percentile: null,
+        ratio_to_median: null,
+        low_sample: rows.some((r) => r.low_sample) || null,
+      };
+    })
+    .sort((a, b) => a.year - b.year || a.month - b.month);
+}

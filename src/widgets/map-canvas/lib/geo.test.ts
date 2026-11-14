@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aoiBounds, aoiGeometry, checkPoint, geomMainBounds, circleRing, clusterUnits, curve, fireMarkOf, heatGain, maskPolygon, niceScale, pixelSquare, placeLabels, tickLabel, tickStep, withAlpha } from "./geo";
+import { aoiBounds, aoiGeometry, approxRegions, inAoi, checkPoint, geomMainBounds, circleRing, clusterUnits, curve, fireMarkOf, heatGain, maskPolygon, niceScale, pixelSquare, placeLabels, tickLabel, tickStep, withAlpha } from "./geo";
 
 describe("그린 영역 → GeoJSON", () => {
   it("사각형은 닫힌 5점 고리(북서에서 시작)", () => {
@@ -136,5 +136,26 @@ describe("경로·색", () => {
   it("토큰 색 + 투명도", () => {
     expect(withAlpha("#ff7a3c", 0.5)).toBe("rgba(255,122,60,0.5)");
     expect(withAlpha("rgb(1, 2, 3)", 0)).toBe("rgba(1,2,3,0)");
+  });
+});
+
+describe("그린 영역 안 판정 · 집계 지역(목업 inGeom · approxRegions)", () => {
+  const sq = { type: "polygon" as const, pts: [[36, 128], [36, 129], [37, 129], [37, 128]] as [number, number][] };
+  it("다각형 안·밖", () => {
+    expect(inAoi(sq, 36.5, 128.5)).toBe(true);
+    expect(inAoi(sq, 37.5, 128.5)).toBe(false);
+  });
+  it("사각형·반경", () => {
+    expect(inAoi({ type: "bbox", west: 128, south: 36, east: 129, north: 37 }, 36.2, 128.9)).toBe(true);
+    expect(inAoi({ type: "point", lat: 36, lon: 128, radius_km: 10 }, 36.05, 128)).toBe(true);
+    expect(inAoi({ type: "point", lat: 36, lon: 128, radius_km: 10 }, 36.2, 128)).toBe(false);
+  });
+  it("안에 든 지역이 없으면 가장 가까운 지역 하나(근사 표시)", () => {
+    const R = [
+      { id: "A", lat: 36.5, lon: 128.5 },
+      { id: "B", lat: 38, lon: 128.5 },
+    ];
+    expect(approxRegions(sq, R)).toEqual({ ids: ["A"], fallback: false });
+    expect(approxRegions({ type: "bbox", west: 128, south: 37.6, east: 129, north: 37.7 }, R)).toEqual({ ids: ["B"], fallback: true });
   });
 });

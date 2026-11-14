@@ -707,3 +707,8 @@ button.hm-scr-i:focus-visible{outline-offset: -2px;}
 .hm-menu-g{display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3) var(--sp-1); font-family: var(--font-body); font-size: var(--fs-2); color: var(--text-3);}
 .hm-menu-f{margin-top: var(--sp-1); padding: var(--sp-2) var(--sp-3) var(--sp-1); border-top: 1px solid var(--line-soft); font-family: var(--font-body); font-size: var(--fs-2); color: var(--text-3);}
 :global(html[data-device="phone"]) .hm-menu,:global(html[data-device="foldable"]) .hm-menu{left: auto; right: 0; width: min(318px,calc(100vw - 32px));}
+/* 관심 영역 배지 부품(목업 home.css .hm-aoi-ap · .hm-x) — 공통 지도 이식(u4) */
+.hm-aoi-ap{display:inline-flex;align-items:center;gap:var(--sp-1);font-size:var(--fs-2);color:var(--text-2)}
+.hm-x{position:relative;display:inline-grid;place-items:center;width:var(--sp-6);height:var(--sp-6);border:0;border-radius:var(--r-s);background:transparent;color:var(--text-2);cursor:pointer;flex:none}
+.hm-x:hover{background:var(--surface-3);color:var(--text-1)}
+.hm-x::after{content:"";position:absolute;inset:min(0px,calc(50% - var(--hit) / 2)) 0}

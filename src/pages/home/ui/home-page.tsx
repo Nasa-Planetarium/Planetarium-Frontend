@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useLocale } from "next-intl";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { useCountry, countryName } from "@/entities/country";
 import { calendarQuery } from "@/entities/month-value";
 import { methodQuery } from "@/entities/release";
@@ -12,8 +12,9 @@ import { useAgency, type Alert, type Fire, type Unit } from "@/shared/agency";
 import { api, unwrap, qk } from "@/shared/api";
 import { useT, useTl } from "@/shared/i18n";
 import { prefs } from "@/shared/lib/prefs";
+import { adm1RegionsQuery, approxRegions, childRegionsQuery, type DrawnAoi, type MapCanvasHandle, type MapRegion } from "@/widgets/map-canvas";
 import { outlookQuery } from "../api/queries";
-import { addDays, grid, partialOf, realAoi, regionOfAoi, SENSORS, worstMonth, type MonthRow, type Sensor } from "../model/home";
+import { addDays, grid, partialOf, realAoi, regionOfAoi, SENSORS, sumMonths, worstMonth, type MonthRow, type Sensor } from "../model/home";
 import { cx } from "./cx";
 import { HomeBand } from "./home-band";
 import { HomeHead } from "./home-head";
@@ -104,7 +105,22 @@ function HomeScreen() {
   const mvQ = useQuery(methodQuery());
   const mv = mvQ.data?.method_version ?? null;
   const S = useAoiScope();
-  const aoi = realAoi(S.chosen, kor ? region : null);
+  /* 지도 면 = 고른 범위의 아래 단(실제 API 경계, 대한민국 → 시도 · 시도 → 시군구 · 다른 나라 → 1급). 스냅숏(MSW)은 경계가 503 이라 나라 1급 정적 파일 */
+  const kidsQ = useQuery(childRegionsQuery(S.scope, lang, mv));
+  const adm1Q = useQuery(adm1RegionsQuery(iso3, lang));
+  const mapRegions: MapRegion[] = useMemo(() => (kidsQ.data?.length ? kidsQ.data : (adm1Q.data ?? [])), [kidsQ.data, adm1Q.data]);
+  /* 그린 관심 영역(사각형·다각형·반경) → 집계 지역(목업 approxRegions: 이름표 자리가 안에 든 지역 · 없으면 가장 가까운 하나). 지역 id 는 실제 AOI 로 옮긴다 */
+  const [drawn, setDrawnSt] = useState<DrawnAoi | null>(null);
+  /* 지도 손잡이(PNG·날아가기) — 콜백 ref 로 받는 상태 */
+  const [mapH, setMapH] = useState<MapCanvasHandle | null>(null);
+  const agg = useMemo(() => {
+    if (!drawn) return null;
+    const ap = approxRegions(drawn, mapRegions);
+    const toAoi = (id: string) => (S.byId.has(id) ? id : S.byId.has(`ADM1_${id}`) ? `ADM1_${id}` : null);
+    return { ...ap, regionIds: ap.ids, aois: ap.ids.map(toAoi).filter((x): x is string => !!x) };
+  }, [drawn, mapRegions, S.byId]);
+  const aggAois = agg?.aois ?? [];
+  const aoi = aggAois.length === 1 ? aggAois[0]! : realAoi(S.chosen, kor ? region : null);
   const aoiBbox = (S.byId.get(aoi)?.bbox as Bbox | undefined) ?? null;
   const aoiQ = useQuery({
     queryKey: qk(`aois/${aoi}`, undefined, mv),
@@ -113,7 +129,16 @@ function HomeScreen() {
     staleTime: Infinity,
   });
   const calQ = useQuery(calendarQuery(aoi, { start_year: 2001, end_year: 2026 }, mv));
-  const months: MonthRow[] = useMemo(() => (typeof calQ.data === "object" && calQ.data ? (calQ.data.months as unknown as MonthRow[]) : []), [calQ.data]);
+  /* 여러 지역에 걸친 그린 영역 = 지역마다 캘린더를 받아 값 열만 더한다(목업 집계 시군 합) */
+  const multi = aggAois.length > 1 ? aggAois : [];
+  const multiQ = useQueries({ queries: multi.map((id) => calendarQuery(id, { start_year: 2001, end_year: 2026 }, mv)) });
+  const multiDone = multi.length > 0 && multiQ.every((q) => typeof q.data === "object" && q.data);
+  const multiKey = multiQ.map((q) => q.dataUpdatedAt).join(",");
+  const months: MonthRow[] = useMemo(() => {
+    if (multi.length) return multiDone ? sumMonths(multiQ.map((q) => (q.data as { months: unknown }).months as MonthRow[])) : [];
+    return typeof calQ.data === "object" && calQ.data ? (calQ.data.months as unknown as MonthRow[]) : [];
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 여러 지역 응답은 갱신 시각 묶음(multiKey)으로 본다
+  }, [calQ.data, multi.length, multiDone, multiKey]);
   const gH = useMemo(() => grid(months, "harmonized"), [months]);
   const worst = useMemo(() => worstMonth(gH), [gH]);
   const partial = useMemo(() => partialOf(months), [months]);
@@ -126,14 +151,18 @@ function HomeScreen() {
     setIsoSeen(seenKey);
     setRegion(null);
     setPop(null);
+    setDrawnSt(null);
   }
 
   /* 이름 */
   const cname = countryName(info, lang, iso3);
   const regName = (id: string) => tl("region", id, null, ag.regions.find((r) => r.id === id)?.name ?? id);
-  const aoiLabel = region ? regName(region) : S.nameOf(S.chosen) || cname;
+  const regionName = (id: string) => mapRegions.find((r) => r.id === id)?.name ?? S.nameOf(id);
+  const drawnKind = drawn ? (drawn.type === "bbox" ? t("home.aoi.bbox") : drawn.type === "polygon" ? t("home.aoi.polygon") : t("home.aoi.radius", { r: String(Math.round(drawn.radius_km * 10) / 10) })) : "";
+  const aggNames = (agg?.regionIds ?? []).map(regionName);
+  const aoiLabel = drawn ? drawnKind + (aggNames.length ? ` · ${aggNames.length > 1 ? t("home.aoi.and_more", { a: aggNames[0]!, n: aggNames.length - 1 }) : aggNames[0]}` : "") : region ? regName(region) : S.nameOf(S.chosen) || cname;
   const apiAoi = aoiQ.data as { name_ko?: string; name_en?: string | null } | undefined;
-  const dataAoiName = apiAoi ? (lang === "ko" ? apiAoi.name_ko : apiAoi.name_en || apiAoi.name_ko) || aoi : aoi;
+  const dataAoiName = drawn ? aoiLabel : apiAoi ? (lang === "ko" ? apiAoi.name_ko : apiAoi.name_en || apiAoi.name_ko) || aoi : aoi;
 
   /* 시나리오 원장(경북)만: 다른 나라는 비운다(목업 FIRES·feedAlerts) */
   const fires: Fire[] = kor ? ag.fires : [];
@@ -167,6 +196,17 @@ function HomeScreen() {
     aoi,
     aoiBbox,
     scope: S,
+    mapRegions,
+    drawn,
+    setDrawn: (a) => {
+      setDrawnSt(a);
+      setRegion(null);
+      setPop(null);
+    },
+    drawnKind,
+    agg: agg ? { names: aggNames, ids: agg.regionIds, fallback: agg.fallback, sgg: /^SIDO_/.test(S.scope) } : null,
+    mapH,
+    setMapH,
     aoiLabel,
     dataAoiName,
     range,
@@ -193,7 +233,7 @@ function HomeScreen() {
     units,
     mv,
     months,
-    calPending: calQ.isPending,
+    calPending: multi.length ? !multiDone : calQ.isPending,
     calError: calQ.error,
     partial,
     worst,
@@ -238,6 +278,16 @@ export type Ctx = {
   /** 고른 지역 상자(실서버 /aois bbox — 스냅숏 모드엔 없음) */
   aoiBbox: Bbox | null;
   scope: AoiScope;
+  /** 지도 면(고른 범위 아래 단) */
+  mapRegions: MapRegion[];
+  /** 그린 관심 영역(사각형·다각형·반경) — 없으면 null */
+  drawn: DrawnAoi | null;
+  setDrawn: (a: DrawnAoi | null) => void;
+  drawnKind: string;
+  /** 그린 영역의 집계 지역(이름·지도 면 id · 근사 여부 · 시군구 단인지) */
+  agg: { names: string[]; ids: string[]; fallback: boolean; sgg: boolean } | null;
+  mapH: MapCanvasHandle | null;
+  setMapH: (h: MapCanvasHandle | null) => void;
   aoiLabel: string;
   dataAoiName: string;
   range: Range | null;

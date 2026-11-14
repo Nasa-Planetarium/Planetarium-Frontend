@@ -486,3 +486,10 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
   .an-print footer{margin-top:12px;padding-top:6px;border-top:1px solid var(--paper-ink);font-size:8pt;color:var(--paper-muted)}
   .an-print :is(.num,small,.an-vsc){color:inherit}
 }
+
+/* 홈에서 가져온 조건(목업 analysis.css .an-handoff) — u4 */
+.an-handoff{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--sp-3);align-items:start;padding:0 0 var(--sp-3)}
+.an-hot{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0}
+.an-hot p{margin:0;font-size:var(--fs-3);color:var(--text-2);line-height:1.45}
+.an-hot p b{color:var(--text-1);font-weight:var(--fw-strong)}
+.eyebrow{font-family:var(--font-body);font-size:var(--fs-2);letter-spacing:0;color:var(--text-2);font-variant-numeric:tabular-nums}

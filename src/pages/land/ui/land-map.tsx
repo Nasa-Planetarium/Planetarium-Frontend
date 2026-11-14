@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Map as MlMap, GeoJSONSource } from "maplibre-gl";
 import { useQuery } from "@tanstack/react-query";
-import { Image as ImageIcon, Layers, LocateFixed, Minus, Plus } from "lucide-react";
-import { boundaryQuery } from "@/entities/country";
+import { Image as ImageIcon, Layers } from "lucide-react";
+import { useLocale } from "next-intl";
+import { methodQuery } from "@/entities/release";
+import { adm1RegionsQuery, childRegionsQuery, downloadMapPng, MapCanvas, type Bbox, type MapCanvasHandle } from "@/widgets/map-canvas";
 import { useT } from "@/shared/i18n";
 import type { FireMeta, LandFire } from "../model/land";
 import { cx } from "./cx";
@@ -73,82 +75,32 @@ function FireMark({ f, sel, x, y }: { f: LandFire; sel: boolean; x?: number; y?:
 
 const ring = (poly: [number, number][]) => [...poly.map(([la, lo]) => [lo, la]), poly[0] ? [poly[0][1], poly[0][0]] : []];
 const fc = (features: unknown[]) => ({ type: "FeatureCollection" as const, features });
-const NICE = [1, 2, 5];
-function niceLen(maxM: number) {
-  const p = Math.pow(10, Math.floor(Math.log10(maxM)));
-  let best = p;
-  NICE.forEach((n) => {
-    if (n * p <= maxM) best = n * p;
-  });
-  return best;
-}
 
 export function LandMap(p: LandMapProps) {
   const t = useT();
-  const box = useRef<HTMLDivElement>(null);
-  const glEl = useRef<HTMLDivElement>(null);
+  const ref = useRef<MapCanvasHandle>(null);
   const [map, setMap] = useState<MlMap | null>(null);
   const ready = !!map;
   const [frame, setFrame] = useState(0);
   const [pop, setPop] = useState(false);
-  const { data: boundary } = useQuery(boundaryQuery("KOR"));
   const sel = useMemo(() => p.fires.find((f) => f.id === p.selId) ?? null, [p.fires, p.selId]);
+  /* 바탕 경계 = 시나리오 시도(경상북도)의 시군구(실제 API 경계) · 스냅숏(MSW)은 나라 1급 */
+  const lang = useLocale();
+  const mv = useQuery(methodQuery()).data?.method_version ?? null;
+  const kids = useQuery(childRegionsQuery("SIDO_47", lang, mv)).data;
+  const adm1 = useQuery(adm1RegionsQuery("KOR", lang)).data;
+  const regions = kids?.length ? kids : (adm1 ?? []);
 
-  /* 지도 만들기(한 번) */
-  useEffect(() => {
-    let dead = false;
-    let ro: ResizeObserver | null = null;
-    let made: MlMap | null = null;
-    void import("maplibre-gl").then((ml) => {
-      if (dead || !glEl.current) return;
-      const map = new ml.Map({
-        container: glEl.current,
-        style: { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: { "background-color": tok("map-void") || "#070605" } }] },
-        center: [128.8, 36.6],
-        zoom: 8,
-        maxZoom: 14.5,
-        attributionControl: false,
-        dragRotate: false,
-        pitchWithRotate: false,
-        touchPitch: false,
-        canvasContextAttributes: { preserveDrawingBuffer: true },
-      });
-      made = map;
-      map.touchZoomRotate.disableRotation();
-      map.on("load", () => {
-        const empty = fc([]);
-        map.addSource("bounds", { type: "geojson", data: empty });
-        map.addSource("burn-other", { type: "geojson", data: empty });
-        map.addSource("burn-sel", { type: "geojson", data: empty });
-        map.addLayer({ id: "bounds-line", type: "line", source: "bounds", paint: { "line-color": tok("text-3"), "line-width": 1, "line-opacity": 0.6 } });
-        map.addLayer({ id: "burn-other", type: "line", source: "burn-other", paint: { "line-color": tok("h4"), "line-opacity": 0.5, "line-width": 1, "line-dasharray": [3, 4] } });
-        map.addLayer({ id: "burn-sel-fill", type: "fill", source: "burn-sel", paint: { "fill-color": tok("h5"), "fill-opacity": 0.16 } });
-        map.addLayer({ id: "burn-sel-line", type: "line", source: "burn-sel", paint: { "line-color": tok("h5"), "line-width": 2 } });
-        setMap(map);
-      });
-      map.on("move", () => setFrame((n) => n + 1));
-      ro = new ResizeObserver(() => {
-        map.resize();
-        setFrame((n) => n + 1);
-      });
-      ro.observe(glEl.current);
-    });
-    return () => {
-      dead = true;
-      ro?.disconnect();
-      made?.remove();
-    };
+  /* 공통 지도(바탕·음영·하천·경계) 위에 소실 범위 층을 얹는다 */
+  const onReady = useCallback((m: MlMap) => {
+    const empty = fc([]);
+    m.addSource("burn-other", { type: "geojson", data: empty });
+    m.addSource("burn-sel", { type: "geojson", data: empty });
+    m.addLayer({ id: "burn-other", type: "line", source: "burn-other", paint: { "line-color": tok("h4"), "line-opacity": 0.5, "line-width": 1, "line-dasharray": [3, 4] } });
+    m.addLayer({ id: "burn-sel-fill", type: "fill", source: "burn-sel", paint: { "fill-color": tok("h5"), "fill-opacity": 0.16 } });
+    m.addLayer({ id: "burn-sel-line", type: "line", source: "burn-sel", paint: { "line-color": tok("h5"), "line-width": 2 } });
+    setMap(m);
   }, []);
-
-  /* 나라 경계 */
-  useEffect(() => {
-    if (!map || !boundary) return;
-    (map.getSource("bounds") as GeoJSONSource | undefined)?.setData(((boundary as { geometry?: unknown }).geometry ?? boundary) as GeoData);
-  }, [map, boundary]);
-  useEffect(() => {
-    if (!map) return;
-    map.setLayoutProperty("bounds-line", "visibility", p.layers.bounds ? "visible" : "none");
-  }, [map, p.layers.bounds]);
 
   /* 소실 범위 */
   useEffect(() => {
@@ -217,13 +169,19 @@ export function LandMap(p: LandMapProps) {
     (map.getSource("burn-other") as GeoJSONSource | undefined)?.setData(fc(feats) as GeoData);
   }, [map, view, p.metas]);
 
+  /* 전체 보기 = 원장 불 전체 범위 */
+  const allView: Bbox | null = useMemo(() => {
+    if (!p.fires.length) return null;
+    return [Math.min(...p.fires.map((f) => f.lon)) - 0.05, Math.min(...p.fires.map((f) => f.lat)) - 0.05, Math.max(...p.fires.map((f) => f.lon)) + 0.05, Math.max(...p.fires.map((f) => f.lat)) + 0.05];
+  }, [p.fires]);
+
   /* 고른 불로 맞추기(목업 fitTo: 다각형 ± 40%, 위 1.3·아래 1.5, 여백 56, 지도 상한까지) */
   const fit = useCallback(() => {
     if (!map) return;
     const f = sel;
     const poly = f ? (p.metas[f.id]?.burn_poly ?? []) : [];
     if (!f || !poly.length) {
-      map.fitBounds([[128.05, 36.15], [129.55, 37.05]], { padding: 24, animate: false });
+      if (allView) ref.current?.fitBounds(allView, 24);
       return;
     }
     let s = 90, n = -90, w = 180, e = -180;
@@ -237,7 +195,7 @@ export function LandMap(p: LandMapProps) {
     const po = (e - w) * 0.4;
     const cam = map.cameraForBounds([[w - po, s - pl * 1.5], [e + po, n + pl * 1.3]], { padding: 56, maxZoom: map.getMaxZoom() });
     if (cam) map.jumpTo({ center: cam.center, zoom: cam.zoom ?? map.getZoom() });
-  }, [map, sel, p.metas]);
+  }, [map, sel, p.metas, allView]);
   const fitKey = `${p.selId}|${ready}`;
   const lastFit = useRef("");
   useEffect(() => {
@@ -246,24 +204,9 @@ export function LandMap(p: LandMapProps) {
     fit();
   }, [ready, fitKey, fit]);
 
-  /* 축척(목업 .scale: 200px 안 둥근 길이) */
-  const scale = useMemo(() => {
-    if (!map || !view) return null;
-    const lat = map.getCenter().lat;
-    const mpp = (40075016.686 * Math.cos((lat * Math.PI) / 180)) / (512 * Math.pow(2, map.getZoom()));
-    const m = niceLen(mpp * 190);
-    return { px: m / mpp, text: `${m / 1000} km` };
-  }, [map, view]);
-
+  /* 지도 PNG(목업 land.js:404 — 제목 띠 「{이름} 소실 범위 {ha}(추정)」 붙인 스냅숏) */
   const png = () => {
-    if (!map) return;
-    map.triggerRepaint();
-    map.once("render", () => {
-      const a = document.createElement("a");
-      a.href = map.getCanvas().toDataURL("image/png");
-      a.download = p.pngName;
-      a.click();
-    });
+    downloadMapPng(ref.current, [p.placeLabel, p.areaLabel].filter(Boolean).join(" · "), p.pngName);
   };
 
   /* 범례(목업 syncKey): 지도 칸 안에 보이는 것만 */
@@ -284,9 +227,19 @@ export function LandMap(p: LandMapProps) {
   }, [view, p.layers, t]);
 
   return (
-    <div ref={box} className={cx("map", p.className)} data-testid="land-map">
-      <div ref={glEl} className={cx("gl")} />
-      <div className={cx("ovl")}>
+    <MapCanvas
+      ref={ref}
+      className={cx("map", p.className)}
+      testId="land-map"
+      iso3="KOR"
+      view={allView}
+      regions={regions}
+      layers={{ heat: false, hotspots: false, boundaries: p.layers.bounds, labels: p.layers.bounds }}
+      onReady={onReady}
+      onMove={() => setFrame((n) => n + 1)}
+      ticks
+    >
+      <div className={cx("ovl")} style={{ pointerEvents: "none" }}>
         {view?.marks
           .filter((m) => m.f.id !== p.selId)
           .map((m) => (
@@ -314,7 +267,7 @@ export function LandMap(p: LandMapProps) {
           </>
         ) : null}
       </div>
-      <div className={cx("map-ui")}>
+      <div className={cx("map-ui")} style={{ pointerEvents: "none" }}>
         <div className={cx("mtools")} role="toolbar" aria-label={t("shell.map.tools")}>
           <button type="button" data-mt="layers" aria-expanded={pop} aria-haspopup="true" onClick={() => setPop((v) => !v)}>
             <Layers aria-hidden="true" />
@@ -341,17 +294,6 @@ export function LandMap(p: LandMapProps) {
             ))}
           </div>
         ) : null}
-        <div className={cx("zoom")}>
-          <button type="button" data-z="1" aria-label={t("shell.map.zoom_in")} onClick={() => map?.zoomIn()}>
-            <Plus aria-hidden="true" />
-          </button>
-          <button type="button" data-z="-1" aria-label={t("shell.map.zoom_out")} onClick={() => map?.zoomOut()}>
-            <Minus aria-hidden="true" />
-          </button>
-          <button type="button" data-z="fit" aria-label={t("shell.map.fit")} onClick={fit}>
-            <LocateFixed aria-hidden="true" />
-          </button>
-        </div>
         {key.length ? (
           <div className={cx("map-key")}>
             {key.map((it) => (
@@ -368,14 +310,7 @@ export function LandMap(p: LandMapProps) {
             ))}
           </div>
         ) : null}
-        <div className={cx("attrib")}>{t("shell.map.attr_kr").split("|")[0]}</div>
-        {scale ? (
-          <div className={cx("scale")}>
-            <i style={{ width: scale.px }} />
-            {scale.text}
-          </div>
-        ) : null}
       </div>
-    </div>
+    </MapCanvas>
   );
 }

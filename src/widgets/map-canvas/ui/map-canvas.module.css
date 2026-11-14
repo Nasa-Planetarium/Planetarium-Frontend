@@ -1,7 +1,7 @@
 /* 공통 지도 — 목업 index.html 의 지도 규칙(.map · .map3d · .m3-* · .mticks · .mtools · .drawhint · .tipbox)과
    home.css 좌표 창(.hm-ptbox) · 화면 밖 안내(.hm-offv)를 그대로 옮겼다. 색·간격은 전부 토큰. */
 .map{position:relative;overflow:hidden;background:var(--map-void);border-radius:var(--r-l);border:0;box-shadow:var(--seam-ring);min-height:300px;touch-action:none;user-select:none}
-.gl{position:absolute;inset:0}
+.gl,.map>.gl.gl{position:absolute;inset:0}
 .gl :global(.maplibregl-canvas):focus:not(:focus-visible){outline:none}
 .gl :global(.maplibregl-canvas):focus-visible{outline:2px solid var(--focus-ring);outline-offset:-2px}
 .map :global(.maplibregl-marker){position:absolute;left:0;top:0;will-change:transform}

@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { GeoJSONSource, Map as MlMap } from "maplibre-gl";
 import { useQuery } from "@tanstack/react-query";
-import { Helicopter, Layers, LocateFixed, Minus, Plus, RadioTower, Truck, Users } from "lucide-react";
-import { boundaryQuery } from "@/entities/country";
+import { Helicopter, Layers, RadioTower, Truck, Users } from "lucide-react";
+import { useLocale } from "next-intl";
+import { methodQuery } from "@/entities/release";
 import { nextPass } from "@/entities/satellite-pass";
 import { useNowMs } from "@/entities/situation";
 import type { Weather } from "@/shared/agency";
 import { useT, useTl } from "@/shared/i18n";
+import { adm1RegionsQuery, childRegionsQuery, MapCanvas, type Bbox, type MapCanvasHandle } from "@/widgets/map-canvas";
 import { DIRS, isClosed, type OpsFire } from "../model/ops";
 import { setSlotOf, useWorld, type Merged } from "../model/store";
 import { cx } from "./cx";
@@ -27,15 +29,6 @@ const tok = (name: string) => (typeof window === "undefined" ? "" : getComputedS
 const fc = (features: unknown[]) => ({ type: "FeatureCollection" as const, features }) as GeoData;
 /** 자원 상태 → 표지 색(목업 .op-pip 과 같은 토큰) */
 const UNIT_C: Record<string, string> = { standby: "var(--data-unit-standby)", enroute: "var(--route)", onscene: "var(--alert-3)", return: "var(--data-unit-return)" };
-const NICE = [1, 2, 5];
-const niceLen = (maxM: number) => {
-  const p = Math.pow(10, Math.floor(Math.log10(maxM)));
-  let best = p;
-  NICE.forEach((n) => {
-    if (n * p <= maxM) best = n * p;
-  });
-  return best;
-};
 
 /** 불 표지(목업 EM.fireMarkSVG 진행·현장·진화 끝 + 선택 고리) — 점은 원(결정 F9) */
 function FireMark({ f, sel }: { f: OpsFire; sel: boolean }) {
@@ -77,56 +70,21 @@ export function OpsMap(p: OpsMapProps) {
   const t = useT();
   const tl = useTl();
   const w = useWorld();
-  const glEl = useRef<HTMLDivElement>(null);
+  const ref = useRef<MapCanvasHandle>(null);
   const [map, setMap] = useState<MlMap | null>(null);
   const [frame, setFrame] = useState(0);
   const [pop, setPop] = useState(false);
-  const { data: boundary } = useQuery(boundaryQuery("KOR"));
-
-  useEffect(() => {
-    let dead = false;
-    let ro: ResizeObserver | null = null;
-    let made: MlMap | null = null;
-    void import("maplibre-gl").then((ml) => {
-      if (dead || !glEl.current) return;
-      const m = new ml.Map({
-        container: glEl.current,
-        style: { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: { "background-color": tok("map-void") || "#070605" } }] },
-        center: [128.85, 36.48],
-        zoom: 9.5,
-        maxZoom: 14.5,
-        attributionControl: false,
-        dragRotate: false,
-        pitchWithRotate: false,
-        touchPitch: false,
-      });
-      made = m;
-      m.touchZoomRotate.disableRotation();
-      m.on("load", () => {
-        m.addSource("bounds", { type: "geojson", data: fc([]) });
-        m.addLayer({ id: "bounds-line", type: "line", source: "bounds", paint: { "line-color": tok("text-3"), "line-width": 1, "line-opacity": 0.6 } });
-        m.addSource("routes", { type: "geojson", data: fc([]) });
-        m.addLayer({ id: "routes", type: "line", source: "routes", paint: { "line-color": tok("route"), "line-width": 2, "line-dasharray": [2, 2] } });
-        setMap(m);
-      });
-      m.on("move", () => setFrame((n) => n + 1));
-      ro = new ResizeObserver(() => {
-        m.resize();
-        setFrame((n) => n + 1);
-      });
-      ro.observe(glEl.current);
-    });
-    return () => {
-      dead = true;
-      ro?.disconnect();
-      made?.remove();
-    };
+  /* 바탕 경계 = 시나리오 시도(경상북도)의 시군구(실제 API 경계) · 스냅숏(MSW)은 나라 1급 */
+  const lang = useLocale();
+  const mv = useQuery(methodQuery()).data?.method_version ?? null;
+  const kids = useQuery(childRegionsQuery("SIDO_47", lang, mv)).data;
+  const adm1 = useQuery(adm1RegionsQuery("KOR", lang)).data;
+  const regions = kids?.length ? kids : (adm1 ?? []);
+  const onReady = useCallback((m: MlMap) => {
+    m.addSource("op-routes", { type: "geojson", data: fc([]) });
+    m.addLayer({ id: "op-routes", type: "line", source: "op-routes", paint: { "line-color": tok("route"), "line-width": 2, "line-dasharray": [2, 2] } });
+    setMap(m);
   }, []);
-
-  useEffect(() => {
-    if (!map || !boundary) return;
-    (map.getSource("bounds") as GeoJSONSource | undefined)?.setData(((boundary as { geometry?: unknown }).geometry ?? boundary) as GeoData);
-  }, [map, boundary]);
 
   const fires = useMemo(() => p.M.fires.filter((f) => !f.historical && (f.current || !isClosed(f.status))), [p.M.fires]);
 
@@ -152,6 +110,13 @@ export function OpsMap(p: OpsMapProps) {
       { padding: { top: Math.round(110 * k), bottom: Math.round(120 * k), left: Math.round(48 * k), right: Math.round(110 * k) }, animate: false, maxZoom: 12 },
     );
   }, [map, p.fitAll, fires, p.M.units]);
+
+  /* 전체 보기 = 처음 받은 오늘 불·자원 전체 범위(자원이 움직일 때마다 공통 지도가 다시 맞추지 않게 한 번만 정한다) */
+  const [allView, setAllView] = useState<Bbox | null>(null);
+  if (!allView) {
+    const pts = [...fires, ...p.M.units];
+    if (pts.length) setAllView([Math.min(...pts.map((x) => x.lon)) - 0.02, Math.min(...pts.map((x) => x.lat)) - 0.02, Math.max(...pts.map((x) => x.lon)) + 0.02, Math.max(...pts.map((x) => x.lat)) + 0.02]);
+  }
 
   /* 고른 불이 지도 밖이면 그쪽으로 옮긴다 */
   const selFire = fires.find((f) => f.id === p.selFireId) ?? null;
@@ -220,10 +185,7 @@ export function OpsMap(p: OpsMapProps) {
           })
       : [];
     const vils = selFire && p.layers.spread ? selFire.villages.map((v) => ({ v, xy: P(v.lat, v.lon) })) : [];
-    const lat = map.getCenter().lat;
-    const mpp = (40075016.686 * Math.cos((lat * Math.PI) / 180)) / (512 * Math.pow(2, z));
-    const m = niceLen(mpp * 190);
-    return { W, H, P, units, routes, fans, vils, wide: pxKm(1) >= 34, scale: { px: m / mpp, text: m >= 1000 ? `${m / 1000} km` : `${m} m` } };
+    return { W, H, P, units, routes, fans, vils, wide: pxKm(1) >= 34 };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, frame, fires, p.M.units, w, p.layers.spread, p.selFireId, selFire]);
 
@@ -246,7 +208,7 @@ export function OpsMap(p: OpsMapProps) {
           .filter((x) => x.kind === "go")
           .map((x) => ({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [[x.from.lon, x.from.lat], [x.to.lon, x.to.lat]] } }))
       : [];
-    (map.getSource("routes") as GeoJSONSource | undefined)?.setData(fc(feats));
+    (map.getSource("op-routes") as GeoJSONSource | undefined)?.setData(fc(feats));
   }, [map, view, w.trips, p.layers.routes]);
 
   const fname = (f: OpsFire) => tl("fire", f.id, "name", f.name);
@@ -257,10 +219,20 @@ export function OpsMap(p: OpsMapProps) {
     `M ${x + Math.cos(a0) * r} ${y + Math.sin(a0) * r} A ${r} ${r} 0 0 1 ${x + Math.cos(a1) * r} ${y + Math.sin(a1) * r}`;
 
   return (
-    <div className={cx("op-map map")} data-testid="ops-map">
-      <div ref={glEl} className={cx("gl")} />
+    <MapCanvas
+      ref={ref}
+      className={cx("op-map map")}
+      testId="ops-map"
+      iso3="KOR"
+      view={allView}
+      regions={regions}
+      layers={{ heat: false, hotspots: false }}
+      onReady={onReady}
+      onMove={() => setFrame((n) => n + 1)}
+      ticks
+    >
       {view ? (
-        <svg className={cx("ovl")} aria-hidden="true">
+        <svg className={cx("ovl")} aria-hidden="true" style={{ pointerEvents: "none" }}>
           <defs>
             {view.fans.map((fn) => (
               <radialGradient key={fn.f.id} id={`opfan-${fn.f.id}`} cx={fn.x} cy={fn.y} r={Math.max(46, fn.rr(3))} gradientUnits="userSpaceOnUse">
@@ -320,7 +292,7 @@ export function OpsMap(p: OpsMapProps) {
         </svg>
       ) : null}
       {view ? (
-        <div className={cx("ovl")}>
+        <div className={cx("ovl")} style={{ pointerEvents: "none" }}>
           {fires.map((f) => {
             const [x, y] = view.P(f.lat, f.lon);
             if (x < -40 || y < -40 || x > view.W + 40 || y > view.H + 40) return null;
@@ -382,7 +354,7 @@ export function OpsMap(p: OpsMapProps) {
             : null}
         </div>
       ) : null}
-      <div className={cx("map-ui")}>
+      <div className={cx("map-ui")} style={{ pointerEvents: "none" }}>
         <div className={cx("op-tr")}>
           <div className={cx("op-wind")} aria-label={t("ops.sel_alert.wind")}>
             <span className={cx("op-wind-dial")}>
@@ -453,47 +425,9 @@ export function OpsMap(p: OpsMapProps) {
             </label>
           ))}
         </div>
-        <div className={cx("zoom")}>
-          <button type="button" data-z="1" aria-label={t("shell.map.zoom_in")} onClick={() => map?.zoomIn()}>
-            <Plus aria-hidden="true" />
-          </button>
-          <button type="button" data-z="-1" aria-label={t("shell.map.zoom_out")} onClick={() => map?.zoomOut()}>
-            <Minus aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            data-z="fit"
-            aria-label={t("shell.map.fit")}
-            onClick={() => {
-              fitted.current = false;
-              setFrame((n) => n + 1);
-              if (map) {
-                const pts = [...fires, ...p.M.units];
-                map.fitBounds(
-                  [
-                    [Math.min(...pts.map((x) => x.lon)), Math.min(...pts.map((x) => x.lat))],
-                    [Math.max(...pts.map((x) => x.lon)), Math.max(...pts.map((x) => x.lat))],
-                  ],
-                  { padding: 60, maxZoom: 12 },
-                );
-              }
-            }}
-          >
-            <LocateFixed aria-hidden="true" />
-          </button>
-        </div>
-        <div className={cx("attrib")} title={t("shell.map.attr_kr_full")}>
-          {t("shell.map.attr_kr").split("|")[view && view.W < 520 ? 1 : 0]}
-        </div>
-        {view ? (
-          <div className={cx("scale")}>
-            <i style={{ width: view.scale.px }} />
-            {view.scale.text}
-          </div>
-        ) : null}
       </div>
       {p.sheet}
-    </div>
+    </MapCanvas>
   );
 }
 

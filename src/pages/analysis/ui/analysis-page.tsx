@@ -4,7 +4,7 @@ import { Suspense, useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
-import { Check, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 import { countryName, useCountry } from "@/entities/country";
 import { methodQuery } from "@/entities/release";
 import { ApiError } from "@/shared/api";
@@ -211,6 +211,10 @@ function S1({ x, KOR, yr, setYr, inScope, iso3 }: { x: Ctx; KOR: boolean; yr: nu
   const { T, W, cal, rec, aoi, has, lang } = x;
   const [pickOpen, setPickOpen] = useState(false);
   const [anchor, setAnchor] = useState<{ left: number; bottom: number } | null>(null);
+  /* 홈(상황판)에서 넘어온 조건(목업 analysis.js handoff — 「홈에서 가져온 조건」 · 지역 · 달 · 닫기) */
+  const sp = useQueryParams();
+  const [hoClosed, setHoClosed] = useState(false);
+  const handoff = sp.get("from") === "home" && !hoClosed;
   const { list: countries } = useCountry();
   const aq = useQuery(aoisQuery(x.M?.method_version ?? null));
   const cov = coverage(rec?.first_month, rec?.last_month, cal);
@@ -247,6 +251,25 @@ function S1({ x, KOR, yr, setYr, inScope, iso3 }: { x: Ctx; KOR: boolean; yr: nu
     <div className={cx("an-s1")}>
       <div className={cx("an-s1l")}>
         <section className={cx("an-q panel")} aria-label={T("ui.analysis_scope")}>
+          {handoff ? (
+            <div className={cx("an-handoff")} role="status" data-handoff="">
+              <div className={cx("an-hot")}>
+                <span className={cx("eyebrow")}>{T("ui.conditions_from_overview")}</span>
+                <p>
+                  <b>{rec ? (lang === "ko" ? rec.name_ko : nameEn(rec) || rec.name_ko) || aoi : (aoi ?? "–")}</b>
+                  {sp.get("ym") ? (
+                    <>
+                      {" · "}
+                      <b className={cx("num")}>{sp.get("ym")}</b>
+                    </>
+                  ) : null}
+                </p>
+              </div>
+              <button type="button" className={cx("iconbtn an-hox")} data-hox="" aria-label={T("ui.close")} onClick={() => setHoClosed(true)}>
+                <X aria-hidden="true" strokeWidth={1.9} />
+              </button>
+            </div>
+          ) : null}
           <div className={cx("an-f")}>
             <div className={cx("an-fl")}>
               <b>{T("ui.region")}</b>

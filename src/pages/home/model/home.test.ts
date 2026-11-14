@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { annual, eraPlace, grid, last12, realAoi, regionOfAoi, worstMonth, ytdRatio, type MonthRow } from "./home";
+import { annual, eraPlace, grid, last12, realAoi, regionOfAoi, sumMonths, worstMonth, ytdRatio, type MonthRow } from "./home";
 
 const row = (year: number, month: number, value: number | null, status = "ok", extra: Partial<MonthRow> = {}): MonthRow => ({
   year,
@@ -71,5 +71,14 @@ describe("상황판 모델", () => {
       { left: 0, right: 200, width: (t) => t.length * 6.8, pad: 3, gap: 6 },
     );
     expect(p.map((q) => q.txt)).toEqual(["T", "Aqua"]);
+  });
+});
+
+describe("sumMonths — 그린 영역 여러 지역 합", () => {
+  it("값 열은 더하고 배수·판정은 비운다", () => {
+    const r = (v: number | null, st = "final") => ({ year: 2025, month: 3, value: v, raw_modis: 1, raw_viirs: null, status: st, ratio_to_median: 2, verdict: "high" });
+    const out = sumMonths([[r(10)], [r(5)], [r(null)]]);
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ value: 15, raw_modis: 3, raw_viirs: null, ratio_to_median: null, verdict: null, status: "final" });
   });
 });

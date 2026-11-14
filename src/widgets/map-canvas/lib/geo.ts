@@ -51,6 +51,43 @@ export function aoiBounds(a: DrawnAoi): Bbox {
   return [w, s, e, n];
 }
 
+/** 점이 그린 영역 안인가(목업 home.js inGeom — 사각형·다각형 짝수-홀수 규칙·반경은 거리) */
+export function inAoi(a: DrawnAoi, lat: number, lon: number): boolean {
+  if (a.type === "bbox") return lat >= a.south && lat <= a.north && lon >= a.west && lon <= a.east;
+  if (a.type === "point") {
+    const dy = (lat - a.lat) * 111;
+    const dx = (lon - a.lon) * 111 * kx(a.lat);
+    return Math.hypot(dx, dy) <= a.radius_km;
+  }
+  const P = a.pts;
+  let inside = false;
+  for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
+    const [yi, xi] = P[i]!;
+    const [yj, xj] = P[j]!;
+    if (yi > lat !== yj > lat && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+/** 그린 영역 → 집계 지역(목업 approxRegions): 이름표 자리가 안에 든 지역, 없으면 영역 가운데에 가장 가까운 지역 하나(근사) */
+export function approxRegions(a: DrawnAoi, regions: readonly { id: string; lat: number; lon: number }[]): { ids: string[]; fallback: boolean } {
+  const inside = regions.filter((r) => inAoi(a, r.lat, r.lon)).map((r) => r.id);
+  if (inside.length) return { ids: inside, fallback: false };
+  const b = aoiBounds(a);
+  const cy = (b[1] + b[3]) / 2;
+  const cxx = (b[0] + b[2]) / 2;
+  let best: string | null = null;
+  let bd = Infinity;
+  regions.forEach((r) => {
+    const d = ((r.lon - cxx) * kx(cy)) ** 2 + (r.lat - cy) ** 2;
+    if (d < bd) {
+      bd = d;
+      best = r.id;
+    }
+  });
+  return { ids: best ? [best] : [], fallback: true };
+}
+
 /** 출동 경로: 불까지 휘는 2차 베지어(목업 curve) — a·b = [경도, 위도] */
 export function curve(a: [number, number], b: [number, number], n = 40): [number, number][] {
   const k = kx((a[1] + b[1]) / 2);

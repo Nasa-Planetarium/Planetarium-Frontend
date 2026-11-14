@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, FileSpreadsheet, Image as ImageIcon, MapPin } from "lucide-react";
+import { ChevronDown, FileSpreadsheet, Image as ImageIcon, Map as MapIcon, MapPin } from "lucide-react";
+import { aoiBounds, downloadMapPng } from "@/widgets/map-canvas";
 import { ApiError } from "@/shared/api";
 import { hotspotsQuery } from "../api/queries";
 import { cx } from "./cx";
@@ -74,7 +75,7 @@ export function HomeDownload(c: Ctx) {
   const hotCsv = async () => {
     if (!c.range) return;
     try {
-      const d = (await qc.fetchQuery(hotspotsQuery(c.aoiBbox ?? KR_VIEW, c.range.start, c.range.end, c.mv))) as unknown as { hotspots?: Record<string, unknown>[] };
+      const d = (await qc.fetchQuery(hotspotsQuery(c.drawn ? aoiBounds(c.drawn) : (c.aoiBbox ?? KR_VIEW), c.range.start, c.range.end, c.mv))) as unknown as { hotspots?: Record<string, unknown>[] };
       const rows = d.hotspots ?? [];
       if (!rows.length) {
         setNote(c.t("home.export_it.no_raw_detections_to"));
@@ -118,6 +119,13 @@ export function HomeDownload(c: Ctx) {
             <span>
               <b>{c.t("home.item.raw_detections_csv")}</b>
               <span>{c.dataAoiName + c.t("home.item.map_period") + (c.range ? `${c.range.start} – ${c.range.end}` : "")}</span>
+            </span>
+          </button>
+          <button type="button" role="menuitem" data-k="map" onClick={() => (downloadMapPng(c.mapH, `Emberline · ${c.aoiLabel}${c.range ? ` · ${c.range.start} – ${c.range.end}` : ""}`, `emberline_map_${c.aoi}`), setOpen(false))}>
+            <MapIcon aria-hidden="true" strokeWidth={1.9} width={16} height={16} />
+            <span>
+              <b>{c.t("home.item.map_png")}</b>
+              <span>{c.t("home.item.current_map_view_with")}</span>
             </span>
           </button>
           {note ? <div className={cx("hm-menu-f")}>{note}</div> : null}

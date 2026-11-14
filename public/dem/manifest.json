@@ -1,0 +1,1 @@
+{"tiles": "dem/{z}/{x}/{y}.webp", "encoding": "terrarium", "tileSize": 512, "minzoom": 5, "maxzoom": 11, "bounds": [127.75, 35.9, 129.72, 37.3], "_note": "목업 planetarium-mockup/dem 그대로(Copernicus GLO-30 terrarium, 경북 북부 127.75–129.72E 35.9–37.3N, z5–11). 한국 전역·세계 저배율은 W0(원천·용량 사람 확인)"}

@@ -54,6 +54,9 @@ export interface MapCanvasProps {
   onRegion?(id: string): void;
   /** 카메라가 멈출 때마다 보이는 범위(서, 남, 동, 북)와 줌 — 화면이 점(/hotspots)을 그 범위로 받을 때 */
   onView?(b: Bbox, zoom: number): void;
+  /** 지도가 처음 다 그려졌을 때 한 번 — 화면 고유 층(예: 예측 면 단계 채움)을 바탕 위에 얹을 때. 움직일 때마다 = onMove */
+  onReady?(m: MlMap): void;
+  onMove?(): void;
   /** 그린 관심 영역(제어) — undefined 면 부품이 스스로 들고 있는다 */
   aoi?: DrawnAoi | null;
   onDraw?(aoi: DrawnAoi): void;
@@ -184,6 +187,7 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
         if (dead) return;
         setMap(m);
         emitView();
+        pRef.current.onReady?.(m);
       });
       m.on("moveend", emitView);
       const tick = () => {
@@ -198,6 +202,7 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
       };
       bump.current = tick;
       m.on("move", tick);
+      m.on("move", () => pRef.current.onMove?.());
       m.on("resize", tick);
       ro = new ResizeObserver(() => {
         m.resize();

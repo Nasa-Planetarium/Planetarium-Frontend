@@ -57,7 +57,7 @@ function Kpi(c: Ctx) {
         <span className={cx("hm-kpis-aoi")} data-kpiaoi="" title={aoiTitle}>
           {aoiT}
         </span>
-        <button type="button" className={cx("btn sm hm-go-an")} data-analyze="" title={c.pop ? c.t("home.entry.title", { a: c.dataAoiName, ym: c.fmt.ym(c.pop.year, c.pop.month) }) : undefined} onClick={() => router.push(pageHref(c.lang as Locale, "analysis"))}>
+        <button type="button" className={cx("btn sm hm-go-an")} data-analyze="" title={c.pop ? c.t("home.entry.title", { a: c.dataAoiName, ym: c.fmt.ym(c.pop.year, c.pop.month) }) : undefined} onClick={() => router.push(pageHref(c.lang as Locale, "analysis", `from=home&aoi=${encodeURIComponent(c.aoi)}${c.pop ? `&ym=${c.pop.year}-${String(c.pop.month).padStart(2, "0")}` : ""}`))}>
           {c.t("home.short_label.compare")}
         </button>
       </div>
