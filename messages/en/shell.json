@@ -12,10 +12,32 @@
    "lv2": "Usual",
    "lv3": "High",
    "lv4": "Very high",
-   "title": "This month''s harmonized detections ÷ same-month historical median (partial month scaled by elapsed days)"
+   "title": "Data release, latest complete month ({ym}) · ratio to the same-month median and verdict"
+  },
+  "aoi": {
+   "down": "Show sub-areas",
+   "lv": {
+    "adm1": "First-level area",
+    "continent": "Continent",
+    "country": "Country",
+    "group": "District group",
+    "kr_sgg": "District",
+    "kr_sido": "Province",
+    "world": "World"
+   },
+   "none": "No matching area",
+   "other": "Other",
+   "pt": "Lat/lon {lat}, {lon}",
+   "pt_near": "nearest cell",
+   "pt_none": "No area contains this point",
+   "search": "Area name, code, or lat/lon",
+   "title": "Choose area",
+   "up": "Up one level",
+   "whole": "All of {name}",
+   "world": "World"
   },
   "app": {
-   "title": "Emberline Wildfire Ops"
+   "title": "Emberline Burning Activity Calendar · Wildfire Ops"
   },
   "bell": {
    "all_read": "Mark all read",
@@ -28,6 +50,56 @@
   "by": {
    "satellite": "Satellite detection",
    "system": "System"
+  },
+  "case": {
+   "before_sensor": {
+    "how": "Not counted as missing",
+    "opinion": "Use the harmonized view for the MODIS-adjusted estimate",
+    "what": "Not yet operating · horizontal line",
+    "why": "Raw VIIRS starts 2012-02"
+   },
+   "interval_out": {
+    "how": "Interval is not recomputed (E3)",
+    "opinion": "Read the value without an interval",
+    "what": "Value kept · interval dropped · flagged",
+    "why": "Value lies outside value_lo–value_hi"
+   },
+   "low_sample": {
+    "how": "Above usual only when value ≥ 3",
+    "opinion": "Read the value rather than the verdict",
+    "what": "Hollow circle next to the verdict",
+    "why": "Too few past records (p75 < 1)"
+   },
+   "missing": {
+    "how": "Never filled with 0 (E2)",
+    "opinion": "Left out of totals and comparisons",
+    "what": "Value null · hatched",
+    "why": "Not enough satellite data (release status missing or no value)"
+   },
+   "nrt": {
+    "how": "May change with standard processing",
+    "opinion": "Check again when standard data arrives",
+    "what": "Value · triangle",
+    "why": "Near-real-time processing (NRT)"
+   },
+   "ok": {
+    "how": "Release value as is",
+    "opinion": "–",
+    "what": "Value",
+    "why": "Standard processing"
+   },
+   "out_of_range": {
+    "how": "Months outside the period are not computed",
+    "opinion": "Compare with months inside the period",
+    "what": "No value",
+    "why": "Outside the release period (2000-11 – 2026-11)"
+   },
+   "partial": {
+    "how": "Verdict withheld",
+    "opinion": "Check again after the month ends",
+    "what": "Value to date · dashed",
+    "why": "Month in progress"
+   }
   },
   "chart": {
    "anom_at": "{n}× usual or more",
@@ -171,6 +243,14 @@
    "sat_gap1": "{s} gap {a}",
    "vs_from": "{vs} from {at}"
   },
+  "flag": {
+   "interval_out": "Outside interval",
+   "low_sample": "Low sample"
+  },
+  "flag_t": {
+   "interval_out": "Value lies outside value_lo–value_hi, so no interval is shown",
+   "low_sample": "Too few past records"
+  },
   "fresh": {
    "aria": "{l} · {d} since last pass",
    "label": "Data freshness"
@@ -188,7 +268,7 @@
   "lim": {
    "cell_sum_ne_aoi": "Summed 0.1° cells differ from the regional value · regional value is aoi_month",
    "group_sum_rule": "North Gyeongbuk = sum of 11 counties · verdict computed with the same rule (80/20 · n≥10 · baseline 2001–2025)",
-   "hotspots_not_fire_counts": "Satellite fire detections are observed activity, not fire counts · not burned area either",
+   "hotspots_not_fire_counts": "Burning-activity detections are observed activity, not fire counts · not burned area either",
    "korea_small_sample": "Small Korean sample · wide uncertainty in validation figures",
    "n20_bridge_from_2026_11_03": "From 2026-11-03, NOAA-20 (N20) values × bridge ratio (n20_bridge)",
    "no_day_status": "No daily satellite status in this release · gap days not shown",
@@ -241,6 +321,10 @@
     "label": "Comparison",
     "short": "Compare"
    },
+   "calendar": {
+    "label": "Calendar",
+    "short": "Calendar"
+   },
    "cmd": {
     "label": "Command Stats",
     "short": "Stats"
@@ -257,6 +341,10 @@
     "label": "Burned Area",
     "short": "Burned"
    },
+   "method": {
+    "label": "Method & Validation",
+    "short": "Method"
+   },
    "ops": {
     "label": "Alerts & Dispatch",
     "short": "Alerts"
@@ -264,11 +352,17 @@
   },
   "page": {
    "analysis": "Comparison",
+   "calendar": "Harmonized burning-activity calendar",
    "cmd": "Command Stats",
    "home": "Overview",
    "lab": "Forecast",
    "land": "Burned Area",
+   "method": "Method & Validation",
    "ops": "Alerts & Dispatch"
+  },
+  "partial": {
+   "mtd": "{v} through {date}",
+   "mtd_proj": "{v} through {date} (about {p} for the month at this pace)"
   },
   "pass": {
    "approx": "about {h}:00",
@@ -282,6 +376,11 @@
   "person": {
    "aria": "Sign in · language · time",
    "title": "Settings"
+  },
+  "pts": {
+   "frp": "FRP {v} MW",
+   "n": "{n} points",
+   "pending": "Point data pending"
   },
   "risk": {
    "1": "Low",
@@ -317,6 +416,7 @@
    }
   },
   "st": {
+   "before_sensor": "Not yet operating",
    "low_sample": "Low sample",
    "missing": "Missing",
    "missing_days_n": "{n} missing days",
@@ -327,6 +427,7 @@
    "partial_d": "In progress · {n} d"
   },
   "st_t": {
+   "before_sensor": "Sensor not yet operating (no observation · not missing)",
    "low_sample": "Too few past records · verdict withheld",
    "missing": "Too little satellite data (not zero)",
    "nrt": "Near-real-time product · may change in standard processing",
@@ -345,8 +446,8 @@
   },
   "top": {
    "anom": {
-    "_": "This month",
-    "short": "Month"
+    "_": "Latest month",
+    "short": "Latest"
    },
    "live": "Live",
    "live_title": "Satellite feed live",
@@ -357,7 +458,10 @@
     "_": "Fire danger index",
     "short": "Danger"
    },
-   "sit": "Situation"
+   "sit": "Situation",
+   "status": "Data status",
+   "version": "Data version",
+   "version_t": "release {v}"
   },
   "ui": {
    "list": "List",
@@ -382,7 +486,8 @@
    "mw": "{n} MW",
    "pct": "{n}%",
    "ratio": "{n}×",
-   "snpp_equiv": "Fire detections, VIIRS (S-NPP) basis",
+   "snpp_equiv": "Burning activity · detections (VIIRS S-NPP basis)",
+   "stitched_raw": "Raw detections (MODIS to 2012-01 · VIIRS after)",
    "viirs_raw": "VIIRS raw detections"
   },
   "unit_status": {
@@ -406,8 +511,9 @@
   },
   "view": {
    "raw_modis": "Raw MODIS",
+   "raw_stitched": "Before harmonization",
    "raw_viirs": "Raw VIIRS",
-   "value": "Detections"
+   "value": "Harmonized"
   },
   "vmetric": {
    "bias_ratio": "Bias (predicted ÷ observed)",
@@ -417,12 +523,12 @@
    "ratio_dev_from_1": "Deviation from 1"
   },
   "vsrc": {
-   "modis_m2v": "Estimate · MODIS→VIIRS",
-   "modis_m2v_terra": "Estimate · MODIS Terra",
-   "n20_bridge": "Observed · NOAA-20 converted",
+   "modis_m2v": "MODIS-adjusted estimate",
+   "modis_m2v_terra": "MODIS-adjusted estimate (Terra)",
+   "n20_bridge": "NOAA-20 bridged",
    "n21_bridge": "Substitute · NOAA-21",
    "raw": "Raw",
-   "snpp_observed": "Observed · S-NPP"
+   "snpp_observed": "S-NPP observed"
   },
   "who": {
    "aria": "Account · {role}",

@@ -42,7 +42,7 @@
    "boundary": "경계: {b}",
    "complete": " · 완료 월",
    "data": "자료: {p} · 기준일 {d}",
-   "formula": "보정식: {k} × MODIS (2012년 이전) · VIIRS 그대로 (2012년 이후) · {v}",
+   "formula": "통합 방식: 기간별 방법(MODIS 보정 추정 · S-NPP 실측 · NOAA-20 연결) · {v}",
    "metric": "지표: {m} · 단위 {u}",
    "month": "분석 월: {ym}",
    "partial": " · 부분월({d}일까지)",
@@ -116,7 +116,7 @@
    "notice": "계절 기준선과 최근 30일 추세로 낸 통계 전망입니다."
   },
   "fire_n": "{n, plural, other {{n}건}}",
-  "formula": "보정 지표 = {k} × MODIS (2012년 이전) · = VIIRS (2012년 이후)",
+  "formula": "통합 = 기간별 방법(MODIS 보정 추정 2000-11–2012-01 · S-NPP 실측 2012-02– · NOAA-20 연결)",
   "fr": {
    "coverage": "기록 기간 {a} – {b}",
    "n": "{n, plural, other {기록 {n}건}}",
@@ -137,7 +137,7 @@
     "short": "발생 시각"
    },
    "pass_rule": "{s} 통과 시각",
-   "pass_rule_harm": "2012년 이전 MODIS 통과 시각 · 2012년 이후 VIIRS 통과 시각(보정 지표 기준)",
+   "pass_rule_harm": "2012년 이전 MODIS 통과 시각 · 2012년 이후 VIIRS 통과 시각(통합 기준)",
    "sat": {
     "dist": "위성 통과 시각 분포",
     "label": "위성 관측 시각",
@@ -173,16 +173,16 @@
   },
   "metric": {
    "harmonized": {
-    "label": "보정 지표(VIIRS 기준 환산)",
-    "unit": "VIIRS 기준 핫스팟 수/월"
+    "label": "통합(VIIRS S-NPP 기준)",
+    "unit": "감지량(VIIRS S-NPP 기준)/월"
    },
    "modis": {
-    "label": "MODIS 원시 관측",
-    "unit": "MODIS 핫스팟 수/월"
+    "label": "원자료 MODIS",
+    "unit": "MODIS 감지 수/월"
    },
    "viirs": {
-    "label": "VIIRS 원시 관측",
-    "unit": "VIIRS 핫스팟 수/월"
+    "label": "원자료 VIIRS",
+    "unit": "VIIRS 감지 수/월"
    }
   },
   "ms": {
@@ -226,7 +226,7 @@
   "proc": {
    "collect": "원시 탐지 수집(FIRMS)",
    "done": "완료",
-   "harm": "보정 지표 계산({v})",
+   "harm": "통합 계산({v})",
    "loyo": "연도 제외 검증(2012–{y})",
    "month_kr": "시군 경계 결합 · KST 월 집계",
    "month_local": "1급 경계 결합 · 현지 시각 월 집계"
@@ -258,7 +258,7 @@
    "outside_support": "지원 범위 밖입니다",
    "partial_month": "부분월 · 진행 중인 달",
    "platform_change": "위성 구성 변화 구간 포함 · 위성 추가 앞뒤로 관측 수가 달라질 수 있음",
-   "sensor_not_operating": "VIIRS 운용 전(2012년 이전)이라 VIIRS 원시 관측이 없습니다",
+   "sensor_not_operating": "VIIRS 운용 전(2012년 이전)이라 원자료 VIIRS가 없습니다",
    "validation_out_of_scope": "이 지역은 검증 범위 밖입니다"
   },
   "rep": {
@@ -301,10 +301,10 @@
    "unavailable": "선택 누락, 지원 범위 밖, 분석 월 결측, 기준 연도 {n}개 미만 · 비교 결과를 내지 않음"
   },
   "unit": {
-   "harm_day": "VIIRS 기준 핫스팟 수/일",
-   "harm_month": "VIIRS 기준 핫스팟 수/월",
-   "harm_n_days": "VIIRS 기준 핫스팟 수/{n}일",
-   "raw_day": "{s} 원시 핫스팟 수/일"
+   "harm_day": "감지량(VIIRS S-NPP 기준)/일",
+   "harm_month": "감지량(VIIRS S-NPP 기준)/월",
+   "harm_n_days": "감지량(VIIRS S-NPP 기준)/{n}일",
+   "raw_day": "원자료 {s} 감지 수/일"
   },
   "unit_n": "{n, plural, other {{n}대}}",
   "v": {
@@ -378,34 +378,34 @@
     "unit": "일"
    },
    "daily_mean": {
-    "label": "하루 평균(보정 지표)",
-    "unit": "VIIRS 기준 핫스팟 수/일"
+    "label": "하루 평균(통합)",
+    "unit": "감지량(VIIRS S-NPP 기준)/일"
    },
    "fire_records": {
     "label": "사건 기록(참고)",
     "unit": "건"
    },
    "harmonized": {
-    "label": "보정 지표 합",
-    "unit": "VIIRS 기준 핫스팟 수"
+    "label": "통합 합계",
+    "unit": "감지량(VIIRS S-NPP 기준)"
    },
    "label": "전년 대비",
    "modis_raw": {
-    "label": "MODIS 원시 관측",
-    "unit": "MODIS 핫스팟 수"
+    "label": "원자료 MODIS",
+    "unit": "MODIS 감지 수"
    },
    "na": "비교 불가",
    "note": "1년 전 같은 날짜(2월 29일은 2월 28일). 진행 중인 달은 오늘까지만 · 원시 센서값은 더하지 않는다",
    "out_why": "1년 전이 자료 기간({d}~) 밖",
    "peak_day": {
-    "label": "가장 많은 날(보정 지표)",
-    "unit": "VIIRS 기준 핫스팟 수/일"
+    "label": "가장 많은 날(통합)",
+    "unit": "감지량(VIIRS S-NPP 기준)/일"
    },
    "prev_na": "전년 비교 불가 · {why}",
    "prev_zero": "전년 0",
    "viirs_raw": {
-    "label": "VIIRS 원시 관측",
-    "unit": "VIIRS 핫스팟 수"
+    "label": "원자료 VIIRS",
+    "unit": "VIIRS 감지 수"
    },
    "why": {
     "missing": "선택 기간에 결측",

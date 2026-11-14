@@ -1,19 +1,20 @@
 {
  "mockup": "/home/trevi/planetarium/fe-src/mockup",
- "generated_at": "2026-11-14T11:35:26.020Z",
+ "generated_at": "2026-11-14T14:41:50.331Z",
  "langs": {
   "ko": {
-   "keys": 1973,
+   "keys": 2293,
    "bundles": {
-    "analysis": 144,
-    "calendar": 67,
-    "cmd": 341,
+    "analysis": 195,
+    "calendar": 102,
+    "cmd": 344,
     "data": 286,
-    "home": 382,
-    "lab": 143,
+    "home": 383,
+    "lab": 161,
     "land": 123,
+    "method": 140,
     "ops": 184,
-    "shell": 303
+    "shell": 375
    },
    "conflicts_n": 11,
    "conflicts": [
@@ -43,17 +44,18 @@
    "apostrophes": []
   },
   "en": {
-   "keys": 2049,
+   "keys": 2369,
    "bundles": {
-    "analysis": 144,
-    "calendar": 67,
-    "cmd": 341,
+    "analysis": 195,
+    "calendar": 102,
+    "cmd": 344,
     "data": 362,
-    "home": 382,
-    "lab": 143,
+    "home": 383,
+    "lab": 161,
     "land": 123,
+    "method": 140,
     "ops": 184,
-    "shell": 303
+    "shell": 375
    },
    "conflicts_n": 11,
    "conflicts": [
@@ -82,12 +84,13 @@
     "shell.det.feed_n",
     "shell.dl.rows"
    ],
-   "apostrophes_n": 4,
+   "apostrophes_n": 5,
    "apostrophes": [
     "analysis.ui.couldn_t_open_the_print_dial",
     "calendar.w.to_country",
     "data.yoy.why.missing_prev",
-    "shell.anom.title"
+    "lab.g6.h_int_d",
+    "lab.g6.lim_1"
    ]
   }
  },

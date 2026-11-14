@@ -5,9 +5,42 @@
    "next_month": "다음 달",
    "next_year": "다음 해",
    "pick": "지역 고르기",
+   "png": "PNG",
+   "png_l": "캘린더 이미지 PNG 내려받기",
    "prev_month": "이전 달",
    "prev_year": "이전 해",
    "to_analysis": "비교 분석으로"
+  },
+  "dm": {
+   "age0": "12시간 안",
+   "age1": "2일 안",
+   "age2": "그 전",
+   "at": "시각",
+   "case": {
+    "uiseong-2025-03": "의성 2025-03",
+    "uljin-2022-03": "울진 2022-03"
+   },
+   "cases": "사례",
+   "cells": "칸 중심 원 · 달 감지량",
+   "cells_month": "칸 원(달 값)",
+   "center": "칸 중심",
+   "frp": "세기 FRP",
+   "kind": "구분",
+   "map": "점 지도",
+   "other": "표시 점",
+   "pause": "멈춤",
+   "play": "확산 재생",
+   "pos": "위치",
+   "pts": "감지 점",
+   "pts_n": "점 {n}",
+   "pts_pending": "점 자료: 한국만",
+   "ref": "기준 점(합계에 씀)",
+   "sat": "위성",
+   "time": "감지 시각",
+   "value": "값",
+   "zoom_fit": "전체 범위",
+   "zoom_in": "확대",
+   "zoom_out": "축소"
   },
   "flag": {
    "interval_out": "구간 밖 · 구간 버림"
@@ -43,6 +76,10 @@
    "show_sgg": "{p} 시군구 보기",
    "world": "전 세계"
   },
+  "png": {
+   "source": "출처: 모델 release {r} · 방법 {m} · EMBERLINE",
+   "title": "연소 활동 캘린더 · {a} · {v}"
+  },
   "st": {
    "before_sensor": "운용 전"
   },
@@ -55,27 +92,31 @@
    "grid": "연×월 캘린더",
    "high": "많음",
    "low": "적음",
-   "map": "칸 지도",
+   "map": "점 지도",
    "median": "중앙값",
    "mode": "모드",
    "months_grid": "{y}년 달별",
    "months_u": "개월",
    "no_cells": "그 달 칸 없음",
+   "no_interval": "실측 · 구간 없음",
    "overview": "전체 연도",
    "p95": "p95 {n}",
+   "partial_line": "{d}까지 {v} (이 추세면 한 달 약 {p})",
    "region": "지역",
    "same": "같은 달 연도별",
+   "scope_modis": "MODIS 보정 추정 {a} – {b}",
+   "scope_viirs": "VIIRS S-NPP 실측 · NOAA-20 연결 {a} –",
    "sel": "선택한 달",
    "title": "캘린더",
    "view": "보기",
    "world_value": "전 세계 지역 값",
    "year": "연도",
-   "zero": "0"
+   "zero": "감지 없음"
   },
   "w": {
    "cells": "감지 있는 1° 칸",
    "latband": "위도 5° 띠 × 달",
-   "legend": "1° 칸 · 달 감지량 · 로그 눈금",
+   "legend": "1° 칸 중심 원 · 달 감지량 · 로그 눈금",
    "month": "달",
    "pause": "멈춤",
    "play": "재생",

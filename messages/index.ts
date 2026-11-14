@@ -1,5 +1,5 @@
 // 자동 생성 — scripts/import-i18n.mjs. 손으로 고치지 말 것.
-export const BUNDLES = ["analysis","calendar","cmd","data","home","lab","land","ops","shell"] as const;
+export const BUNDLES = ["analysis","calendar","cmd","data","home","lab","land","method","ops","shell"] as const;
 export const loaders = {
   ko: () =>
     Promise.all([
@@ -10,6 +10,7 @@ export const loaders = {
       import("./ko/home.json"),
       import("./ko/lab.json"),
       import("./ko/land.json"),
+      import("./ko/method.json"),
       import("./ko/ops.json"),
       import("./ko/shell.json"),
     ]).then((m) => m.map((x) => x.default as Record<string, unknown>)),
@@ -22,6 +23,7 @@ export const loaders = {
       import("./en/home.json"),
       import("./en/lab.json"),
       import("./en/land.json"),
+      import("./en/method.json"),
       import("./en/ops.json"),
       import("./en/shell.json"),
     ]).then((m) => m.map((x) => x.default as Record<string, unknown>)),

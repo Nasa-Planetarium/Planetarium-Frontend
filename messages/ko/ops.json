@@ -125,10 +125,10 @@
    "baseline_median": "기준 중앙값",
    "day_scaled_median": "일수 환산 중앙값",
    "diff_from_median": "중앙값과 차이",
-   "harmonized_index": "보정 지표",
+   "harmonized_index": "통합",
    "regional_comparison": "지역 비교",
    "same_month_vs_past": "같은 달 과거 대비",
-   "viirs_equivalent_hotspots": "VIIRS 기준 핫스팟",
+   "viirs_equivalent_hotspots": "감지량(VIIRS S-NPP 기준)",
    "vs_median": "중앙값 대비",
    "within_same_month_range": "같은 달 분포 안 위치"
   },

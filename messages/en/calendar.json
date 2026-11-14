@@ -5,9 +5,42 @@
    "next_month": "Next month",
    "next_year": "Next year",
    "pick": "Choose region",
+   "png": "PNG",
+   "png_l": "Download calendar image (PNG)",
    "prev_month": "Previous month",
    "prev_year": "Previous year",
    "to_analysis": "Open in comparison"
+  },
+  "dm": {
+   "age0": "< 12 h",
+   "age1": "< 2 days",
+   "age2": "Older",
+   "at": "Time",
+   "case": {
+    "uiseong-2025-03": "Uiseong 2025-03",
+    "uljin-2022-03": "Uljin 2022-03"
+   },
+   "cases": "Cases",
+   "cells": "Cell-center circles · monthly detections",
+   "cells_month": "Cells (month)",
+   "center": "Cell center",
+   "frp": "FRP",
+   "kind": "Type",
+   "map": "Dot map",
+   "other": "Display only",
+   "pause": "Pause",
+   "play": "Play spread",
+   "pos": "Location",
+   "pts": "Detections",
+   "pts_n": "{n} points",
+   "pts_pending": "Point data: Korea only",
+   "ref": "Reference (counted)",
+   "sat": "Satellite",
+   "time": "Detection time",
+   "value": "Value",
+   "zoom_fit": "Fit extent",
+   "zoom_in": "Zoom in",
+   "zoom_out": "Zoom out"
   },
   "flag": {
    "interval_out": "Outside interval · interval dropped"
@@ -43,6 +76,10 @@
    "show_sgg": "Show districts of {p}",
    "world": "World"
   },
+  "png": {
+   "source": "Source: model release {r} · method {m} · EMBERLINE",
+   "title": "Fire activity calendar · {a} · {v}"
+  },
   "st": {
    "before_sensor": "Not yet operating"
   },
@@ -55,27 +92,31 @@
    "grid": "Year × month calendar",
    "high": "More",
    "low": "Less",
-   "map": "Cell map",
+   "map": "Dot map",
    "median": "Median",
    "mode": "Mode",
    "months_grid": "{y} by month",
    "months_u": "mo",
    "no_cells": "No cells this month",
+   "no_interval": "Observed · no interval",
    "overview": "All years",
    "p95": "p95 {n}",
+   "partial_line": "{v} through {d} (about {p} for the month at this pace)",
    "region": "Region",
    "same": "Same month by year",
+   "scope_modis": "MODIS-adjusted estimate {a} – {b}",
+   "scope_viirs": "VIIRS S-NPP observed · NOAA-20 bridge {a} –",
    "sel": "Selected month",
    "title": "Calendar",
    "view": "View",
    "world_value": "World regional value",
    "year": "Year",
-   "zero": "0"
+   "zero": "No detections"
   },
   "w": {
    "cells": "1° cells with detections",
    "latband": "5° latitude bands × month",
-   "legend": "1° cell · monthly detections · log scale",
+   "legend": "1° cell-center circles · monthly detections · log scale",
    "month": "Month",
    "pause": "Stop",
    "play": "Play",

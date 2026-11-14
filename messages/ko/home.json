@@ -132,7 +132,7 @@
    "unit": " · 단위 ",
    "updated": " · 갱신 ",
    "validation": "   - 검증(",
-   "value_harmonized": "값        보정 지표 ",
+   "value_harmonized": "값        통합 ",
    "view_sensor": "[화면 설정] 센서 보기 ",
    "x": "번째",
    "year_block_bootstrap_95": " (연도 묶음 부트스트랩 95% ",
@@ -186,8 +186,8 @@
    "operating_since_2012": "2012년 운용 시작",
    "pixel_1_km": "화소 1 km",
    "sensor_change_modis_1": "센서 전환 MODIS 1 km → VIIRS 375 m",
-   "unit_modis_hotspots_month": "단위 MODIS 핫스팟 수/월",
-   "unit_viirs_hotspots_month": "단위 VIIRS 핫스팟 수/월",
+   "unit_modis_hotspots_month": "단위 MODIS 감지 수/월",
+   "unit_viirs_hotspots_month": "단위 VIIRS 감지 수/월",
    "validation_error_mae": "검증 오차(MAE) "
   },
   "menu": {
@@ -228,7 +228,7 @@
    "title": "{s} · {t} 통과"
   },
   "path": {
-   "daily_harmonized_this_period": "일별 보정 지표 · 올해 기간 합 ",
+   "daily_harmonized_this_period": "일별 통합 · 올해 기간 합 ",
    "day_bins": "일 묶음",
    "day_total": "일 합",
    "onward": "부터 ",
@@ -276,37 +276,37 @@
    "raw_points": "원시 점 "
   },
   "regs": {
-   "harmonized": "보정 지표",
-   "harmonized_viirs_equivalent": "보정 지표(VIIRS 기준 환산)",
-   "harmonized_viirs_equivalent_unit": "보정 지표(VIIRS 기준 환산) · 단위: VIIRS 기준 핫스팟 수/월",
-   "mixed_sensor_raw_hotspots": "센서가 섞인 원시 핫스팟 수/월 · 비교용",
-   "modis_hotspots_month": "MODIS 핫스팟 수/월",
+   "harmonized": "통합",
+   "harmonized_viirs_equivalent": "통합(VIIRS S-NPP 기준)",
+   "harmonized_viirs_equivalent_unit": "통합(VIIRS S-NPP 기준) · 단위: 감지량(VIIRS S-NPP 기준)/월",
+   "mixed_sensor_raw_hotspots": "센서가 섞인 원자료 감지 수/월 · 비교용",
+   "modis_hotspots_month": "MODIS 감지 수/월",
    "modis_raw": {
-    "_": "MODIS 원시",
-    "short": "MODIS 원시"
+    "_": "원자료 MODIS",
+    "short": "원자료 MODIS"
    },
-   "modis_raw_detections": "MODIS 원시 관측",
-   "modis_raw_detections_unit": "MODIS 원시 관측 · 단위: MODIS 핫스팟 수/월",
-   "unadjusted": "보정 전",
-   "unadjusted_for_comparison_raw": "보정 전(비교용) — 2011년까지 MODIS 원시, 2012년부터 VIIRS 원시를 보정 없이 이음",
-   "unadjusted_raw_modis_and": "보정 전(MODIS·VIIRS 원시를 이음)",
-   "viirs_equivalent_hotspots_month": "VIIRS 기준 핫스팟 수/월",
-   "viirs_hotspots_month": "VIIRS 핫스팟 수/월",
+   "modis_raw_detections": "원자료 MODIS",
+   "modis_raw_detections_unit": "원자료 MODIS · 단위: MODIS 감지 수/월",
+   "unadjusted": "원자료 이음",
+   "unadjusted_for_comparison_raw": "원자료 이음(비교용) — 2011년까지 원자료 MODIS, 2012년부터 원자료 VIIRS를 보정 없이 이음",
+   "unadjusted_raw_modis_and": "원자료 이음(MODIS·VIIRS)",
+   "viirs_equivalent_hotspots_month": "감지량(VIIRS S-NPP 기준)/월",
+   "viirs_hotspots_month": "VIIRS 감지 수/월",
    "viirs_raw": {
-    "_": "VIIRS 원시",
-    "short": "VIIRS 원시"
+    "_": "원자료 VIIRS",
+    "short": "원자료 VIIRS"
    },
-   "viirs_raw_detections": "VIIRS 원시 관측",
-   "viirs_raw_detections_unit": "VIIRS 원시 관측 · 단위: VIIRS 핫스팟 수/월 · 2012년 이전 운용 전"
+   "viirs_raw_detections": "원자료 VIIRS",
+   "viirs_raw_detections_unit": "원자료 VIIRS · 단위: VIIRS 감지 수/월 · 2012년 이전 운용 전"
   },
   "render_aoibadge": {
    "clear_area": "관심 영역 해제",
-   "harmonized": " · 보정 지표",
-   "harmonized_viirs_equivalent_unit": " · 보정 지표(VIIRS 기준 환산) · 단위 VIIRS 기준 핫스팟 수/월"
+   "harmonized": " · 통합",
+   "harmonized_viirs_equivalent_unit": " · 통합(VIIRS S-NPP 기준) · 단위 감지량(VIIRS S-NPP 기준)/월"
   },
   "render_cal": {
    "2_same_month_median": "같은 달 중앙값의 2배 이상",
-   "days": "일 기준)",
+   "days": "일까지)",
    "days_reference_only": "일 기준 · 참고용",
    "dots_use_the_2012": "캘린더 점은 2012–2025 같은 달 중앙값 기준(참고). 배수는 칸에 마우스를 올리면 평가 연도를 뺀 분석 결과로 보인다",
    "high": "많음",
@@ -331,13 +331,13 @@
    "max_frp": "최대 FRP",
    "no_active_fires": "진행 중인 산불 없음",
    "selected_fire": "선택한 산불",
-   "viirs_raw_points": "VIIRS 원시 관측점",
+   "viirs_raw_points": "원자료 VIIRS 관측점",
    "vs_past_fires": " · 과거 산불과 비교"
   },
   "render_month": {
    "1_day_map_raw": " 하루 · 지도 원시 점 ",
    "baseline": "기준 ",
-   "comparison_view_harmonized": "비교용 보기 · 보정 지표 기준 ",
+   "comparison_view_harmonized": "비교용 보기 · 통합 기준 ",
    "in_progress": "진행 중(",
    "missing_month": "결측 달",
    "no_fire_records_this": "이 달 산불 기록 없음",
@@ -366,15 +366,15 @@
   },
   "render_yo_y": {
    "by_sensor": "센서별",
-   "daily_harmonized": "일별 · 보정 지표",
+   "daily_harmonized": "일별 · 통합",
    "daily_mean": "하루 평균 ",
    "day": "/일",
    "days_last_year": "일) · 전년 ",
    "days_last_year_2": "일 · 전년 ",
    "days_with_detections": "관측 있는 날 ",
    "fire_records": "산불 기록",
-   "harmonized": "· 보정 지표",
-   "harmonized_total": "보정 지표 합",
+   "harmonized": "· 통합",
+   "harmonized_total": "통합 합계",
    "last_year": " · 전년 ",
    "outside_coverage": "확보 기간 밖",
    "peak_day": "가장 많은 날 ",
@@ -422,7 +422,7 @@
   "short_label": {
    "area": "관심 영역",
    "area_period_download": "관심 영역·기간·내려받기",
-   "by_date_same_window": "날짜 기준 · 해마다 같은 시기 · 보정 지표",
+   "by_date_same_window": "날짜 기준 · 해마다 같은 시기 · 통합",
    "calendar_summary": "캘린더 요약",
    "choose_area": "관심 영역 시군 고르기",
    "choose_period": "기간 고르기",
@@ -496,13 +496,14 @@
   "val": {
    "days_so_far_month": "일까지 · 진행 중인 달",
    "last_12_months": "최근 12개월",
-   "live_eq": "실시간 관측 · VIIRS 기준",
+   "live_eq": "실시간 관측점 · 경북 북부",
    "missing": "결측",
-   "viirs_eq": "VIIRS 기준"
+   "rel_now": "자료 판 · {v}",
+   "viirs_eq": "감지량"
   },
   "y": {
    "excl_this_year": "(올해 제외)",
-   "harmonized": " · 보정 지표 ",
+   "harmonized": " · 통합 ",
    "median": " / 중앙값 ",
    "outside_data_range_from": "자료 범위 밖(2001-01-15 이후)",
    "same_window_median": "같은 시기 중앙값 "

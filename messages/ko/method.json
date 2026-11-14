@@ -1,0 +1,176 @@
+{
+ "method": {
+  "c": {
+   "depth": "최대 깊이",
+   "features": "입력 변수 수",
+   "levels": "범주 수",
+   "lr": "학습률",
+   "n20": "NOAA-20 → S-NPP 연결 비율",
+   "rounds": "부스팅 횟수",
+   "seed": "시드"
+  },
+  "case": {
+   "how": "처리",
+   "opinion": "읽는 법",
+   "what": "화면",
+   "why": "원인"
+  },
+  "f": {
+   "aoi_month": "지역 · 달 값(aoi_month)",
+   "cells": "0.1° 칸 값(harmonized_cell_month)",
+   "compare": "같은 달 비교(aoi_month_compare)",
+   "day_status": "위성 일별 상태",
+   "points": "감지 점"
+  },
+  "h": {
+   "key": "키",
+   "rule": "규칙"
+  },
+  "k": {
+   "adopted": "채택 모델",
+   "kr_bias": "한국 편향 비",
+   "kr_mae": "한국 월 합계 MAE",
+   "missing_months": "결측 달 · {a}",
+   "nrt_months": "NRT 달 · {a}",
+   "periods": "기간",
+   "scopes": "검증 범위"
+  },
+  "kind": {
+   "bridged": "연결",
+   "estimate": "추정",
+   "observed": "실측"
+  },
+  "m": {
+   "created": "만든 시각",
+   "eval": "평가 방식",
+   "final": "채택 모델",
+   "objective": "손실 함수",
+   "target": "목표값",
+   "train": "학습 기간",
+   "version": "방법 판",
+   "zero": "0 규칙"
+  },
+  "p": {
+   "cases": "케이스별 처리",
+   "coef": "계수",
+   "files": "release 파일",
+   "harm": "통합 규칙",
+   "interval": "구간",
+   "kr_pooled": "한국 풀링 · 월 합계 · 연도 제외 교차검증",
+   "limits": "한계",
+   "model": "모델",
+   "periods": "기간별 방법",
+   "regions": "지역 풀링 월 합계 MAE",
+   "sats": "위성 · 센서",
+   "sources": "출처",
+   "status_aoi": "달 상태 · {a}",
+   "unit": "단위",
+   "vs_aoi": "값 출처 구간"
+  },
+  "s": {
+   "release": "통합 시계열 판"
+  },
+  "sc": {
+   "argentina": "아르헨티나",
+   "c_africa": "아프리카",
+   "c_antarctica": "남극",
+   "c_asia": "아시아",
+   "c_europe": "유럽",
+   "c_north_america": "북아메리카",
+   "c_oceania": "오세아니아",
+   "c_seven_seas_open_ocean_": "공해",
+   "c_south_america": "남아메리카",
+   "korea": "한국",
+   "world": "전 세계"
+  },
+  "sec": {
+   "method": "통합 방식",
+   "sources": "출처·한계",
+   "status": "자료 상태",
+   "v11": "v1.1 규칙",
+   "validation": "검증"
+  },
+  "t": {
+   "from": "출처",
+   "item": "항목",
+   "kind": "성격",
+   "metric": "지표",
+   "model": "모델",
+   "months": "달 수",
+   "name": "이름",
+   "period": "기간",
+   "res": "화소",
+   "sat": "위성",
+   "scope": "범위",
+   "sensor": "센서",
+   "status": "상태",
+   "val": "값",
+   "value": "값 종류",
+   "what": "내용",
+   "where": "주소",
+   "which": "해당 달"
+  },
+  "u": {
+   "month": "달 경계",
+   "month_local": "현지 날짜(date_local) 기준",
+   "raw": "원자료",
+   "value": "통합 값"
+  },
+  "ui": {
+   "contract": "계약 값",
+   "months": "달",
+   "not_in_release": "release 에 없음",
+   "not_provided": "이 판에 없음",
+   "now": "지금",
+   "range": "범위",
+   "rules_n": "규칙 {n}개",
+   "sections": "절",
+   "source_ko": "원문(한국어)",
+   "world": "전 세계"
+  },
+  "v": {
+   "adopted": "채택",
+   "adopted_regional": "채택 모델({m}) 지역별 검증",
+   "aoi_interval": "지역 구간 분위수",
+   "bias": "편향 비",
+   "coverage": "구간 포함률",
+   "coverage_lohi": "구간 포함률(value_lo – value_hi)",
+   "cv": "교차검증",
+   "kr_bias": "한국 편향 비",
+   "kr_mae": "한국 월 합계 MAE",
+   "mae": "MAE",
+   "mae_unit": "감지량 · 달",
+   "reason": "채택 근거",
+   "rule": "채택 규칙",
+   "world_bias": "전 세계 편향 비"
+  },
+  "v11": {
+   "as_of": "마지막 관측일",
+   "d_area": "지역 묶음",
+   "d_area_t": "시도·시군구 = 0.1° 칸과 경계의 겹친 면적 비율 · 대한민국 = 기준 점이 있었던 칸",
+   "d_scope": "범위",
+   "d_scope_t": "한국 270개 지역 · 2000-11-01 – {d}",
+   "d_src": "출처",
+   "d_src_t": "harmonized_cell_day(date_local) · 일별 value 에 residual 없음",
+   "line": "화면 표기",
+   "months": "달",
+   "p_daily": "일별 값",
+   "p_partial": "진행 중인 달",
+   "p_resid": "월 추정분(residual)",
+   "proj": "달 전체 추정(value_projected)",
+   "r_kr": "월 추정분 합 2000-11 – 2026-11",
+   "r_period": "기간 합계",
+   "r_period_t": "달 전체가 들면 전부, 일부만 들면 포함 일수 ÷ 그 달 일수 비율",
+   "r_types": "유형",
+   "r_types_t": "modis_unseen 2000-11 – 2012-01 · missing_day_fill 2012-02 이후 자료 빠진 날이 있는 달(음수 가능)",
+   "r_use": "쓰는 곳",
+   "r_use_t": "합계와 짧은 표기에만. 막대·별도 값으로 그리지 않음",
+   "r_where": "저장 위치",
+   "r_where_t": "harmonized_cell_day.residual_month — 그 달 1일 행에만 달 합계(1일의 값이 아님)",
+   "release": "자료 판",
+   "value": "누계(value)",
+   "verdict": "판정",
+   "verdict_t": "진행 중인 달은 늘 판단 보류(백분위·배수는 누계 기준이라 쓰지 않음)"
+  }
+ }
+}

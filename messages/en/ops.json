@@ -125,10 +125,10 @@
    "baseline_median": "Baseline median",
    "day_scaled_median": "Day-scaled median",
    "diff_from_median": "Diff. from median",
-   "harmonized_index": "Harmonized index",
+   "harmonized_index": "Harmonized",
    "regional_comparison": "Regional comparison",
    "same_month_vs_past": "Same month vs. past",
-   "viirs_equivalent_hotspots": "VIIRS-equivalent hotspots",
+   "viirs_equivalent_hotspots": "detections (VIIRS S-NPP basis)",
    "vs_median": "vs. median",
    "within_same_month_range": "Within same-month range"
   },

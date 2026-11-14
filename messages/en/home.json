@@ -186,8 +186,8 @@
    "operating_since_2012": "Operating since 2012",
    "pixel_1_km": "Pixel 1 km",
    "sensor_change_modis_1": "Sensor change MODIS 1 km → VIIRS 375 m",
-   "unit_modis_hotspots_month": "Unit MODIS hotspots/month",
-   "unit_viirs_hotspots_month": "Unit VIIRS hotspots/month",
+   "unit_modis_hotspots_month": "Unit MODIS detections/month",
+   "unit_viirs_hotspots_month": "Unit VIIRS detections/month",
    "validation_error_mae": "Validation error (MAE) "
   },
   "menu": {
@@ -277,36 +277,36 @@
   },
   "regs": {
    "harmonized": "Harmonized",
-   "harmonized_viirs_equivalent": "Harmonized (VIIRS-equivalent)",
-   "harmonized_viirs_equivalent_unit": "Harmonized (VIIRS-equivalent) · unit: VIIRS-equivalent hotspots/month",
-   "mixed_sensor_raw_hotspots": "mixed-sensor raw hotspots/month · comparison only",
-   "modis_hotspots_month": "MODIS hotspots/month",
+   "harmonized_viirs_equivalent": "Harmonized (VIIRS S-NPP basis)",
+   "harmonized_viirs_equivalent_unit": "Harmonized (VIIRS S-NPP basis) · unit: detections (VIIRS S-NPP basis)/month",
+   "mixed_sensor_raw_hotspots": "mixed-sensor raw detections/month · comparison only",
+   "modis_hotspots_month": "MODIS detections/month",
    "modis_raw": {
-    "_": "MODIS raw",
+    "_": "Raw MODIS",
     "short": "MODIS"
    },
-   "modis_raw_detections": "MODIS raw detections",
-   "modis_raw_detections_unit": "MODIS raw detections · unit: MODIS hotspots/month",
-   "unadjusted": "Unadjusted",
-   "unadjusted_for_comparison_raw": "Unadjusted (for comparison) — raw MODIS through 2011, raw VIIRS from 2012, joined without adjustment",
-   "unadjusted_raw_modis_and": "Unadjusted (raw MODIS and VIIRS joined)",
-   "viirs_equivalent_hotspots_month": "VIIRS-equivalent hotspots/month",
-   "viirs_hotspots_month": "VIIRS hotspots/month",
+   "modis_raw_detections": "Raw MODIS",
+   "modis_raw_detections_unit": "Raw MODIS · unit: MODIS detections/month",
+   "unadjusted": "Raw spliced",
+   "unadjusted_for_comparison_raw": "Raw spliced (for comparison) — raw MODIS through 2011, raw VIIRS from 2012, joined without adjustment",
+   "unadjusted_raw_modis_and": "Raw spliced (raw MODIS and VIIRS joined)",
+   "viirs_equivalent_hotspots_month": "detections (VIIRS S-NPP basis)/month",
+   "viirs_hotspots_month": "VIIRS detections/month",
    "viirs_raw": {
-    "_": "VIIRS raw",
+    "_": "Raw VIIRS",
     "short": "VIIRS"
    },
-   "viirs_raw_detections": "VIIRS raw detections",
-   "viirs_raw_detections_unit": "VIIRS raw detections · unit: VIIRS hotspots/month · not operating before 2012"
+   "viirs_raw_detections": "Raw VIIRS",
+   "viirs_raw_detections_unit": "Raw VIIRS · unit: VIIRS detections/month · not operating before 2012"
   },
   "render_aoibadge": {
    "clear_area": "Clear area",
    "harmonized": " · harmonized",
-   "harmonized_viirs_equivalent_unit": " · harmonized (VIIRS-equivalent) · unit VIIRS-equivalent hotspots/month"
+   "harmonized_viirs_equivalent_unit": " · harmonized (VIIRS S-NPP basis) · unit detections (VIIRS S-NPP basis)/month"
   },
   "render_cal": {
    "2_same_month_median": "2× same-month median or more",
-   "days": " days)",
+   "days": " days so far)",
    "days_reference_only": " days · reference only",
    "dots_use_the_2012": "Dots use the 2012–2025 same-month median (reference). Hover a cell for the ratio excluding the target year",
    "high": "High",
@@ -331,7 +331,7 @@
    "max_frp": "Max FRP",
    "no_active_fires": "No active fires",
    "selected_fire": "Selected fire",
-   "viirs_raw_points": "VIIRS raw points",
+   "viirs_raw_points": "Raw VIIRS points",
    "vs_past_fires": " · vs. past fires"
   },
   "render_month": {
@@ -496,9 +496,10 @@
   "val": {
    "days_so_far_month": " days so far · month in progress",
    "last_12_months": "Last 12 months",
-   "live_eq": "Live feed · VIIRS basis",
+   "live_eq": "Live points · N. Gyeongbuk",
    "missing": "Missing",
-   "viirs_eq": "VIIRS-eq."
+   "rel_now": "Data release · {v}",
+   "viirs_eq": "detections"
   },
   "y": {
    "excl_this_year": " (excl. this year)",

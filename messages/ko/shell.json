@@ -12,10 +12,32 @@
    "lv2": "예년 수준",
    "lv3": "높음",
    "lv4": "매우 높음",
-   "title": "이번 달 보정 관측 ÷ 같은 달 과거 중앙값(진행 중인 달은 지난 날짜 비율)"
+   "title": "자료 판 최근 완결 달({ym}) · 같은 달 과거 중앙값 대비 배수와 판정"
+  },
+  "aoi": {
+   "down": "아래 단 보기",
+   "lv": {
+    "adm1": "1급 지역",
+    "continent": "대륙",
+    "country": "나라",
+    "group": "시군 묶음",
+    "kr_sgg": "시군구",
+    "kr_sido": "시도",
+    "world": "전 세계"
+   },
+   "none": "맞는 지역 없음",
+   "other": "기타",
+   "pt": "위경도 {lat}, {lon}",
+   "pt_near": "가까운 칸 기준",
+   "pt_none": "이 위치를 품은 지역 없음",
+   "search": "지역 이름·코드 또는 위경도",
+   "title": "지역 고르기",
+   "up": "위 단으로",
+   "whole": "{name} 전체",
+   "world": "전 세계"
   },
   "app": {
-   "title": "Emberline 산불 관제"
+   "title": "Emberline 연소 활동 캘린더 · 산불 관제"
   },
   "bell": {
    "all_read": "모두 읽음",
@@ -28,6 +50,56 @@
   "by": {
    "satellite": "위성 감지",
    "system": "시스템"
+  },
+  "case": {
+   "before_sensor": {
+    "how": "결측으로 세지 않음",
+    "opinion": "통합 보기에서 MODIS 보정 추정을 봄",
+    "what": "운용 전 · 가로선",
+    "why": "원자료 VIIRS 는 2012-02 부터"
+   },
+   "interval_out": {
+    "how": "구간을 다시 계산하지 않음(E3)",
+    "opinion": "구간 없이 값만 읽음",
+    "what": "값 그대로 · 구간 버림 · 플래그",
+    "why": "값이 value_lo–value_hi 밖"
+   },
+   "low_sample": {
+    "how": "값 3 이상만 예년보다 많음",
+    "opinion": "판정보다 값을 봄",
+    "what": "판정 옆 속 빈 원",
+    "why": "예년 기록이 너무 적음(p75 < 1)"
+   },
+   "missing": {
+    "how": "0 으로 채우지 않음(E2)",
+    "opinion": "합계·비교에서 뺌",
+    "what": "값 null · 빗금",
+    "why": "위성 자료 부족(release status missing 또는 값 없음)"
+   },
+   "nrt": {
+    "how": "정식 처리본으로 바뀔 수 있음",
+    "opinion": "정식 처리본이 오면 다시 봄",
+    "what": "값 · 삼각",
+    "why": "빠른 처리본(NRT)"
+   },
+   "ok": {
+    "how": "release 값 그대로",
+    "opinion": "–",
+    "what": "값",
+    "why": "정식 처리본"
+   },
+   "out_of_range": {
+    "how": "기간 밖 달은 계산하지 않음",
+    "opinion": "기간 안 달과 견줌",
+    "what": "값 없음",
+    "why": "release 기간(2000-11 – 2026-11) 밖"
+   },
+   "partial": {
+    "how": "판정 보류",
+    "opinion": "달이 끝난 뒤 다시 봄",
+    "what": "지난 날까지의 값 · 점선",
+    "why": "진행 중인 달"
+   }
   },
   "chart": {
    "anom_at": "평년의 {n}배 이상",
@@ -171,6 +243,14 @@
    "sat_gap1": "{s} 결측 {a}",
    "vs_from": "{vs} 시작 {at}"
   },
+  "flag": {
+   "interval_out": "구간 밖",
+   "low_sample": "표본 부족"
+  },
+  "flag_t": {
+   "interval_out": "값이 value_lo–value_hi 밖이라 구간을 표시하지 않음",
+   "low_sample": "예년 기록이 너무 적음"
+  },
   "fresh": {
    "aria": "{l} · 마지막 통과 뒤 {d}",
    "label": "자료 신선도"
@@ -188,7 +268,7 @@
   "lim": {
    "cell_sum_ne_aoi": "0.1° 칸을 더한 수는 지역 값과 다름 · 지역 값은 aoi_month",
    "group_sum_rule": "경북 북부 = 11개 시군 값의 합 · 판정은 같은 규칙(80/20 · n≥10 · 기준 2001–2025)으로 계산",
-   "hotspots_not_fire_counts": "위성 화재 감지량은 관측 활동이지 산불 건수가 아님 · 피해 면적도 아님",
+   "hotspots_not_fire_counts": "연소 활동 감지량은 관측 활동이지 산불 건수가 아님 · 피해 면적도 아님",
    "korea_small_sample": "한국 표본이 작아 검증 수치의 불확실성이 큼",
    "n20_bridge_from_2026_11_03": "2026-11-03부터 NOAA-20(N20) 값 × 연결 비율(n20_bridge)",
    "no_day_status": "위성 일별 상태 자료가 이 판에 없음 · 결측일 미표시",
@@ -241,6 +321,10 @@
     "label": "비교 분석",
     "short": "비교"
    },
+   "calendar": {
+    "label": "캘린더",
+    "short": "캘린더"
+   },
    "cmd": {
     "label": "지휘 통계",
     "short": "통계"
@@ -257,6 +341,10 @@
     "label": "피해 면적",
     "short": "피해"
    },
+   "method": {
+    "label": "방법·검증",
+    "short": "방법"
+   },
    "ops": {
     "label": "경보·출동",
     "short": "경보"
@@ -264,11 +352,17 @@
   },
   "page": {
    "analysis": "비교 분석",
+   "calendar": "연소 활동 통합 캘린더",
    "cmd": "지휘 통계",
    "home": "상황판",
    "lab": "예측 분석",
    "land": "피해 면적",
+   "method": "방법·검증",
    "ops": "경보·출동"
+  },
+  "partial": {
+   "mtd": "{date}까지 {v}",
+   "mtd_proj": "{date}까지 {v} (이 추세면 한 달 약 {p})"
   },
   "pass": {
    "approx": "{h}시경",
@@ -282,6 +376,11 @@
   "person": {
    "aria": "로그인 · 언어 · 시각",
    "title": "설정"
+  },
+  "pts": {
+   "frp": "FRP {v} MW",
+   "n": "점 {n}개",
+   "pending": "점 자료 준비 중"
   },
   "risk": {
    "1": "낮음",
@@ -317,6 +416,7 @@
    }
   },
   "st": {
+   "before_sensor": "운용 전",
    "low_sample": "표본 부족",
    "missing": "결측",
    "missing_days_n": "결측일 {n}",
@@ -327,6 +427,7 @@
    "partial_d": "진행 중 {n}일"
   },
   "st_t": {
+   "before_sensor": "센서 운용 전(관측 없음 · 결측 아님)",
    "low_sample": "예년 기록이 너무 적음 · 판정 생략",
    "missing": "위성 자료 부족(0과 다름)",
    "nrt": "빠른 처리본 · 정식 처리본으로 바뀔 수 있음",
@@ -345,8 +446,8 @@
   },
   "top": {
    "anom": {
-    "_": "이번 달",
-    "short": "이번 달"
+    "_": "최근 달",
+    "short": "최근"
    },
    "live": "실시간",
    "live_title": "위성 자료 실시간 수신",
@@ -357,7 +458,10 @@
     "_": "산불위험지수",
     "short": "위험"
    },
-   "sit": "상황"
+   "sit": "상황",
+   "status": "자료 상태",
+   "version": "자료 판",
+   "version_t": "release {v}"
   },
   "ui": {
    "list": "목록",
@@ -382,7 +486,8 @@
    "mw": "{n} MW",
    "pct": "{n}%",
    "ratio": "{n}배",
-   "snpp_equiv": "VIIRS(S-NPP) 기준 화재 감지량",
+   "snpp_equiv": "연소 활동 · 감지량(VIIRS S-NPP 기준)",
+   "stitched_raw": "원자료 감지 수(2012-01까지 MODIS · 이후 VIIRS)",
    "viirs_raw": "VIIRS 원자료 감지 수"
   },
   "unit_status": {
@@ -406,8 +511,9 @@
   },
   "view": {
    "raw_modis": "원자료 MODIS",
+   "raw_stitched": "보정 전",
    "raw_viirs": "원자료 VIIRS",
-   "value": "기준 감지량"
+   "value": "통합"
   },
   "vmetric": {
    "bias_ratio": "편향(예측 합 ÷ 실제 합)",
@@ -417,12 +523,12 @@
    "ratio_dev_from_1": "1에서 벗어난 정도"
   },
   "vsrc": {
-   "modis_m2v": "추정 · MODIS→VIIRS",
-   "modis_m2v_terra": "추정 · MODIS Terra",
-   "n20_bridge": "실측 · NOAA-20 환산",
+   "modis_m2v": "MODIS 보정 추정",
+   "modis_m2v_terra": "MODIS 보정 추정(Terra)",
+   "n20_bridge": "NOAA-20 연결",
    "n21_bridge": "대체 · NOAA-21",
    "raw": "원자료",
-   "snpp_observed": "실측 · S-NPP"
+   "snpp_observed": "S-NPP 실측"
   },
   "who": {
    "aria": "계정 · {role}",

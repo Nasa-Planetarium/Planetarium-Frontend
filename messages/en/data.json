@@ -62,7 +62,7 @@
    "boundary": "Boundaries: {b}",
    "complete": " · complete month",
    "data": "Data: {p} · as of {d}",
-   "formula": "Formula: {k} × MODIS (before 2012) · VIIRS as is (2012 onward) · {v}",
+   "formula": "Harmonization: per-period method (MODIS-adjusted estimate · S-NPP observed · NOAA-20 bridge) · {v}",
    "metric": "Metric: {m} · unit {u}",
    "month": "Analysis month: {ym}",
    "partial": " · partial (through day {d})",
@@ -164,7 +164,7 @@
    }
   },
   "fire_n": "{n, plural, one {{n} fire} other {{n} fires}}",
-  "formula": "Harmonized = {k} × MODIS (before 2012) · = VIIRS (2012 onward)",
+  "formula": "Harmonized = per-period method (MODIS-adjusted estimate 2000-11–2012-01 · S-NPP observed 2012-02– · NOAA-20 bridge)",
   "fr": {
    "coverage": "Record period {a} – {b}",
    "meta": {
@@ -225,16 +225,16 @@
   },
   "metric": {
    "harmonized": {
-    "label": "Harmonized index (VIIRS-equivalent)",
-    "unit": "VIIRS-equivalent hotspots / month"
+    "label": "Harmonized (VIIRS S-NPP basis)",
+    "unit": "detections (VIIRS S-NPP basis) / month"
    },
    "modis": {
-    "label": "MODIS raw detections",
-    "unit": "MODIS hotspots / month"
+    "label": "Raw MODIS",
+    "unit": "MODIS detections / month"
    },
    "viirs": {
-    "label": "VIIRS raw detections",
-    "unit": "VIIRS hotspots / month"
+    "label": "Raw VIIRS",
+    "unit": "VIIRS detections / month"
    }
   },
   "missing": {
@@ -283,7 +283,7 @@
   "proc": {
    "collect": "Raw detections collected (FIRMS)",
    "done": "Done",
-   "harm": "Harmonized index computed ({v})",
+   "harm": "Harmonized computed ({v})",
    "loyo": "Leave-one-year-out validation (2012–{y})",
    "month_kr": "District boundaries joined · monthly totals in KST",
    "month_local": "First-level boundaries joined · monthly totals in local time"
@@ -425,10 +425,10 @@
     "name": "Incident command vehicle K-1",
     "org": "Local fire station"
    },
-   "harm_day": "VIIRS-equivalent hotspots / day",
-   "harm_month": "VIIRS-equivalent hotspots / month",
-   "harm_n_days": "VIIRS-equivalent hotspots / {n} days",
-   "raw_day": "{s} raw hotspots / day"
+   "harm_day": "detections (VIIRS S-NPP basis) / day",
+   "harm_month": "detections (VIIRS S-NPP basis) / month",
+   "harm_n_days": "detections (VIIRS S-NPP basis) / {n} days",
+   "raw_day": "raw {s} detections / day"
   },
   "unit_n": "{n, plural, one {{n} unit} other {{n} units}}",
   "v": {
@@ -519,7 +519,7 @@
    },
    "daily_mean": {
     "label": "Daily mean (harmonized)",
-    "unit": "VIIRS-equivalent hotspots / day"
+    "unit": "detections (VIIRS S-NPP basis) / day"
    },
    "fire_records": {
     "label": "Incident records (reference)",
@@ -527,25 +527,25 @@
    },
    "harmonized": {
     "label": "Harmonized total",
-    "unit": "VIIRS-equivalent hotspots"
+    "unit": "detections (VIIRS S-NPP basis)"
    },
    "label": "Year over year",
    "modis_raw": {
-    "label": "MODIS raw detections",
-    "unit": "MODIS hotspots"
+    "label": "Raw MODIS",
+    "unit": "MODIS detections"
    },
    "na": "Not comparable",
    "note": "Same dates one year earlier (Feb 29 → Feb 28). The current month runs to today · raw sensor values are not added",
    "out_why": "A year earlier is outside the data period ({d}~)",
    "peak_day": {
     "label": "Peak day (harmonized)",
-    "unit": "VIIRS-equivalent hotspots / day"
+    "unit": "detections (VIIRS S-NPP basis) / day"
    },
    "prev_na": "No year-over-year comparison · {why}",
    "prev_zero": "Last year 0",
    "viirs_raw": {
-    "label": "VIIRS raw detections",
-    "unit": "VIIRS hotspots"
+    "label": "Raw VIIRS",
+    "unit": "VIIRS detections"
    },
    "why": {
     "missing": "Missing in the selected period",

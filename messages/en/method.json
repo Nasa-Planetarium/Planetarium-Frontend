@@ -1,0 +1,176 @@
+{
+ "method": {
+  "c": {
+   "depth": "Max depth",
+   "features": "Input features",
+   "levels": "Category levels",
+   "lr": "Learning rate",
+   "n20": "NOAA-20 → S-NPP bridge ratio",
+   "rounds": "Boosting rounds",
+   "seed": "Seed"
+  },
+  "case": {
+   "how": "Handling",
+   "opinion": "Reading",
+   "what": "Display",
+   "why": "Cause"
+  },
+  "f": {
+   "aoi_month": "AOI month values (aoi_month)",
+   "cells": "0.1° cell values (harmonized_cell_month)",
+   "compare": "Same-month comparison (aoi_month_compare)",
+   "day_status": "Satellite daily status",
+   "points": "Detection points"
+  },
+  "h": {
+   "key": "Key",
+   "rule": "Rule"
+  },
+  "k": {
+   "adopted": "Adopted model",
+   "kr_bias": "Korea bias ratio",
+   "kr_mae": "Korea monthly-total MAE",
+   "missing_months": "Missing months · {a}",
+   "nrt_months": "NRT months · {a}",
+   "periods": "Periods",
+   "scopes": "Validation scopes"
+  },
+  "kind": {
+   "bridged": "Bridged",
+   "estimate": "Estimate",
+   "observed": "Observed"
+  },
+  "m": {
+   "created": "Created",
+   "eval": "Evaluation",
+   "final": "Adopted model",
+   "objective": "Objective",
+   "target": "Target",
+   "train": "Training period",
+   "version": "Method version",
+   "zero": "Zero rule"
+  },
+  "p": {
+   "cases": "Handling by case",
+   "coef": "Coefficients",
+   "files": "Release files",
+   "harm": "Harmonization rules",
+   "interval": "Interval",
+   "kr_pooled": "Korea pooled · monthly total · leave-year-out",
+   "limits": "Limits",
+   "model": "Model",
+   "periods": "Method by period",
+   "regions": "Regional pooled monthly-total MAE",
+   "sats": "Satellites · sensors",
+   "sources": "Sources",
+   "status_aoi": "Month status · {a}",
+   "unit": "Units",
+   "vs_aoi": "Value-source periods"
+  },
+  "s": {
+   "release": "Harmonized series release"
+  },
+  "sc": {
+   "argentina": "Argentina",
+   "c_africa": "Africa",
+   "c_antarctica": "Antarctica",
+   "c_asia": "Asia",
+   "c_europe": "Europe",
+   "c_north_america": "North America",
+   "c_oceania": "Oceania",
+   "c_seven_seas_open_ocean_": "Open ocean",
+   "c_south_america": "South America",
+   "korea": "Korea",
+   "world": "World"
+  },
+  "sec": {
+   "method": "Harmonization",
+   "sources": "Sources · limits",
+   "status": "Data status",
+   "v11": "v1.1 rules",
+   "validation": "Validation"
+  },
+  "t": {
+   "from": "Source",
+   "item": "Item",
+   "kind": "Kind",
+   "metric": "Metric",
+   "model": "Model",
+   "months": "Months",
+   "name": "Name",
+   "period": "Period",
+   "res": "Pixel",
+   "sat": "Satellite",
+   "scope": "Scope",
+   "sensor": "Sensor",
+   "status": "Status",
+   "val": "Value",
+   "value": "Value type",
+   "what": "Content",
+   "where": "Location",
+   "which": "Which months"
+  },
+  "u": {
+   "month": "Month boundary",
+   "month_local": "Local date (date_local)",
+   "raw": "Raw",
+   "value": "Harmonized value"
+  },
+  "ui": {
+   "contract": "Contract value",
+   "months": "months",
+   "not_in_release": "Not in release",
+   "not_provided": "Not in this release",
+   "now": "now",
+   "range": "Range",
+   "rules_n": "{n} rules",
+   "sections": "Sections",
+   "source_ko": "Source text (Korean)",
+   "world": "World"
+  },
+  "v": {
+   "adopted": "Adopted",
+   "adopted_regional": "Adopted model ({m}) regional validation",
+   "aoi_interval": "AOI interval quantiles",
+   "bias": "Bias ratio",
+   "coverage": "Interval coverage",
+   "coverage_lohi": "Interval coverage (value_lo – value_hi)",
+   "cv": "Cross-validation",
+   "kr_bias": "Korea bias ratio",
+   "kr_mae": "Korea monthly-total MAE",
+   "mae": "MAE",
+   "mae_unit": "detections · month",
+   "reason": "Adoption basis",
+   "rule": "Adoption rule",
+   "world_bias": "World bias ratio"
+  },
+  "v11": {
+   "as_of": "Last observed day",
+   "d_area": "Area grouping",
+   "d_area_t": "Province·county = overlap-area share of 0.1° cells · Korea = cells that had reference points",
+   "d_scope": "Coverage",
+   "d_scope_t": "270 Korean areas · 2000-11-01 – {d}",
+   "d_src": "Source",
+   "d_src_t": "harmonized_cell_day (date_local) · daily value excludes residual",
+   "line": "Shown as",
+   "months": "months",
+   "p_daily": "Daily values",
+   "p_partial": "Month in progress",
+   "p_resid": "Monthly estimate (residual)",
+   "proj": "Whole-month estimate (value_projected)",
+   "r_kr": "residual total 2000-11 – 2026-11",
+   "r_period": "Period total",
+   "r_period_t": "Whole month inside: all of it; partly inside: days inside ÷ days in month",
+   "r_types": "Types",
+   "r_types_t": "modis_unseen 2000-11 – 2012-01 · missing_day_fill from 2012-02 in months with missing days (can be negative)",
+   "r_use": "Used for",
+   "r_use_t": "Totals and short notes only. Never drawn as a bar or separate value",
+   "r_where": "Stored in",
+   "r_where_t": "harmonized_cell_day.residual_month — monthly total on the day-1 row only (not a day-1 value)",
+   "release": "Data release",
+   "value": "To date (value)",
+   "verdict": "Verdict",
+   "verdict_t": "Always undecided for the month in progress (percentile and ratio are month-to-date, not used)"
+  }
+ }
+}
