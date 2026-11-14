@@ -1,0 +1,110 @@
+/* 공통 지도 — 목업 index.html 의 지도 규칙(.map · .map3d · .m3-* · .mticks · .mtools · .drawhint · .tipbox)과
+   home.css 좌표 창(.hm-ptbox) · 화면 밖 안내(.hm-offv)를 그대로 옮겼다. 색·간격은 전부 토큰. */
+.map{position:relative;overflow:hidden;background:var(--map-void);border-radius:var(--r-l);border:0;box-shadow:var(--seam-ring);min-height:300px;touch-action:none;user-select:none}
+.gl{position:absolute;inset:0}
+.gl :global(.maplibregl-canvas):focus:not(:focus-visible){outline:none}
+.gl :global(.maplibregl-canvas):focus-visible{outline:2px solid var(--focus-ring);outline-offset:-2px}
+.map :global(.maplibregl-marker){position:absolute;left:0;top:0;will-change:transform}
+.ui{position:absolute;inset:0;pointer-events:none;z-index:2}
+.ui>*{pointer-events:auto}
+.zoom{position:absolute;right:var(--sp-3);bottom:44px;display:flex;flex-direction:column;border:1px solid var(--line-strong);border-radius:var(--r-xs);overflow:hidden;background:var(--surface-2);box-shadow:var(--elev-2)}
+.zoom button{width:max(32px,var(--hit));height:max(32px,var(--hit));border:0;background:transparent;cursor:pointer;display:grid;place-items:center;color:var(--text-1);transition:background-color var(--dur-fast) var(--ease-out)}
+.zoom button:hover{background:var(--surface-3)}
+.zoom button:focus-visible{outline-offset:-2px}
+.zoom button+button{border-top:1px solid var(--line-strong)}
+.ic{width:var(--ic-map);height:var(--ic-map)}
+:global(html[data-device="phone"]) .zoom [data-z="1"],:global(html[data-device="phone"]) .zoom [data-z="-1"]{display:none}
+.scale{position:absolute;right:var(--sp-3);bottom:var(--sp-3);font-family:var(--font-data);font-size:var(--fs-1);font-variant-numeric:tabular-nums;color:var(--text-2);display:flex;align-items:center;gap:var(--sp-1);pointer-events:none}
+.scale i{display:block;height:5px;border:1px solid var(--text-2);border-top:0}
+.attrib{position:absolute;left:var(--sp-3);bottom:10px;font-size:var(--fs-1);color:var(--text-3);font-family:var(--font-body);pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tipbox{position:absolute;pointer-events:none;background:color-mix(in srgb,var(--surface-1) 95%,transparent);border:1px solid var(--line-strong);border-radius:var(--r-s);box-shadow:var(--elev-2);padding:var(--sp-2) var(--sp-3);font-size:var(--fs-2);min-width:150px;max-width:240px;transform:translate(12px,-50%);z-index:5;color:var(--text-1)}
+.tipbox .sub{color:var(--text-2);font-family:var(--font-data);font-size:var(--fs-1);margin-top:var(--sp-half)}
+.drawhint{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:var(--accent);color:var(--on-accent);font-size:var(--fs-2);font-weight:var(--fw-strong);border-radius:var(--r-xs);padding:var(--sp-1) var(--sp-4);pointer-events:none;white-space:nowrap;box-shadow:var(--elev-2);z-index:4;max-width:calc(100% - 140px);overflow:hidden;text-overflow:ellipsis}
+.drawing :global(.maplibregl-canvas){cursor:crosshair}
+/* 그리는 동안에는 표지가 누르기를 가로채지 않는다(꼭짓점을 표지 위에도 찍는다) */
+.drawing .fire,.drawing .unit,.drawing .fire::before,.drawing .unit::after{pointer-events:none}
+
+/* 경위도 눈금(목업 EM.mapFrameTicks) */
+.mticks{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2;overflow:visible}
+.ticksOut{overflow:visible}
+.ticksOut>.gl{border-radius:var(--r-l);overflow:hidden}
+.ticksOut .mticks{inset:calc(-1 * var(--tick-band));width:calc(100% + 2 * var(--tick-band));height:calc(100% + 2 * var(--tick-band))}
+.mticks line{stroke:var(--cosmo-tick);stroke-width:1;shape-rendering:crispEdges}
+.mticks text{fill:var(--cosmo-label);font-family:var(--font-data);font-size:var(--fs-1);font-variant-numeric:tabular-nums}
+.map:not(.ticksOut) .mticks text{paint-order:stroke;stroke:var(--map-halo);stroke-width:3px;stroke-linejoin:round}
+@media print{.mticks{display:none}}
+
+/* 이름표(지역·하천) */
+.reg{font:var(--fw-medium) var(--fs-2) var(--font-body);color:var(--map-label);text-shadow:0 0 2px var(--map-halo),0 0 3px var(--map-halo),0 0 4px var(--map-halo);white-space:nowrap;letter-spacing:.08em;pointer-events:none}
+.reg.hi{color:var(--map-label-hi);font-weight:var(--fw-strong)}
+.river{font:italic var(--fs-1) var(--font-body);color:var(--map-water-label);text-shadow:0 0 3px var(--map-halo),0 0 5px var(--map-halo);white-space:nowrap;pointer-events:none}
+.dodged{visibility:hidden}
+
+/* 불 표지 = 조준 고리(r5 · 목업 index.html 997-1019) */
+.fire{--c:var(--alert-4);--mk-hit:max(44px,var(--hit));position:relative;width:26px;height:26px;cursor:pointer}
+.fire::before{content:"";position:absolute;left:50%;top:50%;width:var(--mk-hit);height:var(--mk-hit);transform:translate(-50%,-50%)}
+.pin{position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:var(--r-round);border:2px solid var(--c);background:radial-gradient(circle,var(--c) 0 3.5px,transparent 4px);box-shadow:var(--mk-halo)}
+.pin::before{content:"";position:absolute;inset:-8px;background:linear-gradient(var(--c),var(--c)) 50% 0/2px 5px no-repeat,linear-gradient(var(--c),var(--c)) 50% 100%/2px 5px no-repeat,linear-gradient(var(--c),var(--c)) 0 50%/5px 2px no-repeat,linear-gradient(var(--c),var(--c)) 100% 50%/5px 2px no-repeat;pointer-events:none}
+.pin::after{content:"";position:absolute;inset:-6px;border-radius:var(--r-round);border:0 solid var(--c);pointer-events:none}
+.lv3 .pin::after{border-width:1.5px}
+.lv4 .pin::after{inset:-8px;border-width:5px;border-style:double}
+.half .pin{background:linear-gradient(90deg,var(--c) 50%,transparent 50%)}
+.closed .pin{border-width:1.5px;border-style:dashed;background:transparent}
+.hist .pin{border-width:2px;border-style:dotted;background:transparent}
+.major .pin{border-width:3px}
+.closed .pin::before,.closed .pin::after,.hist .pin::before,.hist .pin::after{display:none}
+.fsM .pin{scale:.8}
+.fsS .pin{scale:.64}
+.pulse{position:absolute;left:50%;top:50%;translate:-50% -50%;width:38px;height:38px;border-radius:var(--r-round);border:2px solid var(--c);opacity:0;pointer-events:none}
+.isNew .pulse{animation:m3pulse 1.6s var(--ease-out) infinite}
+@media (prefers-reduced-motion: reduce){.isNew .pulse{animation:none}}
+@keyframes m3pulse{0%{transform:scale(.45);opacity:.95}100%{transform:scale(1.35);opacity:0}}
+.sel .pin{outline:2px solid var(--cosmo-star);outline-offset:3px}
+.flabel{position:absolute;left:30px;top:50%;transform:translateY(-50%);white-space:nowrap;font:var(--fw-strong) var(--fs-2) var(--font-body);color:var(--text-1);text-shadow:0 0 3px var(--map-halo),0 0 3px var(--map-halo),0 0 6px var(--map-halo);display:none;pointer-events:none}
+.showLabel:not(.past) .flabel,.sel .flabel{display:block}
+
+/* 대응 자원 표지 + 묶음 배지(목업 _ucPass) */
+.unit{--c:var(--data-unit-standby);--mk-hit:max(44px,var(--hit));position:relative;width:22px;height:22px;border-radius:var(--r-2xs);background:var(--marker-bg);border:1.6px solid var(--c);display:grid;place-items:center;color:var(--c);cursor:pointer;box-shadow:var(--elev-2)}
+.unit::after{content:"";position:absolute;left:50%;top:50%;width:var(--mk-hit);height:var(--mk-hit);transform:translate(-50%,-50%)}
+.unit svg{stroke:var(--c);width:14px;height:14px}
+.clhid{display:none}
+.cln{position:absolute;right:calc(-1 * var(--sp-2));top:calc(-1 * var(--sp-2));min-width:18px;height:18px;padding:0 var(--sp-1);border-radius:var(--r-2xs);background:var(--marker-bg);border:1.5px solid var(--c);color:var(--text-1);font-size:var(--fs-1);font-weight:var(--fw-strong);line-height:15px;text-align:center;pointer-events:none;font-variant-numeric:tabular-nums}
+
+/* 지도 도구 열(레이어 · 사각형 · 다각형 · 좌표) */
+.mtools{position:absolute;right:var(--sp-3);top:var(--sp-3);z-index:3;display:flex;flex-direction:column;border:1px solid var(--line-strong);border-radius:var(--r-xs);overflow:hidden;background:var(--surface-2);box-shadow:var(--elev-2)}
+.mtools>button{position:relative;width:max(48px,var(--hit));min-height:max(44px,var(--hit));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--sp-half);border:0;background:transparent;color:var(--text-1);font-size:var(--fs-1);cursor:pointer;padding:var(--sp-1) 0}
+.mtools>button+button{border-top:1px solid var(--line-strong)}
+.mtools>button:hover,.mtools>button[aria-expanded="true"],.mtools>button[aria-pressed="true"]{background:var(--surface-3)}
+.mtools>button[aria-pressed="true"]{box-shadow:inset 2px 0 0 var(--accent)}
+.mtools>button:focus-visible{outline-offset:-2px}
+.mtools>button:disabled{opacity:.45;cursor:not-allowed}
+.pop{position:absolute;right:calc(var(--sp-3) + max(48px,var(--hit)) + var(--sp-2));top:var(--sp-3);z-index:4;min-width:200px;max-width:calc(100% - 96px);background:var(--surface-2);border:1px solid var(--line-strong);border-radius:var(--r-xs);box-shadow:var(--elev-2);padding:var(--sp-1) 0}
+.pop label{display:flex;align-items:center;gap:var(--sp-2);min-height:var(--hit);padding:0 var(--sp-3);font-size:var(--fs-3);cursor:pointer;color:var(--text-1)}
+.pop label:hover{background:var(--surface-3)}
+.pop input[type="checkbox"]{accent-color:var(--text-1);width:16px;height:16px;margin:0}
+
+/* 좌표·반경 창(목업 home.css .hm-ptbox) */
+.ptbox{width:min(360px,calc(100% - 96px));padding:var(--sp-3) var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-2)}
+.ptH{display:flex;flex-direction:column;gap:var(--sp-1);font-size:var(--fs-3);color:var(--text-1)}
+.ptH span{font-size:var(--fs-2);color:var(--text-3)}
+.ptRow{display:grid;grid-template-columns:1fr 1fr 84px;gap:var(--sp-2)}
+.field{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0}
+.field label{min-height:0;padding:0;font-size:var(--fs-1);color:var(--text-2)}
+.field label:hover{background:none}
+.input{height:max(32px,var(--hit));min-width:0;border:1px solid var(--line-strong);border-radius:var(--r-xs);background:var(--surface-1);color:var(--text-1);padding:0 var(--sp-2);font-family:var(--font-data);font-size:var(--fs-3);font-variant-numeric:tabular-nums}
+.input:focus-visible{outline:2px solid var(--focus-ring);outline-offset:0}
+.ptErr{font-size:var(--fs-2);color:var(--crit);margin:0}
+.ptF{display:flex;justify-content:flex-end;gap:var(--sp-2)}
+.btn{height:max(32px,var(--hit));padding:0 var(--sp-3);border-radius:var(--r-xs);border:1px solid var(--line-strong);background:transparent;color:var(--text-1);font-size:var(--fs-2);font-weight:var(--fw-medium);cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--surface-3)}
+.btnPrimary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btnPrimary:hover{background:var(--accent);filter:brightness(1.08)}
+
+/* 화면 밖 안내(목업 home.css .hm-offv) — 지도 위 가운데 아래 */
+.offv{position:absolute;left:50%;bottom:var(--sp-7);transform:translateX(-50%);display:flex;align-items:center;gap:var(--sp-2);padding:var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-3);max-width:calc(100% - 24px);border-radius:var(--r-m);border:1px solid var(--line-strong);background:color-mix(in srgb,var(--surface-2) 94%,transparent);backdrop-filter:blur(8px);font-size:var(--fs-2);color:var(--text-2);z-index:4}
+.offv b{color:var(--text-1)}
+.offv span{overflow-wrap:anywhere;min-width:0}
+.offv .btn{flex:none}
+
+/* 점 자료 상태 한 줄(목업 .m3-state) */
+.state{position:absolute;left:var(--sp-3);bottom:var(--sp-7);z-index:3;display:inline-flex;align-items:center;height:var(--sp-7);padding:0 var(--sp-3);border-radius:var(--r-xs);background:var(--surface-2);border:1px solid var(--line-soft);font-size:var(--fs-2);color:var(--text-2);white-space:nowrap;pointer-events:none}
