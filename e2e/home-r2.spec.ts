@@ -58,6 +58,8 @@ test("상황판 r2: 기간 창 — 날짜 직접 입력·미리 칠함·키보�
 
 test("상황판 r2: 검색 후보 — 불·지명·자원 · 기간 밖 진행 중 안내 · 칸 툴팁", async ({ page }) => {
   const root = await ready(page);
+  /* 붙은 불 벌리기: 첫 화면(전국 보기)에서 길안면 세 불이 겹친다 → 한 줄로 올리거나 대표 고리 + 개수 */
+  await expect(root.locator('[data-spread="spread"], [data-spread="rep"]').first()).toBeAttached({ timeout: 15000 });
   const q = root.locator("[data-search]");
   await q.fill("길안");
   await expect(root.locator("[data-sugg] [data-place]").first()).toContainText("길안면");

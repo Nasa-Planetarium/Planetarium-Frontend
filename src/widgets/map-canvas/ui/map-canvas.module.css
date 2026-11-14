@@ -111,3 +111,11 @@
 /* 폰 「다음 통과」 줄(목업 .m3-passln) — 경보·출동 지도 왼쪽 위 */
 .passln{position:absolute;left:var(--sp-3);top:var(--sp-3);z-index:3;display:inline-flex;align-items:center;gap:var(--sp-2);height:var(--sp-7);padding:0 var(--sp-3);border-radius:var(--r-xs);background:var(--surface-2);font-size:var(--fs-2);color:var(--text-2);white-space:nowrap;pointer-events:none!important}
 .passln b{font-family:var(--font-data);font-weight:var(--fw-medium);color:var(--text-1);font-variant-numeric:tabular-nums}
+
+/* 붙은 불 벌리기(목업 home.css .hm-pin-lead·.hm-pin-tail·.hm-pin-n·.hm-hid — 상황판 spreadFires) */
+.splead{position:absolute;left:50%;top:50%;z-index:-1;height:1.5px;background:var(--c);transform-origin:0 50%;pointer-events:none;opacity:.9}
+.sptail{position:absolute;width:4px;height:4px;transform:translate(-50%,-50%);border:2px solid var(--map-halo);box-sizing:content-box;border-radius:var(--r-round);background:var(--c);pointer-events:none}
+.sphid{visibility:hidden}
+.sphid .sptail{visibility:visible}
+.spn{position:absolute;right:-8px;top:-8px;min-width:18px;height:18px;padding:0 var(--sp-1);border-radius:var(--r-2xs);background:var(--marker-bg);border:1.5px solid var(--c);color:var(--text-1);font-size:var(--fs-1);font-weight:var(--fw-strong);line-height:15px;text-align:center;pointer-events:none;font-variant-numeric:tabular-nums}
+.spread{z-index:2}

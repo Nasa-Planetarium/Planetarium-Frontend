@@ -250,6 +250,7 @@ export function HomeMap(c: Ctx) {
       onFire={(id) => c.setSelFire(id)}
       onUnit={onUnit}
       viewPad={viewPad}
+      spreadFires
       onRegion={(id) => (S.byId.has(id) ? S.setAoi(id) : undefined)}
       onView={(b) => setVb(b)}
       aoi={c.drawn}

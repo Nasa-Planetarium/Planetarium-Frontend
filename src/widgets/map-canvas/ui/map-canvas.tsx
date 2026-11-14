@@ -74,6 +74,8 @@ export interface MapCanvasProps {
   offView?: { pts: LatLon[]; label: string } | null;
   /** 점 자료 상태 한 줄(예 「점 자료 준비 중」) */
   status?: string | null;
+  /** 붙은 불 벌리기(목업 home spreadPins) — 상황판만 켠다 */
+  spreadFires?: boolean;
   /** 전체 보기 맞춤 여백(px) — 화면이 지도 위에 띄운 것(검색 줄·범례 등)을 피할 때. 맞출 때마다 부른다(없으면 24) */
   viewPad?: () => number | { top: number; bottom: number; left: number; right: number };
   className?: string;
@@ -534,6 +536,153 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
     });
     bump.current();
   }, [map, p.fires, p.units, p.selFire, p.annotFire, layers.fires, layers.units, routeLines, bindMk, t]);
+
+  /* ── 붙은 불 벌리기(목업 home spreadPins — 화면이 spreadFires 로 켤 때만) ──
+     고리 상자(26)의 누르는 영역(44 + 2)이 겹치는 불을 한 무리로 묶어 꼬리들 위 한 줄로 올리고, 실제 자리엔 꼬리 점 + 고리까지 선.
+     선이 40px 를 넘으면 가장 급한 고리는 제자리에 두고 나머지를 꼬리 둘레 40px 안 빈 자리로, 그것도 안 되면 대표 고리 + 개수(나머지는 꼬리 점만) */
+  useEffect(() => {
+    const m = mapRef.current;
+    const el = wrap.current;
+    if (!map || !m || !el) return;
+    if (!p.spreadFires) return;
+    const PIN = 26;
+    const HALF = 13;
+    const LIFT = 12;
+    const HB = 46;
+    const GAP = HB - PIN;
+    const LEAD_MAX = 40;
+    const W = el.clientWidth;
+    const H = el.clientHeight;
+    type Pin = { mk: Mk; x: number; y: number; hx: number; hy: number; mode: "" | "spread" | "rep" | "hid"; n: number };
+    const list: Pin[] = [];
+    fireMk.current.forEach((mk) => {
+      if (!mk.d.isConnected) return;
+      const q = m.project(mk.m.getLngLat());
+      list.push({ mk, x: q.x, y: q.y, hx: q.x, hy: q.y, mode: "", n: 0 });
+    });
+    const sq = (q: Pin) => ({ l: q.hx - HB / 2, r: q.hx + HB / 2, t: q.hy - HB / 2, b: q.hy + HB / 2 });
+    const ovl = (a: Box, b: Box) => a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t;
+    const lay = (g: Pin[]) => {
+      if (g.length === 1) {
+        g[0]!.hx = g[0]!.x;
+        g[0]!.hy = g[0]!.y;
+        return;
+      }
+      g.sort((a, b) => a.x - b.x);
+      const rowW = g.length * PIN + (g.length - 1) * GAP;
+      const cx = g.reduce((s0, q) => s0 + q.x, 0) / g.length;
+      const hy = Math.min(...g.map((q) => q.y)) - LIFT - HALF;
+      const x0 = Math.max(PIN / 2 + 4, Math.min(W - rowW + PIN / 2 - 4, cx - rowW / 2 + PIN / 2));
+      g.forEach((q, k) => {
+        q.hx = x0 + k * (PIN + GAP);
+        q.hy = hy;
+      });
+    };
+    const clash = (a: Pin[], b: Pin[]) => a.some((x) => b.some((y) => ovl(sq(x), sq(y))));
+    let groups: Pin[][] = list.map((q) => [q]);
+    groups.forEach(lay);
+    for (let it = 0; it < 40; it++) {
+      let hit: [number, number] | null = null;
+      for (let i = 0; i < groups.length && !hit; i++) for (let j = i + 1; j < groups.length; j++) if (clash(groups[i]!, groups[j]!)) { hit = [i, j]; break; }
+      if (!hit) break;
+      const g = [...groups[hit[0]]!, ...groups[hit[1]]!];
+      groups = groups.filter((_, k) => k !== hit![0] && k !== hit![1]);
+      lay(g);
+      groups.push(g);
+    }
+    const fireOf = (id: string) => (pRef.current.fires ?? []).find((f) => f.id === id);
+    const rank = (q: Pin) => {
+      const f = fireOf(q.mk.id);
+      return (pRef.current.selFire === q.mk.id ? 1000 : 0) + (f && !isClosedFire(f.status) ? 100 : 0) + (f?.status === "new" ? 10 : 0) + (f?.level ?? 0);
+    };
+    const inMap = (b: Box) => b.l >= 0 && b.r <= W && b.t >= 0 && b.b <= H;
+    groups.forEach((g) => {
+      if (g.length < 2) return;
+      if (g.every((q) => Math.hypot(q.hx - q.x, q.hy - q.y) <= LEAD_MAX) && g.every((q) => inMap(sq(q)))) {
+        g.forEach((q) => (q.mode = "spread"));
+        return;
+      }
+      /* 가장 급한 고리는 제자리, 나머지는 꼬리 둘레 빈 자리 */
+      const ps = g.slice().sort((a, b) => rank(b) - rank(a));
+      ps.forEach((q) => {
+        q.hx = q.x;
+        q.hy = q.y;
+      });
+      const placed = [ps[0]!];
+      let ok = true;
+      for (const q of ps.slice(1)) {
+        let got = false;
+        for (let r = 4; r <= LEAD_MAX && !got; r += 4)
+          for (let a = 0; a < 360 && !got; a += 15) {
+            q.hx = q.x + Math.cos((a * Math.PI) / 180) * r;
+            q.hy = q.y + Math.sin((a * Math.PI) / 180) * r;
+            const b = sq(q);
+            got = inMap(b) && !placed.some((o) => ovl(b, sq(o)));
+          }
+        if (!got) {
+          ok = false;
+          break;
+        }
+        placed.push(q);
+      }
+      if (ok) {
+        g.forEach((q) => (q.mode = "spread"));
+        return;
+      }
+      g.forEach((q) => {
+        q.hx = q.x;
+        q.hy = q.y;
+        q.mode = q === ps[0] ? "rep" : "hid";
+      });
+      ps[0]!.n = g.length;
+    });
+    list.forEach((q) => {
+      const d = q.mk.d;
+      const dx = Math.round(q.hx - q.x);
+      const dy = Math.round(q.hy - q.y);
+      const moved = dx !== 0 || dy !== 0;
+      q.mk.m.setOffset([dx, dy]);
+      d.classList.toggle(s.spread!, moved);
+      d.classList.toggle(s.sphid!, q.mode === "hid");
+      d.dataset.spread = q.mode;
+      let lead = d.querySelector<HTMLElement>(`.${s.splead}`);
+      let tail = d.querySelector<HTMLElement>(`.${s.sptail}`);
+      let badge = d.querySelector<HTMLElement>(`.${s.spn}`);
+      if (q.mode === "rep") {
+        if (!badge) {
+          badge = document.createElement("b");
+          badge.className = s.spn!;
+          badge.setAttribute("aria-hidden", "true");
+          d.insertBefore(badge, d.firstChild);
+        }
+        badge.textContent = String(q.n);
+      } else badge?.remove();
+      if (!moved && q.mode !== "hid") {
+        lead?.remove();
+        tail?.remove();
+        return;
+      }
+      if (moved && !lead) {
+        lead = document.createElement("i");
+        lead.className = s.splead!;
+        lead.setAttribute("aria-hidden", "true");
+        d.insertBefore(lead, d.firstChild);
+      }
+      if (!moved) lead?.remove();
+      if (!tail) {
+        tail = document.createElement("i");
+        tail.className = s.sptail!;
+        tail.setAttribute("aria-hidden", "true");
+        d.insertBefore(tail, d.firstChild);
+      }
+      if (moved && lead) {
+        lead.style.width = `${Math.hypot(dx, dy).toFixed(1)}px`;
+        lead.style.transform = `rotate(${((Math.atan2(-dy, -dx) * 180) / Math.PI).toFixed(1)}deg)`;
+      }
+      tail.style.left = `${PIN / 2 - dx}px`;
+      tail.style.top = `${HALF - dy}px`;
+    });
+  }, [map, frame, p.spreadFires, p.fires, p.selFire, layers.fires]);
   useEffect(
     () => () => {
       fireMk.current.forEach((mk) => mk.m.remove());
