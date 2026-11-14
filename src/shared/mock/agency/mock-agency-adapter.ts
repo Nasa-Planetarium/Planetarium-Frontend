@@ -18,6 +18,7 @@ import type {
   Unit,
 } from "../../agency/port";
 import ledger from "./ledger.json";
+import { landParcels } from "./land-parcels";
 
 const KST_OFFSET_MIN = 9 * 60;
 
@@ -76,10 +77,10 @@ export class MockAgencyAdapter implements AgencyPort {
     delete u.fire_id;
     return this.tick(u);
   }
-  /** 필지는 목업 pages/land.js 가 불마다 결정적으로 만든다 — land 화면 담당이 그 생성기를 이 폴더로 옮긴다 */
+  /** 필지 — 목업 pages/land.js 생성기(./land-parcels.ts)가 불마다 결정적으로 만든다 */
   listParcels(fireId: string): Promise<Parcel[]> {
-    void fireId;
-    return this.tick([]);
+    const f = this.fires.find((x) => x.id === fireId);
+    return this.tick(f ? landParcels(f, this.alerts, ledger.regions) : []);
   }
   getCommandStats(): Promise<CommandStats> {
     return this.tick({
