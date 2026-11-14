@@ -24,6 +24,22 @@ let countries: Promise<CountriesSnap> | null = null;
 const load = <T,>(p: string): Promise<T> => fetch(bypass(new Request(new URL(p, location.origin)))).then((r) => r.json() as Promise<T>);
 const getKorea = () => (korea ??= load<KoreaSnap>(`${SNAP}/korea.json`));
 const getCountries = () => (countries ??= load<CountriesSnap>(`${SNAP}/countries.json`));
+/* release m2v_meta.json(실서버 /methods/current 의 meta 와 같은 파일) — 없으면 빈 meta */
+let meta: Promise<Record<string, unknown>> | null = null;
+const getMeta = () => (meta ??= load<Record<string, unknown>>(`${SNAP}/m2v_meta.json`).catch(() => ({})));
+
+/* 실서버 /methods/current 의 값 출처 표(2026-11-14 :18490 표본과 같은 모양 — from/to 는 달 YYYY-MM, label_ko 는 서버 문구) */
+const VALUE_SOURCES = [
+  { value_source: "modis_m2v_terra", from: "2000-11", to: "2002-06", label_ko: "추정 (Terra)" },
+  { value_source: "modis_m2v", from: "2002-07", to: "2012-01", label_ko: "추정 (MODIS → VIIRS)" },
+  { value_source: "snpp_observed", from: "2012-02", to: "2026-10", label_ko: "실측" },
+  { value_source: "n20_bridge", from: "2026-11", to: null, label_ko: "실측 (NOAA-20 환산 × 1.013)", factor: 1.013 },
+  { value_source: "n21_bridge", from: null, to: null, label_ko: "대체 위성 (NOAA-21 × 1.053, NOAA-20 결측일)", factor: 1.053 },
+];
+const SOURCES = [
+  { url: "https://firms.modaps.eosdis.nasa.gov/", name: "NASA FIRMS", credit: "We acknowledge the use of data and imagery from LANCE FIRMS operated by NASA's Earth Science Data and Information System (ESDIS)." },
+  { license: "CC BY", name: "Boundaries", note: "see the team's docs/references.md" },
+];
 
 let reqN = 0;
 const requestId = () => `MSW${(++reqN).toString(36).toUpperCase().padStart(6, "0")}`;
@@ -127,16 +143,19 @@ export function createHandlers(base: string) {
     }),
 
     http.get(at("/methods/current"), async () => {
-      const k = await getKorea();
+      const [k, m] = await Promise.all([getKorea(), getMeta()]);
       return ok(
         {
           method_version: k.method_version,
           unit: "VIIRS(S-NPP) 기준 화재 감지량",
           unit_code: "snpp_equiv_hotspots",
-          meta: { method_version: k.method_version },
-          value_sources: k.codes.vs,
-          statuses: k.codes.st,
+          meta: { ...m, method_version: k.method_version },
+          value_sources: VALUE_SOURCES,
+          statuses: ["ok", "nrt", "partial", "missing", "out_of_range"],
+          sources: SOURCES,
           data_version: k.release,
+          /* 이 스냅숏에 든 파일(실서버 files 와 같은 이름) — 점(hotspots)·위성 일 상태는 없음 */
+          files: { hotspots: false, satellite_day_status: false },
         },
         k.method_version,
       );

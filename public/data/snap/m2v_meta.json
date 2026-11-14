@@ -1,0 +1,228 @@
+{
+  "stage": "final",
+  "final_method": "m2v_xgb",
+  "final_method_reason": "채택 규칙: 한국 월 합계 MAE 80.2→42.1, 편향 1.395→0.986 (ratio_lat 대비). 추가 튜닝 없이 확정.",
+  "method_version": "v1-m2v-2026-11-14",
+  "train_period": "2012-02 ~ 2025-12",
+  "target": "S-NPP 감지 수, 공통 정상일(Aqua·Terra·S-NPP 모두 ok) 집계를 days_in_month/common_days로 월 환산",
+  "zero_rule": "B1은 MODIS 감지가 0이면 예측 0 (규칙 켬/끔 결과 동일)",
+  "evaluation": "leave-year-out 2012~2025; 지역·월 합계는 전체 칸(이력 칸 ∪ 한국 칸) × 정상 월",
+  "seed": 42,
+  "created": "2026-11-14T13:42:56",
+  "validation_summary": {
+    "argentina": {
+      "metric": "pooled_month_total_MAE",
+      "mean": 3323.340654308583
+    },
+    "continent:Africa": {
+      "metric": "pooled_month_total_MAE",
+      "mean": 43855.62642587609
+    },
+    "continent:Antarctica": {
+      "metric": "pooled_month_total_MAE",
+      "mean": 6.014351695986484
+    },
+    "continent:Asia": {
+      "metric": "pooled_month_total_MAE",
+      "mean": 16856.30611872968
+    },
+    "continent:Europe": {
+      "metric": "pooled_month_total_MAE",
+      "mean": 8605.603294893719
+    },
+    "continent:North America": {
+      "metric": "pooled_month_total_MAE",
+      "mean": 15254.098786733348
+    },
+    "continent:Oceania": {
+      "metric": "pooled_month_total_MAE",
+      "mean": 11308.34064211986
+    },
+    "continent:Seven seas (open ocean)": {
+      "metric": "pooled_month_total_MAE",
+      "mean": 10.966887357526966
+    },
+    "continent:South America": {
+      "metric": "pooled_month_total_MAE",
+      "mean": 31203.044972749358
+    },
+    "korea": {
+      "metric": "pooled_month_total_MAE",
+      "mean": 80.23011257471212
+    },
+    "world": {
+      "metric": "pooled_month_total_MAE",
+      "mean": 46674.455321639514
+    }
+  },
+  "harmonization": {
+    "2012-01": "m2v_xgb 값만 사용 (S-NPP 실측과 섞지 않음). S-NPP는 2012-01-20부터 12일만 있어 월 환산 오차가 크고, 학습 기간도 2012-02부터라 2012-01은 MODIS 쪽(공통 정상일: Aqua·Terra) 예측이 더 일관됨. value_source=modis_m2v",
+    "snpp_observed": "S-NPP status=ok인 날의 감지 수 × days_in_month / ok일수 (raw_viirs는 전체 일 원값)",
+    "regional_only": "2026-01~09는 동아시아 자료만 있어 그 밖의 칸·AOI는 missing",
+    "sparse_cell_table": "harmonized_cell_month는 value·raw가 모두 0인 칸·월을 저장하지 않음",
+    "n20_bridge": "2026-11-03 부터 NOAA-20 × n20_bridge 비율 (한국·아르헨티나·대륙·world 순, 대체 규칙 적용)",
+    "modis_m2v": "2002-07~2012-01: m2v_xgb(M2V Harmonizer)로 패널 칸 + 감지 없는 모든 격자 칸 예측 (zero rule 끔, 검증과 같은 방식). 2000-11~2002-06: m2v_xgb_terra",
+    "dense_rows": "감지 없는 칸의 예측 중 0.5 미만은 harmonized_cell_month에 넣지 않고 data/interim/harmonized_background/에 따로 저장해 AOI 합계에만 더함 (2005년 기준 감지 없는 칸 예측은 전체의 약 3%)",
+    "cell_interval": "칸 value_lo/hi = m2v_q10_q90 (Terra 단독 달은 칸 분위수 모델이 없어 null)",
+    "aoi_interval": "AOI value_lo/hi = AOI 합계 × '실제/예측' 비율의 10·90 분위수. leave-year-out fold 모델의 전체 칸 OOF 예측을 AOI 유형(world·continent·country(KR 포함)·adm1·sido·sgg) × 예측 크기 구간별로 보정 (models/m2v_aoi_interval.parquet)",
+    "hidden_aoi": "Seven seas(공해) 대륙과 그 아래 AOI는 aoi_list.hidden=true, 비교 판정 uncertain"
+  },
+  "release": {
+    "v0-b1-global-r3": "status: 직전 30일 중앙값과 다른 연도 같은 날짜 ±15일 중앙값 둘 다 50% 미만일 때만 low(계절 감소는 ok+seasonal_decline), 여러 위성 동시 감소도 low, 알려진 결측일 강제 해제. B1(위도 5° 띠 × 월).",
+    "v1.1-m2v-2026-11-14": "모델·method_version(v1-m2v-2026-11-14)은 그대로, 데이터 규칙만 수정: 점 가중치는 센서 변환만(S-NPP 1.0, NOAA-20 n20_bridge, NOAA-21 n21_bridge, MODIS m2v 배율), 관측 빠진 날 환산분은 residual_type=missing_day_fill, 진행 중인 달 value=month-to-date + value_projected(달 전체 추정) + as_of_date, harmonized_cell_day 추가"
+  },
+  "m2v_evaluation": {
+    "created": "2026-11-14T15:46:18",
+    "objective": "tweedie_1.1",
+    "objective_selection": "안쪽 검증 연도 Poisson deviance (선택 fold 2013·2017·2021·2025)",
+    "features": [
+      "aqua_n_det",
+      "terra_n_det",
+      "aqua_active_days",
+      "terra_active_days",
+      "aqua_n_det_conf",
+      "terra_n_det_conf",
+      "aqua_frp_sum",
+      "aqua_frp_max",
+      "terra_frp_sum",
+      "terra_frp_max",
+      "aqua_night_ratio",
+      "terra_night_ratio",
+      "aqua_n_det_nb",
+      "terra_n_det_nb",
+      "month_sin",
+      "month_cos",
+      "cell_lat",
+      "cell_lon",
+      "terra_drift",
+      "aqua_obs_days",
+      "terra_obs_days",
+      "adm0_a3",
+      "subregion",
+      "continent"
+    ],
+    "terra_only_features": [
+      "terra_n_det",
+      "terra_active_days",
+      "terra_n_det_conf",
+      "terra_frp_sum",
+      "terra_frp_max",
+      "terra_night_ratio",
+      "terra_n_det_nb",
+      "month_sin",
+      "month_cos",
+      "cell_lat",
+      "cell_lon",
+      "terra_drift",
+      "terra_obs_days",
+      "adm0_a3",
+      "subregion",
+      "continent"
+    ],
+    "categorical": [
+      "adm0_a3",
+      "subregion",
+      "continent"
+    ],
+    "category_levels": {
+      "adm0_a3": 236,
+      "subregion": 25,
+      "continent": 9
+    },
+    "params": {
+      "device": "cuda",
+      "tree_method": "hist",
+      "max_bin": 256,
+      "learning_rate": 0.05,
+      "max_depth": 8,
+      "min_child_weight": 10,
+      "subsample": 0.8,
+      "colsample_bytree": 0.9,
+      "lambda": 1.0,
+      "max_cat_to_onehot": 1,
+      "max_cat_threshold": 64,
+      "seed": 42
+    },
+    "n_rounds_final": {
+      "m2v_xgb": 2697,
+      "m2v_xgb_terra": 3456,
+      "m2v_q10_q90": 2000
+    },
+    "sample_weight": "1/표본 비율 (positive 0.25, 0행 후보/표본)",
+    "korea_pooled": {
+      "ratio_lat": {
+        "MAE": 80.23011257471214,
+        "bias": 1.3950513949081182
+      },
+      "m2v_xgb": {
+        "MAE": 42.09408252438659,
+        "bias": 0.9861530030083302
+      },
+      "ratio_country": {
+        "MAE": 49.44571765316543,
+        "bias": 0.9766273281534013
+      }
+    },
+    "adoption_rule": "한국 월 합계 MAE와 |편향-1| 둘 다 m2v_xgb가 ratio_lat보다 나아야 채택",
+    "adopted": "m2v_xgb",
+    "models": {
+      "m2v_xgb": "m2v_xgb.json",
+      "m2v_q10_q90": "m2v_q10_q90.json",
+      "m2v_xgb_terra": "m2v_xgb_terra.json",
+      "ratio_country": "ratio_country.parquet",
+      "loglinear_ridge": "loglinear_ridge.json",
+      "ratio_lat": "ratio_lat.parquet",
+      "ratio_lat_interval": "ratio_lat_interval.parquet",
+      "n20_bridge": "n20_bridge.parquet"
+    },
+    "best_variant": "m2v_xgb"
+  },
+  "ratio_lat": {
+    "group": "위도 5° 띠 × 월, 분모 0이면 월만",
+    "ratios": "ratio_lat.parquet",
+    "interval": "ratio_lat_interval.parquet",
+    "interval_method": "OOF 칸·월 y/예측 비율의 10·90 백분위수 (예측 크기 구간별)"
+  },
+  "model_names": {
+    "m2v_xgb": "M2V Harmonizer — MODIS→VIIRS(S-NPP 기준) 환산 XGBoost (구 M1)",
+    "m2v_xgb_terra": "M2V Harmonizer Terra 단독 변형, 2000-11~2002-06 적용 (구 M1_terra)",
+    "m2v_q10_q90": "M2V Uncertainty Band — 10·90 분위수 구간 (구 M1 분위수 모델)",
+    "ratio_lat": "위도 5° 띠 × 월 비율 기준선 (구 B1)",
+    "ratio_country": "국가 × 월 비율, 하위지역→위도띠 대체 (구 B1c)",
+    "loglinear_ridge": "log1p 선형 Ridge (구 B2)",
+    "n20_bridge": "NOAA-20 → S-NPP 연결 계수 (구 M2)"
+  },
+  "value_sources": {
+    "modis_harmonized_terra_only": "modis_m2v_terra",
+    "modis_harmonized": "modis_m2v",
+    "snpp_observed": "snpp_observed",
+    "noaa20_bridged": "n20_bridge"
+  },
+  "renamed": {
+    "date": "2026-11-14T15:53:35",
+    "from_meta": "m1_meta.json",
+    "previous_method_version": "v0-b1-global-2026-11-14-r3",
+    "log": "reports/rename_log.csv"
+  },
+  "hotspots": {
+    "weight_rule": "점 가중치 = 센서 변환만: S-NPP 1.0, NOAA-20 n20_bridge, NOAA-21 n21_bridge, MODIS m2v 배율(m2v 기간은 칸·월 value/raw_modis, 그 밖의 달은 입력 MODIS 점으로 m2v 예측 = m2v_predicted). 관측이 빠진 날을 달 전체로 늘리는 환산은 넣지 않음",
+    "reference": {
+      "modis": "2000-11 ~ 2012-01 (v1에서 2012-01은 m2v 값)",
+      "snpp": "2012-02 ~ 2026-11-02",
+      "noaa20": "2026-11-03 ~ (NOAA-20 status≠ok인 날은 NOAA-21 → MODIS 대체)"
+    },
+    "terra_only_interval": "2000-11 ~ 2002-06(Terra 단독)은 칸 단위 분위수 모델이 없어 점 weight_lo/hi와 칸 value_lo/hi가 null. 이 기간 구간은 AOI 단위(aoi_month.value_lo/hi)로만 제공",
+    "residual": "harmonized_residual_cell_month.residual_type: modis_unseen(MODIS 기간 미감지 칸의 m2v 예측 + 배경 예측 interim/harmonized_background), missing_day_fill(실측 기간 완결된 달: 칸 value − Σ 기준 점 가중치, 음수 가능). 점 가중치 합 + residual = 칸 value",
+    "non_reference": "is_reference=false 점: S-NPP 1.0, NOAA-20 n20_bridge, NOAA-21 n21_bridge, MODIS(2012-02~)는 null — 지도 표시용, 합계에 쓰지 않음"
+  },
+  "data_release": "v1.1-m2v-2026-11-14",
+  "partial_month": {
+    "rule": "status=partial(진행 중인 달): value/value_lo/value_hi = 오늘까지 실제 합계(month-to-date, 환산 없음), value_projected = 관측일 수로 환산한 달 전체 추정, as_of_date = 마지막 관측일. 판정은 uncertain",
+    "tables": [
+      "harmonized_cell_month.value_projected",
+      "aoi_month.value_projected/as_of_date",
+      "aoi_month_compare.value_projected/as_of_date",
+      "harmonized_cell_day.value_projected_month(그 달 1일 행)"
+    ]
+  }
+}

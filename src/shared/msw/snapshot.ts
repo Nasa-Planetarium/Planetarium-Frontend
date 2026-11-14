@@ -23,6 +23,8 @@ export interface KoreaAoiRaw {
   v: Arr; lo: Arr; hi: Arr; rm: Arr; rv: Arr;
   pct: Arr; rat: Arr; vd: Arr; bm: Arr; b25: Arr; b75: Arr; nb: Arr; ls: Arr;
   vs?: Arr; ds?: Arr; st?: Arr;
+  /** v1.1 진행 중인 달 달 전체 추정(value_projected ×10) — snap.partial 순서와 같은 자리 */
+  vp?: Arr;
 }
 export interface KoreaSnap {
   release: string;
@@ -30,6 +32,8 @@ export interface KoreaSnap {
   months: { start: string; n: number };
   codes: { vs: string[]; ds: string[]; st: string[]; vd: string[] };
   month: { vs: Arr; ds: Arr; st: Arr };
+  /** v1.1 진행 중인 달(m = 달 번호, as_of_date = 마지막 관측일) */
+  partial?: { m: number; ym: string; as_of_date: string }[];
   aoi: KoreaAoiRaw[];
 }
 export interface CountryAoiRaw {
@@ -93,7 +97,18 @@ export function koreaMonth(snap: KoreaSnap, a: KoreaAoiRaw, m: number): Calendar
     percentile: div(a.pct[m], 10),
     ratio_to_median: div(a.rat[m], 100),
     low_sample: a.ls[m] == null ? null : a.ls[m] === 1,
+    ...partialOf(snap, a, m),
   };
+}
+
+/**
+ * v1.1 진행 중인 달(실서버 /calendar 의 value_projected · as_of_date — 팀 계약 v1.1 모양). 진행 중인 달이 아니면 붙이지 않는다.
+ * 값은 스냅숏 vp(release aoi_month.value_projected ×10) 그대로.
+ */
+function partialOf(snap: KoreaSnap, a: KoreaAoiRaw, m: number): Record<string, unknown> {
+  const k = (snap.partial ?? []).findIndex((p) => p.m === m);
+  if (k < 0) return {};
+  return { value_projected: div(a.vp?.[k] ?? null, 10), as_of_date: snap.partial?.[k]?.as_of_date ?? null };
 }
 
 /**

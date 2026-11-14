@@ -5,7 +5,7 @@
  * 쓰는 법: node scripts/import-snapshot.mjs --snap <스냅숏 폴더>   (korea.json · countries.json · world-1deg/ · FORMAT.md)
  *
  * 값은 release data-v1-m2v-2026-11-14 그대로(결정 A1 「모델을 따른다」). 이 스크립트는 복사와 SHA-256 기록만 한다.
- * 전망(outlook.json)이 있으면 함께 복사한다(--outlook <파일>, 없으면 건너뜀).
+ * 전망(outlook.json)이 있으면 함께 복사한다(--outlook <파일>, 없으면 건너뜀). release m2v_meta.json 도 같은 방식(--meta <파일>).
  */
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -41,6 +41,15 @@ if (outlook && fs.existsSync(outlook)) {
   manifest.files["outlook.json"] = { bytes: buf.length, sha256: crypto.createHash("sha256").update(buf).digest("hex") };
 } else {
   manifest.outlook = "없음 — 전망 파일이 만들어지면 --outlook 으로 다시 돌린다";
+}
+/* release m2v_meta.json(/methods/current 의 meta) — --meta <파일>, 없으면 건너뜀 */
+const metaFile = argOf("--meta") ?? process.env.META_FILE;
+if (metaFile && fs.existsSync(metaFile)) {
+  fs.copyFileSync(metaFile, path.join(dest, "m2v_meta.json"));
+  const buf = fs.readFileSync(metaFile);
+  manifest.files["m2v_meta.json"] = { bytes: buf.length, sha256: crypto.createHash("sha256").update(buf).digest("hex") };
+} else {
+  manifest.meta = "없음 — --meta <m2v_meta.json> 으로 다시 돌린다(/methods/current meta 가 비게 된다)";
 }
 fs.writeFileSync(path.join(dest, "manifest.json"), JSON.stringify(manifest, null, 1) + "\n");
 console.log(Object.entries(manifest.files).map(([f, v]) => `${f} ${v.bytes} B`).join(" · "), manifest.outlook ?? "");
