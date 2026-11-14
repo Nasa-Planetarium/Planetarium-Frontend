@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent as RKeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronLeft, ChevronRight, ChartColumn, FlaskConical, Ruler, Siren } from "lucide-react";
+import { Calendar, ChevronDown, ChevronLeft, ChevronRight, ChartColumn, FlaskConical, Ruler, Siren } from "lucide-react";
 import { LoginDialog } from "@/features/auth-login";
 import { ScopeButton } from "@/features/pick-aoi";
 import { pageHref, ROLE_DEF, type Locale, type PageId, type RoleId } from "@/shared/config";
 import { useDevice } from "@/shared/lib/use-device";
-import { ACTIVE, addDays, dayCount, grid, ytdRatio, ymKey, daysIn } from "../model/home";
+import { ACTIVE, addDays, dayCount, FIRST_DAY, grid, ytdRatio, ymKey, daysIn } from "../model/home";
 import { cx } from "./cx";
 import type { Ctx } from "./home-page";
 import { HomeDownload } from "./home-download";
@@ -202,7 +202,24 @@ function ToolBar(c: Ctx & { head?: boolean }) {
   );
 }
 
-/** 기간 창: 빠른 선택 + 범위 달력(첫 누름 = 시작, 두 번째 = 끝) */
+/** 달 이동(목업 data-nav/data-rn): 2001-01 ~ 오늘 달 안으로 자른다 */
+function moveYm(v: { y: number; m: number }, d: number, hi: string): { y: number; m: number } {
+  const kHi = +hi.slice(0, 4) * 12 + +hi.slice(5, 7) - 1;
+  const k = Math.max(2001 * 12, Math.min(kHi, v.y * 12 + v.m - 1 + d));
+  return { y: Math.floor(k / 12), m: (k % 12) + 1 };
+}
+
+/** 달력 칸 키보드(목업 rcBox·dp keydown): ← → 하루 · ↑ ↓ 한 주 — 고를 수 있는 칸끼리 */
+function gridKeys(e: RKeyboardEvent<HTMLElement>, sel: string) {
+  const step = ({ ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 } as Record<string, number>)[e.key];
+  const d = (e.target as HTMLElement).closest?.(sel);
+  if (!step || !d) return;
+  e.preventDefault();
+  const all = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>(`${sel}:not(:disabled)`));
+  all[all.indexOf(d as HTMLButtonElement) + step]?.focus();
+}
+
+/** 기간 창: 빠른 선택 + 범위 달력(첫 누름 = 시작, 두 번째 = 끝 · 올리면 미리 칠함 · 화살표) + 날짜 직접 입력 + 전년 대비 */
 function PeriodPop(c: Ctx & { close: () => void }) {
   const today = c.today!;
   const r = c.range!;
@@ -212,50 +229,71 @@ function PeriodPop(c: Ctx & { close: () => void }) {
   ];
   const [view, setView] = useState(() => ({ y: +r.end.slice(0, 4), m: +r.end.slice(5, 7) }));
   const [a, setA] = useState<string | null>(null);
+  const [hov, setHov] = useState<string | null>(null);
+  const gref = useRef<HTMLDivElement>(null);
   const n = daysIn(view.y, view.m);
   const first = new Date(Date.UTC(view.y, view.m - 1, 1)).getUTCDay();
-  const wk = Array.from({ length: 7 }, (_, i) => new Intl.DateTimeFormat(c.lang, { weekday: "narrow", timeZone: "UTC" }).format(new Date(Date.UTC(2023, 0, 1 + i))));
-  const mv = (d: number) => {
-    let y = view.y;
-    let m = view.m + d;
-    while (m < 1) {
-      m += 12;
-      y--;
-    }
-    while (m > 12) {
-      m -= 12;
-      y++;
-    }
-    setView({ y, m });
-  };
+  const wk = c.t("home.dp.weekdays").split(",");
   const lastYm = today.slice(0, 7);
+  /* 첫 누름 뒤 마우스가 가리키는 날까지 미리 칠한다(목업 mouseover) */
+  let lo = r.start;
+  let hi = r.end;
+  if (a) {
+    lo = a;
+    hi = hov ?? a;
+    if (lo > hi) [lo, hi] = [hi, lo];
+  }
+  const focusIn = (sel: string) =>
+    requestAnimationFrame(() => {
+      const b = gref.current?.querySelector<HTMLButtonElement>(sel);
+      if (b && !b.disabled) b.focus();
+    });
   const pick = (d: string) => {
     if (!a) {
       setA(d);
+      setHov(null);
+      focusIn(`[data-rd="${d}"]`);
       return;
     }
-    const [s, e] = a <= d ? [a, d] : [d, a];
     setA(null);
-    c.setRange({ start: s, end: e });
-    c.close();
+    c.setRange({ start: a, end: d });
+  };
+  const navBtn = (d: number, label: string, disabled: boolean, two: boolean, right: boolean) => {
+    const Ic = right ? ChevronRight : ChevronLeft;
+    return (
+      <button
+        type="button"
+        className={cx("hm-dp-nav")}
+        data-rn={String(d)}
+        aria-label={label}
+        disabled={disabled}
+        onClick={() => {
+          setView(moveYm(view, d, today));
+          focusIn(`[data-rn="${d}"]`);
+        }}
+      >
+        <Ic className={cx("ic ic-btn")} aria-hidden="true" />
+        {two ? <Ic className={cx("ic ic-btn")} aria-hidden="true" /> : null}
+      </button>
+    );
   };
   return (
-    <div className={cx("hm-pdpop")} data-pdpop="" role="dialog" aria-label={c.t("home.short_label.choose_period")}>
+    <div
+      className={cx("hm-pdpop")}
+      data-pdpop=""
+      role="dialog"
+      aria-label={c.t("home.short_label.choose_period")}
+      onKeyDown={(e) => {
+        if (e.key !== "Escape") return;
+        e.stopPropagation();
+        c.close();
+      }}
+    >
       <div className={cx("hm-pdpop-s")}>
         <span className={cx("hm-pdpop-k")}>{c.t("home.short_label.quick_pick")}</span>
         <div className={cx("hm-quick")} role="group">
           {quick.map((q) => (
-            <button
-              key={q.id}
-              type="button"
-              className={cx("hm-q")}
-              data-q={q.id}
-              aria-pressed={q.start === r.start && q.end === r.end}
-              onClick={() => {
-                c.setRange({ start: q.start, end: q.end });
-                c.close();
-              }}
-            >
+            <button key={q.id} type="button" className={cx("hm-q")} data-q={q.id} aria-pressed={q.start === r.start && q.end === r.end} onClick={() => c.setRange({ start: q.start, end: q.end })}>
               {q.label}
             </button>
           ))}
@@ -263,41 +301,47 @@ function PeriodPop(c: Ctx & { close: () => void }) {
       </div>
       <div className={cx("hm-pdpop-s")}>
         <span className={cx("hm-pdpop-k")}>
-          {c.t("home.rcal.title")} <small className={cx("dim")}>{c.t(a ? "home.rcal.hint_end" : "home.rcal.hint_start")}</small>
+          {c.t("home.rcal.title")}{" "}
+          <small className={cx("dim")} data-rch="">
+            {c.t(a ? "home.rcal.hint_end" : "home.rcal.hint_start")}
+          </small>
         </span>
-        <div className={cx("hm-rcal")} data-rcal="">
+        <div className={cx("hm-rcal")} data-rcal="" ref={gref} onKeyDown={(e) => gridKeys(e, "[data-rd]")}>
           <div className={cx("hm-dp-h")}>
-            <button type="button" className={cx("hm-dp-nav")} aria-label={c.t("home.ym_of.previous_year")} onClick={() => mv(-12)} disabled={view.y <= 2001}>
-              <ChevronLeft className={cx("ic ic-btn")} aria-hidden="true" />
-            </button>
-            <button type="button" className={cx("hm-dp-nav")} aria-label={c.t("home.ym_of.previous_month")} onClick={() => mv(-1)} disabled={view.y <= 2001 && view.m <= 1}>
-              <ChevronLeft className={cx("ic ic-btn")} aria-hidden="true" />
-            </button>
+            {navBtn(-12, c.t("home.ym_of.previous_year"), view.y - 1 < 2001, true, false)}
+            {navBtn(-1, c.t("home.ym_of.previous_month"), ymKey(view.y, view.m) <= "2001-01", false, false)}
             <b className={cx("hm-dp-t num")} aria-live="polite">
               {c.fmt.ym(view.y, view.m)}
             </b>
-            <button type="button" className={cx("hm-dp-nav")} aria-label={c.t("home.ym_of.next_month")} onClick={() => mv(1)} disabled={ymKey(view.y, view.m) >= lastYm}>
-              <ChevronRight className={cx("ic ic-btn")} aria-hidden="true" />
-            </button>
-            <button type="button" className={cx("hm-dp-nav")} aria-label={c.t("home.ym_of.next_year")} onClick={() => mv(12)} disabled={ymKey(view.y + 1, view.m) > lastYm}>
-              <ChevronRight className={cx("ic ic-btn")} aria-hidden="true" />
-            </button>
+            {navBtn(1, c.t("home.ym_of.next_month"), ymKey(view.y, view.m) >= lastYm, false, true)}
+            {navBtn(12, c.t("home.ym_of.next_year"), String(view.y + 1) > today.slice(0, 4), true, true)}
           </div>
           <div className={cx("hm-dp-w")} aria-hidden="true">
             {wk.map((w, i) => (
               <span key={i}>{w}</span>
             ))}
           </div>
-          <div className={cx("hm-dp-g")}>
+          <div className={cx("hm-dp-g")} onMouseLeave={() => setHov(null)}>
             {Array.from({ length: first }, (_, i) => (
-              <span key={`e${i}`} />
+              <span key={`e${i}`} aria-hidden="true" />
             ))}
             {Array.from({ length: n }, (_, i) => {
               const d = `${ymKey(view.y, view.m)}-${String(i + 1).padStart(2, "0")}`;
-              const sel = d === (a ?? r.start) || (!a && d === r.end);
-              const inR = !a && d > r.start && d < r.end;
+              const ends = d === lo || d === hi;
+              const mid = d > lo && d < hi;
               return (
-                <button key={d} type="button" className={cx("hm-dp-d num", sel && "is-sel", inR && "is-in", d === today && "is-today")} data-rd={d} disabled={d > today} aria-pressed={sel || inR} aria-label={c.fmt.ym(view.y, view.m) + " " + (i + 1)} onClick={() => pick(d)}>
+                <button
+                  key={d}
+                  type="button"
+                  className={cx("hm-dp-d num", ends ? "is-sel" : mid && "is-in", d === today && "is-today")}
+                  data-rd={d}
+                  disabled={d > today || d < FIRST_DAY}
+                  aria-pressed={ends || mid}
+                  aria-label={c.t("home.dp.day_aria", { y: view.y, m: view.m, d: i + 1 })}
+                  onMouseEnter={() => (a ? setHov(d) : undefined)}
+                  onFocus={() => (a ? setHov(d) : undefined)}
+                  onClick={() => pick(d)}
+                >
                   {i + 1}
                 </button>
               );
@@ -305,6 +349,179 @@ function PeriodPop(c: Ctx & { close: () => void }) {
           </div>
         </div>
       </div>
+      <div className={cx("hm-pdpop-s")}>
+        <span className={cx("hm-pdpop-k")}>{c.t("home.short_label.enter_dates")}</span>
+        <div className={cx("hm-dates")}>
+          <DatePick {...c} label={c.t("home.short_label.start_date")} value={r.start} onPick={(v) => c.setRange({ start: v, end: r.end })} />
+          <span className={cx("dim")} aria-hidden="true">
+            –
+          </span>
+          <DatePick {...c} label={c.t("home.short_label.end_date")} value={r.end} end onPick={(v) => c.setRange({ start: r.start, end: v })} />
+        </div>
+      </div>
+      <div className={cx("hm-pdpop-s hm-pdpop-y")}>
+        <div className={cx("hm-yoyw")} data-yoyw="">
+          <button type="button" className={cx("hm-q-yoy")} data-yoy="" aria-pressed={c.yoy} onClick={() => c.setYoy(!c.yoy)}>
+            <i className={cx("hm-q-sw")} aria-hidden="true" />
+            <span>
+              {c.t("home.render_range.year_over_year")}
+              <small>{c.t("home.render_range.selected_period_beside_the")}</small>
+            </span>
+          </button>
+        </div>
+      </div>
     </div>
+  );
+}
+
+/** 날짜 고르기(목업 datePick): OS 기본 날짜 칸 대신 단추 + 달력 팝오버 · 2001-01-01 ~ 오늘 · 화살표·Esc */
+function DatePick(c: Ctx & { label: string; value: string; end?: boolean; onPick: (v: string) => void }) {
+  const today = c.today!;
+  const [open, setOpen] = useState(false);
+  const [view, setView] = useState(() => ({ y: +c.value.slice(0, 4), m: +c.value.slice(5, 7) }));
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  const btn = useRef<HTMLButtonElement>(null);
+  const pop = useRef<HTMLDivElement>(null);
+  const close = (focus: boolean) => {
+    setOpen(false);
+    if (focus) btn.current?.focus();
+  };
+  const end = !!c.end;
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: Event) => {
+      if (e.type === "resize" || (!pop.current?.contains(e.target as Node) && !btn.current?.contains(e.target as Node))) setOpen(false);
+    };
+    document.addEventListener("pointerdown", away, true);
+    window.addEventListener("resize", away);
+    /* 자리(목업 place): 단추 아래, 끝 날짜는 오른쪽 맞춤 · 화면 밖이면 위로 */
+    const id = requestAnimationFrame(() => {
+      const rb = btn.current?.getBoundingClientRect();
+      const p = pop.current;
+      if (!rb || !p) return;
+      const pw = p.offsetWidth;
+      const ph = p.offsetHeight;
+      const vw = document.documentElement.clientWidth;
+      const vh = window.innerHeight;
+      let x = end ? rb.right - pw : rb.left;
+      x = Math.max(8, Math.min(vw - pw - 8, x));
+      let y = rb.bottom + 6;
+      if (y + ph > vh - 8 && rb.top - 6 - ph >= 8) y = rb.top - 6 - ph;
+      setPos({ left: Math.round(x), top: Math.round(Math.max(8, y)) });
+      (p.querySelector<HTMLButtonElement>("[aria-current]") ?? p.querySelector<HTMLButtonElement>("[data-d]:not(:disabled)"))?.focus();
+    });
+    return () => {
+      cancelAnimationFrame(id);
+      document.removeEventListener("pointerdown", away, true);
+      window.removeEventListener("resize", away);
+    };
+  }, [open, end]);
+  const n = daysIn(view.y, view.m);
+  const first = new Date(Date.UTC(view.y, view.m - 1, 1)).getUTCDay();
+  const ym = ymKey(view.y, view.m);
+  const navBtn = (d: number, label: string, disabled: boolean, two: boolean, right: boolean) => {
+    const Ic = right ? ChevronRight : ChevronLeft;
+    return (
+      <button
+        type="button"
+        className={cx("hm-dp-nav")}
+        data-nav={String(d)}
+        aria-label={label}
+        disabled={disabled}
+        onClick={() => {
+          setView(moveYm(view, d, today));
+          requestAnimationFrame(() => {
+            const b = pop.current?.querySelector<HTMLButtonElement>(`[data-nav="${d}"]`);
+            if (b && !b.disabled) b.focus();
+          });
+        }}
+      >
+        <Ic className={cx("ic ic-btn")} aria-hidden="true" />
+        {two ? <Ic className={cx("ic ic-btn")} aria-hidden="true" /> : null}
+      </button>
+    );
+  };
+  return (
+    <>
+      <button
+        ref={btn}
+        type="button"
+        className={cx("input hm-date hm-dbtn num")}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-label={c.label + " " + (c.value || c.t("home.sync.none")) + c.t("home.sync.open_calendar")}
+        data-dpick={end ? "end" : "start"}
+        onClick={() => {
+          if (open) return close(true);
+          setView({ y: +c.value.slice(0, 4), m: +c.value.slice(5, 7) });
+          setPos(null);
+          setOpen(true);
+        }}
+      >
+        <span className={cx("hm-dbtn-v")}>{c.value || c.t("home.sync.pick_a_date")}</span>
+        <Calendar className={cx("ic ic-btn")} aria-hidden="true" strokeWidth={1.9} />
+      </button>
+      {open ? (
+        <div
+          ref={pop}
+          className={cx("hm-dp")}
+          role="dialog"
+          data-dp=""
+          aria-label={c.label + c.t("home.place.picker")}
+          style={pos ?? { visibility: "hidden", left: 0, top: 0 }}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              e.stopPropagation();
+              close(true);
+              return;
+            }
+            gridKeys(e, "[data-d]");
+          }}
+        >
+          <div className={cx("hm-dp-h")}>
+            {navBtn(-12, c.t("home.ym_of.previous_year"), view.y - 1 < 2001, true, false)}
+            {navBtn(-1, c.t("home.ym_of.previous_month"), ym <= "2001-01", false, false)}
+            <b className={cx("hm-dp-t num")} aria-live="polite">
+              {c.fmt.ym(view.y, view.m)}
+            </b>
+            {navBtn(1, c.t("home.ym_of.next_month"), ym >= today.slice(0, 7), false, true)}
+            {navBtn(12, c.t("home.ym_of.next_year"), String(view.y + 1) > today.slice(0, 4), true, true)}
+          </div>
+          <div className={cx("hm-dp-w")} aria-hidden="true">
+            {c
+              .t("home.dp.weekdays")
+              .split(",")
+              .map((w, i) => (
+                <span key={i}>{w}</span>
+              ))}
+          </div>
+          <div className={cx("hm-dp-g")}>
+            {Array.from({ length: first }, (_, i) => (
+              <span key={`e${i}`} aria-hidden="true" />
+            ))}
+            {Array.from({ length: n }, (_, i) => {
+              const v = `${ym}-${String(i + 1).padStart(2, "0")}`;
+              return (
+                <button
+                  key={v}
+                  type="button"
+                  className={cx("hm-dp-d num", v === c.value && "is-sel", v === today && "is-today")}
+                  data-d={v}
+                  disabled={v < FIRST_DAY || v > today}
+                  aria-current={v === c.value ? "date" : undefined}
+                  aria-label={c.t("home.dp.day_aria", { y: view.y, m: view.m, d: i + 1 })}
+                  onClick={() => {
+                    close(true);
+                    c.onPick(v);
+                  }}
+                >
+                  {i + 1}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }

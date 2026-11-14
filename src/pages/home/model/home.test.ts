@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { annual, eraPlace, grid, last12, realAoi, regionOfAoi, sumMonths, worstMonth, ytdRatio, type MonthRow } from "./home";
+import { annual, eraPlace, grid, last12, prevRange, rangeTxt, realAoi, regionOfAoi, shiftYear, sumMonths, worstMonth, yoyMetric, ytdRatio, type MonthRow } from "./home";
 
 const row = (year: number, month: number, value: number | null, status = "ok", extra: Partial<MonthRow> = {}): MonthRow => ({
   year,
@@ -80,5 +80,21 @@ describe("sumMonths — 그린 영역 여러 지역 합", () => {
     const out = sumMonths([[r(10)], [r(5)], [r(null)]]);
     expect(out).toHaveLength(1);
     expect(out[0]).toMatchObject({ value: 15, raw_modis: 3, raw_viirs: null, ratio_to_median: null, verdict: null, status: "final" });
+  });
+});
+
+describe("전년 대비 날짜(r2-B)", () => {
+  it("1년 전 같은 날짜 · 2/29 → 2/28", () => {
+    expect(shiftYear("2024-02-29", -1)).toBe("2023-02-28");
+    expect(prevRange({ start: "2026-11-05", end: "2026-11-11" })).toEqual({ start: "2025-11-05", end: "2025-11-11" });
+  });
+  it("범위 글자", () => {
+    expect(rangeTxt({ start: "2026-11-05", end: "2026-11-11" })).toBe("26.11.05–11.11");
+    expect(rangeTxt({ start: "2025-12-30", end: "2026-01-02" })).toBe("25.12.30–26.01.02");
+  });
+  it("증감 · 전년 0 · 비교 불가", () => {
+    expect(yoyMetric(12, 10)).toMatchObject({ delta: 2, pct: 20, na: false });
+    expect(yoyMetric(3, 0)).toMatchObject({ delta: 3, pct: null, zero: true });
+    expect(yoyMetric(null, 5)).toMatchObject({ na: true });
   });
 });

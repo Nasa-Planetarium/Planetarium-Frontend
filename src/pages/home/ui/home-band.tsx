@@ -7,7 +7,7 @@ import { comparisonQuery } from "@/entities/month-value";
 import { ApiError } from "@/shared/api";
 import { useDevice } from "@/shared/lib/use-device";
 import { summaryDayQuery } from "../api/queries";
-import { annual, daysIn, FIRST_YEAR, grid, LAST_YEAR, monthEnd, scaleMaxOf, SENSORS, ymKey, type Cell, type Sensor } from "../model/home";
+import { annual, daysIn, FIRST_YEAR, grid, LAST_YEAR, monthEnd, scaleMaxOf, SENSORS, shiftYear, ymKey, yoyMetric, type Cell, type Sensor } from "../model/home";
 import { AnnualLine, CalendarSvg, DaysSvg } from "./charts";
 import { cx } from "./cx";
 import type { Ctx } from "./home-page";
@@ -31,7 +31,8 @@ export function HomeBand(c: Ctx) {
   const gH = useMemo(() => grid(c.months, "harmonized"), [c.months]);
   const smax = useMemo(() => scaleMaxOf(g), [g]);
   const ann = useMemo(() => annual(gH), [gH]);
-  const topYear = useMemo(() => ann.slice().sort((a, b) => b.total - a.total)[0] ?? null, [ann]);
+  /* 가장 많았던 해 = 끝난 해 가운데(목업 renderQAns: 진행 중인 해 제외) */
+  const topYear = useMemo(() => ann.filter((r) => r.year < LAST_YEAR).sort((a, b) => b.total - a.total)[0] ?? null, [ann]);
   const cs = col ? Math.max(c.vals ? 16 : 10, Math.min(18, Math.floor((bw - 32 - 42) / 26) - 2)) : c.vals ? 16 : 11;
   const partial = c.partial;
   const unitShort = c.t({ harmonized: "home.regs.viirs_equivalent_hotspots_month", modis: "home.render_cal.modis_month", viirs: "home.render_cal.viirs_month" }[c.sensor]);
@@ -44,9 +45,10 @@ export function HomeBand(c: Ctx) {
     if (x.st === "before_sensor") return `${ym} · ${c.t("shell.chart.not_operating")}`;
     if (x.v == null) return `${ym} · ${c.t("shell.chart.missing_cell")}`;
     let s = `${ym} · ${c.t(`shell.view.${VIEW_KEY[c.sensor]}`)} ${c.fmt.num(x.v, x.v < 10 && x.v % 1 ? 1 : 0)}`;
-    if (c.sensor === "harmonized" && x.ratio != null) s += ` · ${c.t("home.ratio.short", { x: c.fmt.ratio(x.ratio) })}`;
-    if (x.st === "partial" && x.row?.as_of_date) s += ` · ${c.t("shell.st.partial")} (${x.row.as_of_date})`;
+    /* 목업 cellTitle: 「· 배수 (평가 연도 제외)」 · 판단 정보 부족이면 그 말 · 진행 중인 달은 둘째 줄 「진행 중인 달 · {일}일 기준 · 부분월 참고용」 */
+    if (c.sensor === "harmonized" && x.st !== "partial") s += x.ratio != null ? ` · ${c.t("home.ratio.short", { x: c.fmt.ratio(x.ratio) })}${c.t("home.cell_title.excl_target_year")}` : ` · ${c.t("home.ratio_text.insufficient_data")}`;
     if (x.st === "nrt") s += ` · ${c.t("shell.st.nrt")}`;
+    if (x.st === "partial") s += `\n${c.t("home.cell_title.month_in_progress")}${x.row?.as_of_date ? +x.row.as_of_date.slice(8, 10) : ""}${c.t("home.cell_title.days_partial_month_reference")}`;
     return s;
   };
   return (
@@ -212,6 +214,16 @@ function MonthPane(c: Ctx & { width: number }) {
     return { day: i + 1, value: s ? s.value : null, fires: fires.filter((f) => f.detected_at.slice(0, 10) === d).map((f) => f.id) };
   });
   const sumErr = sumQ.error instanceof ApiError ? sumQ.error : null;
+  /* 전년 같은 달(목업 monthYoY): 칩 = 1년 전 같은 날짜 범위 합(API total) · 선 = 전년 그 달 일별 전체. 통합 보기에서만(일별은 통합 값) */
+  const yoyOn = c.yoy && c.sensor === "harmonized" && y - 1 >= FIRST_YEAR;
+  const pEnd = shiftYear(end, -1);
+  const prevSpanQ = useQuery(summaryDayQuery(c.aoi, `${ymKey(y - 1, m)}-01`, pEnd, yoyOn && pop && row ? c.mv : null));
+  const prevFullQ = useQuery(summaryDayQuery(c.aoi, `${ymKey(y - 1, m)}-01`, monthEnd(y - 1, m), yoyOn && pop && row ? c.mv : null));
+  const prevTot = (prevSpanQ.data as unknown as { total?: { value?: number | null; n_missing?: number } } | undefined)?.total;
+  const curTot = (sumQ.data as unknown as { total?: { value?: number | null; n_missing?: number } } | undefined)?.total;
+  const ym1 = yoyOn ? yoyMetric(curTot && !curTot.n_missing ? (curTot.value ?? null) : null, prevTot && !prevTot.n_missing ? (prevTot.value ?? null) : null) : null;
+  const prevSeries = yoyOn ? ((prevFullQ.data as unknown as { series?: { date: string; value: number | null }[] } | undefined)?.series ?? []) : [];
+  const prevDays = yoyOn ? Array.from({ length: daysIn(y - 1, m) }, (_, i) => prevSeries.find((x) => x.date === `${ymKey(y - 1, m)}-${String(i + 1).padStart(2, "0")}`)?.value ?? null) : null;
   const v = row ? (c.sensor === "harmonized" ? row.value : c.sensor === "modis" ? row.raw_modis : row.raw_viirs) : null;
   const med = cmp?.baseline_median ?? null;
   const ratio = cmp?.ratio_to_median ?? row?.ratio_to_median ?? null;
@@ -307,6 +319,34 @@ function MonthPane(c: Ctx & { width: number }) {
             </b>
           </span>
         ) : null}
+        {ym1 ? (
+          <span className={cx("hm-mres-y")} data-mres-y="">
+            <span className={cx("dim")}>
+              {c.t("home.yoy_prev.last_year")}
+              {y - 1}.{m}
+              {isPart && row?.as_of_date ? ` 1–${+row.as_of_date.slice(8, 10)}${c.t("home.render_month.x")}` : ""}
+            </span>
+            <b className={cx("num")}>{ym1.prev == null ? "–" : c.fmt.num(ym1.prev, ym1.prev < 100 && ym1.prev % 1 ? 1 : 0)}</b>
+            {ym1.na ? (
+              <span className={cx("hm-yd hm-yd-na")} title={c.t(ym1.curr == null ? "data.yoy.why.missing" : "data.yoy.why.missing_prev")}>
+                {c.t("home.yoy_delta.not_comparable")}
+              </span>
+            ) : (
+              <>
+                <b className={cx("num", ym1.delta! > 0 ? "up" : ym1.delta! < 0 ? "down" : "muted")}>{(ym1.delta! > 0 ? "+" : ym1.delta! < 0 ? "−" : "±") + c.fmt.num(Math.abs(ym1.delta!), 1)}</b>
+                {ym1.zero ? (
+                  <span className={cx("hm-yd hm-yd-z")} title={c.t("home.yoy_delta.last_year_was_0")}>
+                    {c.t("home.yoy_delta.last_year_0")}
+                  </span>
+                ) : (
+                  <span className={cx("num", ym1.delta! > 0 ? "up" : ym1.delta! < 0 ? "down" : "muted")}>{`${ym1.pct! > 0 ? "+" : ym1.pct! < 0 ? "−" : "±"}${c.fmt.num(Math.abs(ym1.pct!), 1)}%`}</span>
+                )}
+              </>
+            )}
+          </span>
+        ) : c.yoy ? (
+          <span className={cx("hm-mres-y dim")}>{c.t("home.render_month.no_year_over_year")}</span>
+        ) : null}
       </div>
       <div className={cx("hm-days chart")} data-days="" aria-label={c.t("home.daily.aria2", { ym: c.fmt.ym(y, m) })}>
         {c.tok && series.length ? (
@@ -320,12 +360,22 @@ function MonthPane(c: Ctx & { width: number }) {
             ramp={c.ramp}
             fmt={c.fmt}
             label={c.t("shell.chart.daily", { ym: c.fmt.ym(y, m) })}
-            dayTitle={(d) => `${c.fmt.md(m, d.day)} · ${c.t("home.daily.pts", { n: d.value == null ? "–" : c.fmt.num(d.value, d.value % 1 ? 1 : 0) })}`}
+            dayTitle={(d) => {
+              const pv = prevDays?.[d.day - 1];
+              const nf = days[d.day - 1]?.fires.length ?? 0;
+              return `${c.fmt.md(m, d.day)} · ${c.t("home.daily.pts", { n: d.value == null ? "–" : c.fmt.num(d.value, d.value % 1 ? 1 : 0) })}${pv != null ? ` · ${c.t("home.daily.prev", { n: c.fmt.num(pv, pv % 1 ? 1 : 0) })}` : ""}${nf ? ` · ${c.t("home.daily.fires", { n: nf })}` : ""}`;
+            }}
             fireTitle={(ids) => ids.map((id) => c.tl("fire", id, "name", c.fires.find((f) => f.id === id)?.name ?? id)).join(", ")}
+            prev={prevDays}
+            prevTitle={c.fmt.ym(y - 1, m) + c.t("home.t.daily_same_month_last")}
             onDay={(d) => {
+              /* 목업 pickDay: 지도 기간 = 그날(조용히) + 확인 줄 「기간 그날 하루 · 지도 원시 점 … · 산불 기록 n건」 + 그날 불로 지도 맞춤 */
               const ds = `${ym}-${String(d).padStart(2, "0")}`;
+              const fs = days[d - 1]?.fires.map((id) => c.fires.find((f) => f.id === id)).filter((f): f is NonNullable<typeof f> => !!f) ?? [];
+              c.setRange({ start: ds, end: ds }, { quiet: true });
               c.setDaySel(ds);
-              c.setRange({ start: ds, end: ds });
+              c.note(c.t("home.set_range.period") + ds + c.t("home.set_range.1_day"), "", undefined, { pre: c.t("home.set_range.map_raw_points"), post: fs.length ? c.t("home.pick_day.fire_records") + fs.length + c.t("home.svc_val.x_2") : "" });
+              if (fs.length) c.fly(fs[0]!.lat, fs[0]!.lon, 9.6);
             }}
           />
         ) : (
@@ -346,9 +396,11 @@ function MonthPane(c: Ctx & { width: number }) {
               title={`${c.tl("fire", f.id, "name", f.name)} · ${f.detected_at}`}
               onClick={() => {
                 const d = f.detected_at.slice(0, 10);
+                c.setRange({ start: d, end: d }, { quiet: true });
                 c.setDaySel(d);
-                c.setRange({ start: d, end: d });
+                if (!f.historical) c.setSelFire(f.id);
                 c.fly(f.lat, f.lon, 9.6);
+                c.note(c.tl("fire", f.id, "name", f.name), "", undefined, { pre: c.t("home.set_range.period") + d + c.t("home.render_month.1_day_map_raw") });
               }}
             >
               <span className={cx("lv", `l${f.level}`)}>{c.t(`shell.level.${f.level}`)}</span>
@@ -360,6 +412,12 @@ function MonthPane(c: Ctx & { width: number }) {
           <span className={cx("dim")}>{c.t("home.render_month.no_fire_records_this")}</span>
         )}
         <span className={cx("hm-mf-s dim")}>
+          {ym1 ? (
+            <>
+              <i className={cx("hm-ylg hm-ylg-p")} aria-hidden="true" />
+              {c.t("home.render_month.same_month_last_year")}
+            </>
+          ) : null}
           {med != null && c.sensor === "harmonized" ? (
             <>
               <i className={cx("hm-avg-sw")} aria-hidden="true" />
@@ -377,8 +435,19 @@ function MonthPane(c: Ctx & { width: number }) {
 
 /** 연간 합계(목업 renderAnnual) — 지금 센서 보기 하나만(단위가 다른 선을 한 축에 섞지 않음) */
 function YearPane(c: Ctx & { ann: { year: number; total: number }[]; width: number; top: number | null }) {
-  const g = useMemo(() => annual(grid(c.months, c.sensor)), [c.months, c.sensor]);
+  /* 끝난 해만(목업 renderAnnual: 진행 중인 해 제외) */
+  const g = useMemo(() => annual(grid(c.months, c.sensor)).filter((r) => r.year < LAST_YEAR), [c.months, c.sensor]);
   const top3 = g.slice().sort((a, b) => b.total - a.total).slice(0, 3);
+  const stepH = useMemo(() => {
+    const h = annual(grid(c.months, "harmonized"));
+    const mean = (a: number, b: number) => {
+      const xs = h.filter((r) => r.year >= a && r.year <= b && !r.missing).map((r) => r.total);
+      return xs.length === b - a + 1 ? xs.reduce((p, q) => p + q, 0) / xs.length : null;
+    };
+    const lo = mean(2009, 2011);
+    const hi = mean(2012, 2014);
+    return lo && hi != null ? hi / lo : null;
+  }, [c.months]);
   const color = c.tok ? (c.sensor === "modis" ? c.tok["data-modis"] : c.sensor === "viirs" ? c.tok["data-viirs"] : c.tok["data-harm"]) : "#888";
   const w = Math.max(300, c.width || 420);
   return (
@@ -400,8 +469,31 @@ function YearPane(c: Ctx & { ann: { year: number; total: number }[]; width: numb
       <div data-annual="">
         {c.tok ? <AnnualLine pts={g.map((r) => ({ x: r.year, y: r.total }))} width={w} height={130} color={color} tok={c.tok} fmt={c.fmt} label={c.t("home.v.annual_total")} viirsLabel={c.t("home.v.viirs_start")} top={c.top} /> : null}
       </div>
+      {/* 목업 renderAnnual 꼬리: 통합 = 2011→2012 변화(2012–14 평균 / 2009–11 평균) · 원시 = 단위·화소·운용 시작. 원인은 단정하지 않는다 */}
       <p className={cx("hm-annual-note")} data-annualnote="">
-        <span>{c.t(UNIT_KEY[c.sensor])}</span>
+        {c.sensor === "harmonized" ? (
+          <>
+            <span>{c.t(UNIT_KEY[c.sensor])}</span>
+            {stepH != null ? (
+              <span>
+                {c.t("home.mean.2011_2012_change")}
+                <b className={cx("num")}>{c.fmt.ratio(stepH)}</b>
+              </span>
+            ) : null}
+          </>
+        ) : c.sensor === "modis" ? (
+          <>
+            <span>{c.t("home.regs.modis_raw_detections")}</span>
+            <span>{c.t("home.mean.unit_modis_hotspots_month")}</span>
+            <span>{c.t("home.mean.pixel_1_km")}</span>
+          </>
+        ) : (
+          <>
+            <span>{c.t("home.regs.viirs_raw_detections")}</span>
+            <span>{c.t("home.mean.unit_viirs_hotspots_month")}</span>
+            <span>{c.t("home.mean.operating_since_2012")}</span>
+          </>
+        )}
         <span>{c.dataAoiName}</span>
       </p>
     </div>

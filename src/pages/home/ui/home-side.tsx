@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import type { Alert, Fire } from "@/shared/agency";
 import { pageHref, type Locale } from "@/shared/config";
 import { useDevice } from "@/shared/lib/use-device";
-import { last12, YDAY } from "../model/home";
+import { dayCount, last12, prevRange, rangeTxt, YDAY } from "../model/home";
 import { cx } from "./cx";
+import { YoyKpis } from "./home-yoy";
 import { useClock, type Ctx } from "./home-page";
 import { Spark } from "./charts";
 import { useSize } from "./use-ui";
@@ -43,24 +44,36 @@ function Kpi(c: Ctx) {
   const head = c.t("home.short_label.vs_same_month_in");
   const badge = c.t("home.short_label.excl_target_year");
   const sw = Math.max(160, Math.min(720, (w || 368) - 32));
+  /* 전년 대비(목업 renderYoY 머리): 「전년 대비 · 1년 전 같은 날짜 · 26.11.05–11.11 vs 25.11.05–11.11」 */
+  const y = c.yoy && c.range ? { curr: c.range, prev: prevRange(c.range) } : null;
+  const H = y ? c.t("home.render_range.year_over_year") : head;
+  const B = y ? c.t("home.render_yo_y.same_dates_a_year") : badge;
+  const A = y ? `${rangeTxt(y.curr)} vs ${rangeTxt(y.prev)}` : aoiT;
+  const AT = y ? `${c.dataAoiName}${c.t("home.render_yo_y.period")}${y.curr.start} – ${y.curr.end} (${dayCount(y.curr.start, y.curr.end)}${c.t("home.render_yo_y.days_last_year")}${y.prev.start} – ${y.prev.end} · ${c.t("data.yoy.note")}` : aoiTitle;
   return (
     <>
-      <div className={cx("hm-kpis-h")}>
+      {/* 깜박임(목업 pulseKPI): 바뀔 때마다 머리를 새로 달아 애니메이션을 다시 건다 */}
+      <div key={c.pulse} className={cx("hm-kpis-h", c.pulse > 0 && "is-pulse")} data-pulse={c.pulse}>
         <div className={cx("hm-ttl")}>
-          <h2 data-kpih="" title={`${badge} · ${aoiTitle}`}>
-            {head}
+          <h2 data-kpih="" title={`${B} · ${AT}`}>
+            {H}
           </h2>
-          <span className={cx("hm-badge")} data-kpib="">
-            {badge}
+          <span className={cx("hm-badge", y && "hm-badge-yoy")} data-kpib="">
+            {B}
           </span>
         </div>
-        <span className={cx("hm-kpis-aoi")} data-kpiaoi="" title={aoiTitle}>
-          {aoiT}
+        <span className={cx("hm-kpis-aoi")} data-kpiaoi="" title={AT}>
+          {A}
         </span>
         <button type="button" className={cx("btn sm hm-go-an")} data-analyze="" title={c.pop ? c.t("home.entry.title", { a: c.dataAoiName, ym: c.fmt.ym(c.pop.year, c.pop.month) }) : undefined} onClick={() => router.push(pageHref(c.lang as Locale, "analysis", `from=home&aoi=${encodeURIComponent(c.aoi)}${c.pop ? `&ym=${c.pop.year}-${String(c.pop.month).padStart(2, "0")}` : ""}`))}>
           {c.t("home.short_label.compare")}
         </button>
       </div>
+      {y ? (
+        <div className={cx("hm-kpis is-yoy")} data-kpis="" data-yoy="" ref={ref}>
+          <YoyKpis {...c} curr={y.curr} prev={y.prev} width={w} />
+        </div>
+      ) : (
       <div className={cx("hm-kpis")} data-kpis="" ref={ref}>
         <div className={cx("hm-kpi")} data-testid="home-kpi" data-v={last?.value ?? ""} data-vp={last?.value_projected ?? ""}>
           <div className={cx("hm-kpi-k")}>{c.t("home.quick_ranges.this_month")}</div>
@@ -93,6 +106,7 @@ function Kpi(c: Ctx) {
           </div>
         </div>
       </div>
+      )}
     </>
   );
 }

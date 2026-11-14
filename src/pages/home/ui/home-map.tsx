@@ -2,10 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Truck, X } from "lucide-react";
-import { focusBoundaryQuery, geomMainBounds, MapCanvas, type Bbox, type LayerKey, type MapCanvasHandle, type MapHotspot } from "@/widgets/map-canvas";
+import { Check, Info, Search, Truck, X } from "lucide-react";
+import { focusBoundaryQuery, geomMainBounds, linesQuery, MapCanvas, type Bbox, type LayerKey, type MapCanvasHandle, type MapHotspot } from "@/widgets/map-canvas";
 import { iso3OfAoi } from "@/features/pick-aoi";
+import type { Alert, Fire } from "@/shared/agency";
 import { ApiError } from "@/shared/api";
+import { pageHref, type Locale } from "@/shared/config";
+import { useRouter } from "next/navigation";
 import { useDevice } from "@/shared/lib/use-device";
 import { hotspotsQuery } from "../api/queries";
 import { ACTIVE } from "../model/home";
@@ -59,11 +62,37 @@ export function HomeMap(c: Ctx) {
   const nM = hot.length - nV;
   const hotErr = hotQ.error instanceof ApiError ? hotQ.error : null;
 
+  /* 원시 점 수를 화면(확인 줄)에 넘긴다 */
+  const { setHot } = c;
+  useEffect(() => setHot(hb && hotQ.data ? { v: nV, m: nM } : null), [setHot, hb, hotQ.data, nV, nM]);
+
   /* 불·자원·경로(시나리오 목 — 한국만) */
   const live = useMemo(() => c.fires.filter((f) => !f.historical), [c.fires]);
   const annot = useMemo(() => live.filter((f) => ACTIVE.includes(f.status)).sort((x, y) => y.level - x.level || String(y.detected_at).localeCompare(String(x.detected_at)))[0]?.id ?? null, [live]);
-  const fires = useMemo(() => live.map((f) => ({ id: f.id, lat: f.lat, lon: f.lon, level: f.level || 1, status: f.status, name: c.tl("fire", f.id, "name", f.name), frp_max: f.frp_max })), [live, c]);
+  /* 지도 불(목업 firesNow): 기간 안 사건 기록(과거 산불 포함) + 지금 진행 중인 불. 진행 중인데 기간 밖이면 이름에 「지금 진행 중(기간 밖)」(L10) */
+  const rs = c.range?.start ?? "";
+  const re = c.range?.end ?? "";
+  const inRange = useCallback((f: Fire) => !!rs && ((f.contained_at as string | undefined) ?? f.detected_at).slice(0, 10) >= rs && f.detected_at.slice(0, 10) <= re, [rs, re]);
+  const outside = useMemo(() => live.filter((f) => ACTIVE.includes(f.status) && !inRange(f)), [live, inRange]);
+  const outTag = c.t("home.in_range.active_now_outside_period");
+  const fires = useMemo(
+    () =>
+      c.fires
+        .filter((f) => (!f.historical && ACTIVE.includes(f.status)) || inRange(f))
+        .map((f) => {
+          const nm = c.tl("fire", f.id, "name", f.name);
+          const out = !f.historical && ACTIVE.includes(f.status) && !inRange(f);
+          return { id: f.id, lat: f.lat, lon: f.lon, level: f.level || 1, status: f.status, name: out ? `${nm.split(" ").slice(-1)[0]} ${outTag}` : nm, frp_max: f.frp_max, historical: !!f.historical, burned_ha: (f.burned_ha as number | null | undefined) ?? null };
+        }),
+    [c, inRange, outTag],
+  );
   const units = useMemo(() => c.units.map((u) => ({ id: u.id, lat: u.lat, lon: u.lon, status: u.status, type: u.type, name: c.tl("unit", u.id, "name", u.name), sub: c.t(`shell.unit_status.${u.status}`) })), [c]);
+  /* 자원 표지 누르기(목업 onUnit): 「이름 · 상태」 + 「소속 · 종류 · n명」 확인 줄 */
+  const onUnit = (id: string) => {
+    const u = c.units.find((x) => x.id === id);
+    if (!u) return;
+    c.note(`${c.tl("unit", u.id, "name", u.name)} · ${c.t(`shell.unit_status.${u.status}`)}`, `${c.tl("unit", u.id, "org", u.org)} · ${c.t(`shell.unit_type.${u.type}`)}${u.crew != null ? ` · ${c.t("home.unit.crew", { n: u.crew })}` : ""}`, "info");
+  };
   const routes = useMemo(
     () =>
       c.units
@@ -84,12 +113,83 @@ export function HomeMap(c: Ctx) {
     { k: "relief", label: c.t("maplab.relief") },
   ];
 
-  /* 검색 — 지금 나라의 모든 지역(실제 /aois 이름) */
+  /* 검색(목업 PLACES) — 지금 나라의 모든 지역(실제 /aois 이름) + 한국 시나리오 원장(불·과거 산불·면리 지명·하천·자원).
+     순위: 지역 0 · 불 1 · 지명 2 · 하천 3 · 자원 4. 공백 무시·대소문자 무시 · 「시/군」 떼고도 맞춤 · ↑↓ Enter */
+  const lines = useQuery(linesQuery(c.kor ? "KOR" : "")).data as { features?: { properties?: { kind?: string; name?: string }; geometry?: { type: string; coordinates: number[][] | number[][][] } }[] } | null | undefined;
+  type Place = { key: string; name: string; kind: string; rank: number; aoi?: string; lat?: number; lon?: number; z?: number; fire?: string | null };
+  const places: Place[] = useMemo(() => {
+    const out: Place[] = S.aois
+      .filter((a) => !a.hidden && a.aoi_id !== "WORLD" && iso3OfAoi(a.aoi_id) === c.iso3)
+      .map((a) => ({ key: a.aoi_id, name: S.nameOf(a), kind: a.parent_id && a.parent_id !== S.own ? S.nameOf(a.parent_id) : c.cname, rank: 0, aoi: a.aoi_id }));
+    if (!c.kor) return out;
+    c.fires.forEach((f) => {
+      out.push({ key: `f:${f.id}`, name: c.tl("fire", f.id, "name", f.name), kind: f.historical ? c.t("home.set_layer_k.past_fire") : c.t("home.over.fires"), rank: 1, lat: f.lat, lon: f.lon, z: f.historical ? 8.6 : 10.2, fire: f.historical ? null : f.id });
+      /* 면·리 지명은 원장 원문(한국어)에서만 */
+      if (c.lang === "ko")
+        f.name
+          .split(" ")
+          .slice(1)
+          .forEach((w) => {
+            if (/[읍면리동]$/.test(w) && !out.some((p) => p.name === w)) out.push({ key: `p:${w}`, name: w, kind: `지명 · ${f.name.split(" ")[0]}`, rank: 2, lat: f.lat, lon: f.lon, z: 9.6 }); // i18n:keep
+          });
+    });
+    (lines?.features ?? [])
+      .filter((x) => x.properties?.kind === "river" && x.properties.name)
+      .forEach((x) => {
+        const g = x.geometry;
+        const pts = (g?.type === "MultiLineString" ? (g.coordinates as number[][][]).flat() : ((g?.coordinates as number[][] | undefined) ?? [])) as number[][];
+        const mid = pts[Math.floor(pts.length / 2)];
+        if (mid && !out.some((p) => p.rank === 3 && p.name === x.properties!.name)) out.push({ key: `r:${x.properties!.name}`, name: c.tl("river", x.properties!.name!, "", x.properties!.name!), kind: c.t("home.set_layer_k.river"), rank: 3, lat: mid[1], lon: mid[0], z: 8.4 });
+      });
+    c.units.forEach((u) => out.push({ key: `u:${u.id}`, name: c.tl("unit", u.id, "name", u.name), kind: c.t("home.over.response_units"), rank: 4, lat: u.lat, lon: u.lon, z: 10.2 }));
+    return out;
+  }, [S, c, lines]);
+  const norm = (s: string) => s.replace(/\s+/g, "").toLowerCase();
   const sugg = useMemo(() => {
-    const k = q.trim().toLowerCase();
+    const k = norm(q);
     if (!k) return [];
-    return S.aois.filter((a) => !a.hidden && a.aoi_id !== "WORLD" && iso3OfAoi(a.aoi_id) === c.iso3 && S.nameOf(a).toLowerCase().includes(k)).slice(0, 8);
-  }, [q, S, c.iso3]);
+    return places
+      .filter((p) => norm(p.name).includes(k) || norm(p.name.replace(/[시군]$/, "")) === k)
+      .sort((a, b) => a.rank - b.rank)
+      .slice(0, 8);
+  }, [q, places]);
+  const [hi, setHi] = useState(0);
+  const goPlace = (p: Place | undefined) => {
+    if (!p) return;
+    if (p.aoi) {
+      c.setDrawn(null);
+      S.setAoi(p.aoi);
+      setQ("");
+      return;
+    }
+    if (p.lat != null && p.lon != null) c.fly(p.lat, p.lon, p.z);
+    if (p.fire) c.setSelFire(p.fire);
+    setQ("");
+  };
+
+  /* 새 경보 지도 알림 띠(목업 showFlash): 처음 받은 뒤 새로 들어온 대응 경보 하나 · 역할로 들어온 사람에게만 · 10초 뒤 닫힘 */
+  const router = useRouter();
+  const [flash, setFlash] = useState<Alert | null>(null);
+  const ids = c.alerts.map((a) => a.id).join(",");
+  const [seen, setSeen] = useState<string | null>(null);
+  if (seen == null && c.alerts.length) setSeen(ids);
+  else if (seen != null && seen !== ids) {
+    const old = new Set(seen.split(","));
+    const fresh = c.alerts.find((a) => !old.has(a.id) && a.status === "new");
+    setSeen(ids);
+    if (fresh && c.role && c.kor) setFlash(fresh);
+  }
+  useEffect(() => {
+    if (!flash) return;
+    const id = setTimeout(() => setFlash(null), 10000);
+    return () => clearTimeout(id);
+  }, [flash]);
+  const canOpen = c.role === "responder" || c.role === "firefighter";
+  const flashFire = flash ? c.fires.find((f) => f.id === flash.fire_id) : undefined;
+  const hotTxt = c.hot ? `VIIRS ${c.fmt.num(c.hot.v)}, MODIS ${c.fmt.num(c.hot.m)}` : "–";
+  const st = c.status;
+  /* 「고른 기간(26.11.01–11.03) 밖에 {진행 중 n곳}」 — 굵은 몫을 가운데 끼우려고 자리표로 나눈다 */
+  const outParts = c.t("home.outv.text", { a: rs.slice(2).replace(/-/g, "."), b: re.slice(2).replace(/-/g, "."), n: "@@N@@" }).split("@@N@@");
 
   /* 관심 영역 배지(목업 renderAOIBadge): 「관심 영역 {종류} · 집계 시군 {r} ×」 */
   const approx = c.agg && c.agg.names.length ? c.t(c.agg.sgg ? "home.aoi.approx_kor" : "home.aoi.approx_adm1", { r: c.agg.names.join("·") }) : "";
@@ -120,6 +220,7 @@ export function HomeMap(c: Ctx) {
       selFire={c.selFire}
       annotFire={annot}
       onFire={(id) => c.setSelFire(id)}
+      onUnit={onUnit}
       onRegion={(id) => (S.byId.has(id) ? S.setAoi(id) : undefined)}
       onView={(b) => setVb(b)}
       aoi={c.drawn}
@@ -134,32 +235,105 @@ export function HomeMap(c: Ctx) {
       <div className={cx("hm-ov hm-ov-tl")} style={{ pointerEvents: "none" }}>
         <div className={cx("hm-search")} role="search">
           <Search className={cx("ic ic-btn")} aria-hidden="true" strokeWidth={1.9} />
-          <input type="search" placeholder={c.t("home.over.search_places")} aria-label={c.t("home.over.search_places")} autoComplete="off" data-search="" value={q} onChange={(e) => setQ(e.target.value)} />
-          {sugg.length ? (
+          <input
+            type="search"
+            placeholder={c.t("home.over.search_places")}
+            aria-label={c.t("home.over.search_places")}
+            autoComplete="off"
+            data-search=""
+            value={q}
+            onChange={(e) => {
+              setQ(e.target.value);
+              setHi(0);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                goPlace(sugg[hi] ?? sugg[0]);
+              } else if ((e.key === "ArrowDown" || e.key === "ArrowUp") && sugg.length) {
+                e.preventDefault();
+                setHi((hi + (e.key === "ArrowDown" ? 1 : sugg.length - 1)) % sugg.length);
+              } else if (e.key === "Escape") setQ("");
+            }}
+          />
+          {q.trim() ? (
             <div className={cx("hm-sugg")} data-sugg="" role="listbox">
-              {sugg.map((a) => (
-                <button
-                  key={a.aoi_id}
-                  type="button"
-                  className={cx("hm-sg")}
-                  role="option"
-                  aria-selected="false"
-                  data-a={a.aoi_id}
-                  onClick={() => {
-                    c.setDrawn(null);
-                    S.setAoi(a.aoi_id);
-                    setQ("");
-                  }}
-                >
-                  {S.nameOf(a)}
-                  <span className={cx("dim")}>{a.parent_id && a.parent_id !== S.own ? S.nameOf(a.parent_id) : c.cname}</span>
-                </button>
-              ))}
+              {sugg.length ? (
+                sugg.map((p, i) => (
+                  <button key={p.key} type="button" className={cx("hm-sg")} role="option" aria-selected={i === hi} data-a={p.aoi} data-place={p.key} onMouseDown={(e) => e.preventDefault()} onClick={() => goPlace(p)}>
+                    <b>{p.name}</b>
+                    <span className={cx("dim")}>{p.kind}</span>
+                  </button>
+                ))
+              ) : (
+                <div className={cx("hm-sg-empty")}>{c.t("home.show_sugg.no_results")}</div>
+              )}
             </div>
           ) : null}
         </div>
       </div>
+      {flash ? (
+        <div className={cx("hm-flash", `hm-l${flash.level}`)} role="alert" data-flash={flash.id} style={{ pointerEvents: "auto" }}>
+          <span className={cx("lv", `l${flash.level}`)}>{c.t(`shell.level.${flash.level}`)}</span>
+          <div className={cx("hm-flash-t")}>
+            <b>{c.tl("alert", flash.id, "title", flash.title)}</b>
+            <span>
+              {flashFire ? c.tl("fire", flashFire.id, "name", flashFire.name) : ""}, {flash.at}
+            </span>
+          </div>
+          {canOpen ? (
+            <button
+              type="button"
+              className={cx("btn sm")}
+              data-ops=""
+              onClick={() => {
+                setFlash(null);
+                router.push(pageHref(c.lang as Locale, "ops"));
+              }}
+            >
+              {c.t("home.show_flash.open_in_alerts")}
+            </button>
+          ) : (
+            <button
+              type="button"
+              className={cx("btn sm")}
+              data-fly=""
+              onClick={() => {
+                setFlash(null);
+                c.setSelFire(flash.fire_id);
+                if (flashFire) c.fly(flashFire.lat, flashFire.lon, 10.2);
+              }}
+            >
+              {c.t("home.show_flash.show_on_map")}
+            </button>
+          )}
+          <button type="button" className={cx("hm-x")} data-hide="" aria-label={c.t("home.show_flash.close")} onClick={() => setFlash(null)}>
+            <X className={cx("ic ic-btn")} aria-hidden="true" strokeWidth={1.9} />
+          </button>
+        </div>
+      ) : null}
+      {/* 변경 확인 줄(목업 note · 지도 아래쪽, 오른쪽 지표를 가리지 않게) */}
+      <div className={cx("hm-status", st && !st.off && "is-on", st?.kind === "info" && "is-info")} data-status="" role="status" aria-live="polite" title={st ? `${st.text} ${st.sub}${st.hot ? st.hot.pre + hotTxt + (st.hot.post ?? "") : ""}` : undefined}>
+        {st ? (
+          <>
+            {st.kind === "info" ? <Info className={cx("ic")} width={13} height={13} aria-hidden="true" strokeWidth={1.9} /> : <Check className={cx("ic")} width={13} height={13} aria-hidden="true" strokeWidth={1.9} />}
+            <b>{st.text}</b>
+            {st.sub || st.hot ? <span>{st.sub + (st.hot ? st.hot.pre + hotTxt + (st.hot.post ?? "") : "")}</span> : null}
+          </>
+        ) : null}
+      </div>
       <div className={cx("hm-ov hm-ov-bl")} style={{ pointerEvents: "none" }}>
+        {outside.length ? (
+          /* 과거 기간을 볼 때 지금 진행 중인 불(기간 밖) 안내(목업 renderOutside · L10) */
+          <div className={cx("hm-outv")} role="note" data-outv="">
+            <i className={cx("hm-outv-dot")} aria-hidden="true" />
+            <span>
+              {outParts[0]}
+              <b>{c.t("home.outv.n", { n: outside.length })}</b>
+              {outParts[1]}
+            </span>
+          </div>
+        ) : null}
         {c.drawn ? (
           <div className={cx("hm-aoibadge")} data-aoibadge="" data-aoi-type={c.drawn.type}>
             <span className={cx("hm-aoi-k")}>{c.t("home.short_label.area")}</span>

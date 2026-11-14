@@ -322,3 +322,26 @@ export function sumMonths(lists: readonly (readonly MonthRow[])[]): MonthRow[] {
     })
     .sort((a, b) => a.year - b.year || a.month - b.month);
 }
+
+/* ── 전년 대비(목업 core EM.yoy 의 날짜 몫) ── 값은 API(/summary 합계·일별) 그대로, 여기서는 날짜만 옮긴다 */
+export const FIRST_DAY = "2001-01-01";
+/** 1년 전 같은 날짜(2/29 → 2/28) */
+export function shiftYear(d: string, n: number): string {
+  const y = +d.slice(0, 4) + n;
+  const md = d.slice(5) === "02-29" ? "02-28" : d.slice(5);
+  return `${y}-${md}`;
+}
+export function prevRange(r: { start: string; end: string }): { start: string; end: string } {
+  return { start: shiftYear(r.start, -1), end: shiftYear(r.end, -1) };
+}
+/** 「26.11.05–11.11」 (목업 rangeTxt) */
+export function rangeTxt(r: { start: string; end: string }): string {
+  const ds = (d: string, yr: boolean) => (yr ? `${d.slice(2, 4)}.` : "") + d.slice(5).replace("-", ".");
+  return r.start === r.end ? ds(r.start, true) : `${ds(r.start, true)}–${ds(r.end, r.start.slice(0, 4) !== r.end.slice(0, 4))}`;
+}
+/** 증감(목업 EM.yoy metrics): 한쪽이 없으면 비교 불가, 전년 0 이면 % 없이 */
+export function yoyMetric(curr: number | null, prev: number | null): { curr: number | null; prev: number | null; delta: number | null; pct: number | null; na: boolean; zero: boolean } {
+  if (curr == null || prev == null) return { curr, prev, delta: null, pct: null, na: true, zero: false };
+  const r1 = (v: number) => Math.round(v * 10) / 10;
+  return { curr, prev, delta: r1(curr - prev), pct: prev === 0 ? null : r1(((curr - prev) / prev) * 100), na: false, zero: prev === 0 };
+}

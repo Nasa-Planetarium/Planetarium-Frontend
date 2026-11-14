@@ -222,6 +222,9 @@ export function DaysSvg(p: {
   dayTitle: (d: { day: number; value: number | null }) => string;
   fireTitle: (ids: string[]) => string;
   onDay: (d: number) => void;
+  /** 전년 같은 달 일별(목업 daysYoY) — 점선 회색 · 축 최대를 둘 다로 */
+  prev?: (number | null)[] | null;
+  prevTitle?: string;
 }) {
   const { tok: C } = p;
   const W = p.width;
@@ -231,15 +234,27 @@ export function DaysSvg(p: {
   const pt = 16;
   const pb = 22;
   const vals = p.days.map((d) => d.value ?? 0);
+  const pv = (p.prev ?? []).filter((v): v is number => v != null);
   const ph = H - pt - pb;
   const tn = ph >= 54 ? 3 : ph >= 26 ? 2 : 1;
-  const mx = niceMax(Math.max(4, ...vals));
+  const mx = niceMax(Math.max(4, ...vals, ...pv));
   const step = mx / tn;
   const ticks = Array.from({ length: tn + 1 }, (_, i) => +(i * step).toFixed(6));
-  const n = Math.max(1, p.days.length);
+  const n = Math.max(1, p.days.length, p.prev?.length ?? 0);
   const bw = (W - pl - pr) / n;
   const X = (i: number) => pl + i * bw;
   const Y = (v: number) => pt + (1 - v / mx) * (H - pt - pb);
+  /* 전년 선: 막대 가운데를 잇고 결측 날은 끊는다 */
+  let dp = "";
+  let pen = false;
+  (p.prev ?? []).forEach((v, i) => {
+    if (v == null) {
+      pen = false;
+      return;
+    }
+    dp += `${pen ? "L" : "M"}${(X(i) + bw / 2).toFixed(1)} ${Y(v).toFixed(1)}`;
+    pen = true;
+  });
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} role="img" aria-label={p.label} style={{ fontVariantNumeric: "tabular-nums" }}>
       {ticks.map((v) => (
@@ -276,6 +291,11 @@ export function DaysSvg(p: {
           </g>
         );
       })}
+      {dp ? (
+        <path d={dp} fill="none" stroke={C["text-2"]} strokeWidth={1.5} strokeDasharray="4 3" strokeLinejoin="round" opacity={0.95} data-prev="">
+          <title>{p.prevTitle}</title>
+        </path>
+      ) : null}
     </svg>
   );
 }

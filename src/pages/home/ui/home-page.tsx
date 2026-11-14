@@ -14,7 +14,7 @@ import { useT, useTl } from "@/shared/i18n";
 import { prefs } from "@/shared/lib/prefs";
 import { adm1RegionsQuery, approxRegions, childRegionsQuery, type DrawnAoi, type MapCanvasHandle, type MapRegion } from "@/widgets/map-canvas";
 import { outlookQuery } from "../api/queries";
-import { addDays, grid, partialOf, realAoi, regionOfAoi, SENSORS, sumMonths, worstMonth, type MonthRow, type Sensor } from "../model/home";
+import { addDays, grid, partialOf, prevRange, rangeTxt, realAoi, regionOfAoi, SENSORS, sumMonths, worstMonth, type MonthRow, type Sensor } from "../model/home";
 import { cx } from "./cx";
 import { HomeBand } from "./home-band";
 import { HomeHead } from "./home-head";
@@ -100,6 +100,21 @@ function HomeScreen() {
   const [selFire, setSelFire] = useState<string | null>(null);
   const [cntSel, setCntSel] = useState<"live" | "new" | "busy" | null>(null);
   const [flyTo, setFlyTo] = useState<{ lat: number; lon: number; z?: number; k: number } | null>(null);
+  /* 변경 확인 줄(목업 note · role=status) — 5.2초 뒤 꺼진다. hot = 지도 원시 점 수를 그릴 때 넣는다(점이 도착하면 같은 줄이 새 수로 바뀐다) */
+  const [status, setStatus] = useState<Note | null>(null);
+  useEffect(() => {
+    if (!status) return;
+    const id = setTimeout(() => setStatus((s) => (s && s.k === status.k ? { ...s, off: true } : s)), 5200);
+    return () => clearTimeout(id);
+  }, [status]);
+  const note = (text: string, sub?: string, kind?: "info", hot?: { pre: string; post?: string }) => setStatus((s) => ({ text, sub: sub ?? "", kind: kind ?? null, hot: hot ?? null, k: (s?.k ?? 0) + 1, off: false }));
+  /* 지표 머리 깜박임(목업 pulseKPI) — 관심 영역·기간·전년 대비가 바뀔 때 */
+  const [pulse, setPulse] = useState(0);
+  const pulseKPI = () => setPulse((n) => n + 1);
+  /* 전년 대비(목업 UI.yoy · ROLES-V2 §4) — 화면 단위 상태 */
+  const [yoy, setYoySt] = useState(false);
+  /* 지도 원시 점 수(VIIRS·MODIS 따로) — 지도가 받은 /hotspots 결과 */
+  const [hot, setHot] = useState<{ v: number; m: number } | null>(null);
 
   /* 실제 데이터 — 지금 판 + 관심 영역 AOI */
   const mvQ = useQuery(methodQuery());
@@ -152,6 +167,9 @@ function HomeScreen() {
     setRegion(null);
     setPop(null);
     setDrawnSt(null);
+    /* 지역이 바뀌면 확인 줄(목업 setAOI note) + 지표 깜박임 */
+    note(t("home.set_aoi.area") + (S.nameOf(S.chosen) || countryName(info, lang, iso3)), t("home.set_aoi.calendar_indicators_questions_and"));
+    pulseKPI();
   }
 
   /* 이름 */
@@ -202,6 +220,15 @@ function HomeScreen() {
       setDrawnSt(a);
       setRegion(null);
       setPop(null);
+      pulseKPI();
+      /* 그린 영역 확인 줄(목업 applyGeom note): 「관심 영역 · 사각형 · 집계 시군 … → 캘린더·지표·CSV 반영」 */
+      if (a) {
+        const kind = a.type === "bbox" ? t("home.aoi.bbox") : a.type === "polygon" ? t("home.aoi.polygon") : t("home.aoi.radius", { r: String(Math.round(a.radius_km * 10) / 10) });
+        const ap = approxRegions(a, mapRegions);
+        const names = ap.ids.map((id) => mapRegions.find((r) => r.id === id)?.name ?? S.nameOf(id));
+        const approxT = names.length ? t(/^SIDO_/.test(S.scope) ? "home.aoi.approx_kor" : "home.aoi.approx_adm1", { r: names.join("·") }) : "";
+        note(t("home.set_aoi.area") + kind, approxT + t("home.apply_geom.calendar_indicators_and_csv"));
+      } else note(t("home.set_aoi.area") + (S.nameOf(S.chosen) || cname), t("home.set_aoi.calendar_indicators_questions_and"));
     },
     drawnKind,
     agg: agg ? { names: aggNames, ids: agg.regionIds, fallback: agg.fallback, sgg: /^SIDO_/.test(S.scope) } : null,
@@ -210,7 +237,32 @@ function HomeScreen() {
     aoiLabel,
     dataAoiName,
     range,
-    setRange,
+    /* 목업 setRange: 2001-01-01 ~ 오늘로 자르고 앞뒤를 바로잡는다 · 확인 줄(quiet 면 부른 쪽이 따로) · 지표 깜박임 */
+    setRange: (r0, o) => {
+      const hi = today ?? r0.end;
+      const clip = (d: string) => (d < "2001-01-01" ? "2001-01-01" : d > hi ? hi : d);
+      let a = clip(r0.start);
+      let b = clip(r0.end);
+      if (a > b) [a, b] = [b, a];
+      setRange({ start: a, end: b });
+      if (!(daySel && daySel === a && a === b)) setDaySel(null);
+      pulseKPI();
+      if (!o?.quiet) note(t("home.set_range.period") + a + (a === b ? t("home.set_range.1_day") : ` – ${b}`), "", undefined, { pre: t("home.set_range.map_raw_points"), post: t("home.set_range.raw_detection_csv_updated") });
+    },
+    note,
+    status,
+    pulse,
+    yoy,
+    setYoy: (v) => {
+      setYoySt(v);
+      pulseKPI();
+      if (v && range) {
+        const p = prevRange(range);
+        note(t("home.set_yo_y.year_over_year_on"), `${rangeTxt(range)} vs ${rangeTxt(p)}` + t("home.set_yo_y.indicators_daily_chart_and"));
+      } else note(t("home.set_yo_y.year_over_year_off"), t("home.set_yo_y.indicators") + "=" + t("home.set_yo_y.vs_same_month_in"), "info");
+    },
+    hot,
+    setHot,
     sensor,
     setSensor,
     vals,
@@ -254,6 +306,8 @@ function HomeScreen() {
   );
 }
 
+export type Note = { text: string; sub: string; kind: "info" | null; hot: { pre: string; post?: string } | null; k: number; off: boolean };
+
 export type Ctx = {
   t: ReturnType<typeof useT>;
   tl: ReturnType<typeof useTl>;
@@ -291,7 +345,16 @@ export type Ctx = {
   aoiLabel: string;
   dataAoiName: string;
   range: Range | null;
-  setRange: (r: Range) => void;
+  setRange: (r: Range, o?: { quiet?: boolean }) => void;
+  /** 변경 확인 줄(목업 note) — hot 이면 지도 원시 점 수를 뒤에 붙인다 */
+  note: (text: string, sub?: string, kind?: "info", hot?: { pre: string; post?: string }) => void;
+  status: Note | null;
+  /** 지표 머리 깜박임 횟수(바뀔 때마다 한 번) */
+  pulse: number;
+  yoy: boolean;
+  setYoy: (v: boolean) => void;
+  hot: { v: number; m: number } | null;
+  setHot: (h: { v: number; m: number } | null) => void;
   sensor: Sensor;
   setSensor: (s: Sensor) => void;
   vals: boolean;
