@@ -57,7 +57,9 @@ test("나라 고르기: 검색 → 고르면 주소 ?c= 가 바뀌고 그 나라
 
 test("MSW: 계약 경로가 release 스냅숏 값을 그대로 응답한다(결측 달 = null, 0 아님)", async ({ page }) => {
   await page.goto("/ko/calendar/");
-  await page.waitForFunction(() => navigator.serviceWorker?.controller != null, null, { timeout: 15000 }).catch(() => {});
+  // controller 만 보면 MSW 처리기가 붙기 전에 fetch 가 정적 서버로 새어 HTML 이 온다(첫 실행에서 1/1 재현).
+  // 앱이 MSW 시작을 끝냈다고 단 표시(data-boot.tsx)를 기다린다 — 시간 초과를 삼키지 않는다.
+  await expect(page.locator("html")).toHaveAttribute("data-data", "ready", { timeout: 15000 });
   const r = await page.evaluate(async () => {
     const res = await fetch("/api/v1/aois/KR/calendar?start_year=2001&end_year=2001");
     const j = await res.json();

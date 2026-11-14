@@ -1,10 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * Playwright — aibox 전용(개인 PC 에서 브라우저·서버를 띄우지 않는다).
- * 실행: pnpm build && systemd-run --user --scope -p MemoryMax=8G pnpm e2e
+ * Playwright e2e — 정적 내보내기 결과를 띄워 연다.
+ * 실행: pnpm build && pnpm e2e   (처음 한 번: pnpm exec playwright install chromium)
  * 서버: 정적 내보내기 결과(out/)를 scripts/serve-out.mjs 로 127.0.0.1:PW_PORT(기본 8797)에. 끝나면 Playwright 가 끈다.
- * 브라우저: PW_CHROMIUM 이 있으면 그 실행 파일(aibox ~/.cache/ms-playwright 의 이미 받은 판), 없으면 Playwright 기본.
+ * 브라우저: PW_CHROMIUM 이 있으면 그 실행 파일(이미 받아 둔 다른 판을 쓸 때), 없으면 Playwright 기본.
  */
 const port = Number(process.env.PW_PORT ?? 8797);
 const executablePath = process.env.PW_CHROMIUM || undefined;

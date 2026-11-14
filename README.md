@@ -9,10 +9,11 @@
 
 ## 실행
 
-Node ≥ 22.18, pnpm 10.34.9(`packageManager` 고정).
+Node ≥ 22.18, pnpm 10.34.9(`packageManager` 고정 — pnpm 이 없으면 `corepack enable` 이 이 판을 받아 준다).
 
 ```bash
-pnpm install
+corepack enable                     # 처음 한 번(pnpm 이 이미 있으면 생략)
+pnpm install --frozen-lockfile      # lock 그대로. 「Ignored build scripts: @parcel/watcher, @swc/core」 안내는 무시해도 된다(미리 빌드된 바이너리를 씀)
 cp .env.example .env.local          # 필요하면 값 바꾸기(아래 「목 ↔ 실제 교체」)
 pnpm dev                            # http://localhost:8797/ko/calendar/
 pnpm build                          # 정적 내보내기 → out/ (nginx 가 그대로 서빙)
@@ -23,7 +24,8 @@ node scripts/serve-out.mjs          # out/ 을 127.0.0.1:8797 에서 확인
 
 ```bash
 pnpm check            # typecheck · eslint · steiger · check:isolation · vitest
-pnpm e2e              # Playwright(빌드 뒤, out/ 을 띄워 연다) — 팀 aibox 에서는 PW_CHROMIUM=<받아 둔 chromium> 지정
+pnpm exec playwright install chromium   # 처음 한 번 — e2e 용 브라우저 받기
+pnpm build && pnpm e2e                  # Playwright(out/ 을 띄워 연다). 이미 받아 둔 다른 판 chromium 을 쓰려면 PW_CHROMIUM=<실행 파일>
 node scripts/check-isolation.mjs --self-test   # 격리 검사기가 실제로 위반을 잡는지(가짜 위반 3개)
 ```
 
