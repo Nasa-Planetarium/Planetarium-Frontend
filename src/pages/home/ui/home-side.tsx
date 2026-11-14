@@ -5,9 +5,13 @@ import { useRouter } from "next/navigation";
 import type { Alert, Fire } from "@/shared/agency";
 import { pageHref, type Locale } from "@/shared/config";
 import { useDevice } from "@/shared/lib/use-device";
+import { useQuery } from "@tanstack/react-query";
+import type { Bbox } from "@/features/pick-aoi";
+import { ApiError } from "@/shared/api";
+import { hotspotsQuery } from "../api/queries";
 import { dayCount, last12, prevRange, rangeTxt, YDAY } from "../model/home";
 import { cx } from "./cx";
-import { YoyKpis } from "./home-yoy";
+import { RETRY_429, YoyKpis } from "./home-yoy";
 import { useClock, type Ctx } from "./home-page";
 import { Spark } from "./charts";
 import { useSize } from "./use-ui";
@@ -131,7 +135,9 @@ export function Feed(c: Ctx & { part?: "all" | "head" | "body" }) {
   const list = c.alerts.filter((a) => !c.cntSel || HAS[c.cntSel]!(a));
   const open = list.filter((a) => a.status !== "resolved").length;
   const canOpen = c.role === "responder" || c.role === "firefighter";
-  const inRange = (f: Fire) => !!c.range && f.detected_at.slice(0, 10) >= c.range.start && f.detected_at.slice(0, 10) <= c.range.end;
+  /* 기간 안 사건(목업 inRange): 진화 시각(없으면 감지)이 시작 뒤 · 감지가 끝 앞 */
+  const inRange = (f: Fire) => !!c.range && String((f.contained_at as string | undefined) ?? f.detected_at).slice(0, 10) >= c.range.start && f.detected_at.slice(0, 10) <= c.range.end;
+  const det = useDetections(c);
   const regIds = c.region ? [c.region] : null;
   const nIn = c.fires.filter((f) => inRange(f) && (!regIds || regIds.includes(f.region))).length;
   const go = (a: Alert) => {
@@ -161,6 +167,9 @@ export function Feed(c: Ctx & { part?: "all" | "head" | "body" }) {
               <b className={cx("num")}>{c.t("home.feed.n_v", { n: list.length })}</b>
               {list.length - open ? <span className={cx("dim")}>{c.t("home.feed.closed", { n: list.length - open })}</span> : null}
             </>
+          ) : det.list ? (
+            /* 상한 40 을 총수처럼 보이지 않게 「40 / 322 묶음」(목업 g2 N6) */
+            <b className={cx("num")}>{(det.list.length > 40 ? `${c.fmt.num(40)} / ` : "") + c.t("shell.det.feed_n", { n: det.list.length })}</b>
           ) : null}
         </span>
       </div>
@@ -237,6 +246,8 @@ export function Feed(c: Ctx & { part?: "all" | "head" | "body" }) {
               </div>
             );
           })
+        ) : !c.kor ? (
+          <DetRows c={c} det={det} />
         ) : (
           <div className={cx("hm-empty")}>
             <b>{c.t(c.cntSel ? "home.empty_feed.no_matching_alerts" : "home.empty_feed.no_new_detections")}</b>
@@ -244,6 +255,112 @@ export function Feed(c: Ctx & { part?: "all" | "head" | "body" }) {
         )}
       </div>
       ) : null}
+    </>
+  );
+}
+
+type Det = { id: string; region: string; lat: number; lon: number; n: number; viirs: number; modis: number; high: number; frp_max: number; last_ms: number; level: number };
+
+/**
+ * 한국 밖 감지 묶음(목업 EM.detections · g1fix 비평 #2): 경보 원장이 없는 나라는 지난 24시간 실제 /hotspots 점을 1급 지역 안 0.3° 칸으로 묶는다.
+ * 시각 기준 = 화면 시계(원장 now) · 범위 = 나라 본토 상자(100 제곱도 넘으면 지금 지도 범위). 단계: 15점↑ 또는 FRP 100↑ = 3 · 5점↑ 또는 40↑ = 2 · 그 밖 1.
+ */
+function useDetections(c: Ctx): { list: Det[] | null; err: string | null; zoom: boolean } {
+  const info = c.info as { bbox_main?: Bbox; bbox?: Bbox } | undefined;
+  const cb = info?.bbox_main ?? info?.bbox ?? null;
+  const area = (b: Bbox) => Math.abs((b[2] - b[0]) * (b[3] - b[1]));
+  const box = cb && area(cb) <= 100 ? (cb.map((v) => Math.round(v * 20) / 20) as unknown as Bbox) : c.detBox;
+  const now = c.nowMs;
+  const d0 = now != null ? new Date(now - 86400e3).toISOString().slice(0, 10) : "";
+  const d1 = now != null ? new Date(now).toISOString().slice(0, 10) : "";
+  const q = useQuery({ ...hotspotsQuery(box ?? [0, 0, 0, 0], d0, d1, c.mv), ...RETRY_429, enabled: !c.kor && !!box && now != null && !!c.mv });
+  const list = useMemo(() => {
+    const hs = (q.data as unknown as { hotspots?: { latitude: number; longitude: number; acq_datetime_utc: string; instrument: string; frp: number | null; confidence: string; adm1_code?: string | null; adm1?: string | null }[] } | undefined)?.hotspots;
+    if (!hs || now == null) return null;
+    const cells = new Map<string, { region: string; n: number; viirs: number; modis: number; high: number; frp_max: number; la: number; lo: number; last: number }>();
+    for (const h of hs) {
+      const ms = Date.parse(h.acq_datetime_utc);
+      if (!(ms > now - 86400e3 && ms <= now)) continue;
+      const region = h.adm1_code ?? h.adm1 ?? "";
+      const k = `${region}|${Math.floor(h.latitude / 0.3)}|${Math.floor(h.longitude / 0.3)}`;
+      const x = cells.get(k) ?? { region, n: 0, viirs: 0, modis: 0, high: 0, frp_max: 0, la: 0, lo: 0, last: 0 };
+      x.n++;
+      if (h.instrument === "MODIS") x.modis++;
+      else x.viirs++;
+      if (h.confidence === "h") x.high++;
+      x.frp_max = Math.max(x.frp_max, h.frp ?? 0);
+      x.la += h.latitude;
+      x.lo += h.longitude;
+      x.last = Math.max(x.last, ms);
+      cells.set(k, x);
+    }
+    return [...cells.entries()]
+      .map(([k, x]) => ({ id: `D-${k.replace(/\|/g, "-")}`, region: x.region, lat: x.la / x.n, lon: x.lo / x.n, n: x.n, viirs: x.viirs, modis: x.modis, high: x.high, frp_max: Math.round(x.frp_max * 10) / 10, last_ms: x.last, level: x.n >= 15 || x.frp_max >= 100 ? 3 : x.n >= 5 || x.frp_max >= 40 ? 2 : 1 }))
+      .sort((a, b) => b.level - a.level || b.n - a.n || b.last_ms - a.last_ms);
+  }, [q.data, now]);
+  const e = q.error instanceof ApiError ? q.error : null;
+  return { list, err: e ? c.t(e.code === "data_not_loaded" ? "shell.err.data_not_loaded" : "shell.err.request") : null, zoom: !box };
+}
+
+function DetRows({ c, det }: { c: Ctx; det: ReturnType<typeof useDetections> }) {
+  if (det.err || det.zoom || !det.list) return <div className={cx("hm-empty")}>{det.err ? <b>{det.err}</b> : det.zoom ? <b>{c.t("maplab.zoom_for_points")}</b> : <b>–</b>}</div>;
+  if (!det.list.length)
+    return (
+      <div className={cx("hm-empty")}>
+        <b>{c.t("shell.det.none")}</b>
+      </div>
+    );
+  const name = (id: string) => c.mapRegions.find((r) => r.id === id)?.name ?? (c.scope.nameOf(`ADM1_${id}`) || id);
+  const hm = (ms: number) => new Intl.DateTimeFormat("en-GB", { timeZone: c.tz, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(ms));
+  const ll = (lat: number, lon: number) => `${Math.abs(lat).toFixed(1)}°${lat < 0 ? "S" : "N"} ${Math.abs(lon).toFixed(1)}°${lon < 0 ? "W" : "E"}`;
+  return (
+    <>
+      {det.list.slice(0, 40).map((d) => {
+        const rn = name(d.region);
+        const go = () => c.fly(d.lat, d.lon, 9);
+        return (
+          <div
+            key={d.id}
+            className={cx("hm-al", `hm-l${d.level}`)}
+            role="listitem"
+            tabIndex={0}
+            data-det={d.id}
+            aria-label={`${c.t("shell.det.row")}, ${rn}`}
+            onClick={go}
+            onKeyDown={(e) => {
+              if ((e.key === "Enter" || e.key === " ") && e.target === e.currentTarget) {
+                e.preventDefault();
+                go();
+              }
+            }}
+          >
+            <div className={cx("hm-al-top")}>
+              <i className={cx("hm-al-dot")} aria-hidden="true" />
+              <span className={cx("hm-al-title row-t")}>{c.t("shell.det.row")}</span>
+              <span className={cx("hm-al-t num")}>{hm(d.last_ms)}</span>
+            </div>
+            <div className={cx("hm-al-place")}>
+              {rn} <span className={cx("dim num")}>{ll(d.lat, d.lon)}</span>
+            </div>
+            <div className={cx("hm-al-meta")}>
+              <span>
+                {c.t("home.alert_row.detections")}
+                <b className={cx("num")}>{c.fmt.num(d.n)}</b>
+              </span>
+              <span>
+                {c.t("home.alert_row.max_frp")}
+                <b className={cx("num")}>{c.fmt.num(d.frp_max, 1)} MW</b>
+              </span>
+            </div>
+            <div className={cx("hm-al-st")}>
+              <span className={cx("hm-al-lv")}>{c.t(`shell.level.${d.level}`)}</span>
+              <span className={cx("dim num")}>
+                VIIRS {c.fmt.num(d.viirs)} · MODIS {c.fmt.num(d.modis)}
+              </span>
+            </div>
+          </div>
+        );
+      })}
     </>
   );
 }

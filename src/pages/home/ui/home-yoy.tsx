@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import type { Bbox } from "@/features/pick-aoi";
 import type { Fire } from "@/shared/agency";
+import { ApiError } from "@/shared/api";
 import { hotspotsQuery, summaryDayQuery } from "../api/queries";
 import { dayCount, FIRST_DAY, niceMax, yoyMetric } from "../model/home";
 import { cx } from "./cx";
@@ -12,6 +13,8 @@ type Sum = { series?: { date: string; value: number | null }[]; total?: { value?
 type Metric = ReturnType<typeof yoyMetric>;
 const MINUS = "−";
 const r20 = (b: Bbox) => b.map((v) => Math.round(v * 20) / 20) as unknown as Bbox;
+/** 실서버 무거운 경로 한도(429 rate_limited · 10초 뒤 다시) — 두 번까지 기다려 다시 받는다 */
+export const RETRY_429 = { retry: (n: number, e: unknown) => e instanceof ApiError && e.status === 429 && n < 2, retryDelay: 10500 } as const;
 
 /** 한 기간의 일별 합(API 그대로) → 지표 몫: 합계 = total.value(결측 날이 있으면 없음) · 평균 = 합계 / 값 있는 날 · 가장 많은 날 · 관측 있는 날 */
 function side(d: Sum | undefined) {
@@ -31,15 +34,18 @@ function side(d: Sum | undefined) {
  */
 export function YoyKpis(c: Ctx & { curr: { start: string; end: string }; prev: { start: string; end: string }; width: number }) {
   const prevOk = c.prev.start >= FIRST_DAY;
-  const cq = useQuery(summaryDayQuery(c.aoi, c.curr.start, c.curr.end, c.mv));
-  const pq = useQuery(summaryDayQuery(c.aoi, c.prev.start, c.prev.end, prevOk ? c.mv : null));
+  const cq = useQuery({ ...summaryDayQuery(c.aoi, c.curr.start, c.curr.end, c.mv), ...RETRY_429 });
+  const pq = useQuery({ ...summaryDayQuery(c.aoi, c.prev.start, c.prev.end, prevOk ? c.mv : null), ...RETRY_429 });
   const info = c.info as { bbox_main?: Bbox; bbox?: Bbox } | undefined;
   const box = c.aoiBbox ?? info?.bbox_main ?? info?.bbox ?? null;
   const days = dayCount(c.curr.start, c.curr.end);
   const rawOk = !!box && Math.abs((box[2] - box[0]) * (box[3] - box[1])) <= 100 && days <= 31;
   const hb: Bbox = box ? r20(box) : [0, 0, 0, 0];
-  const hc = useQuery({ ...hotspotsQuery(hb, c.curr.start, c.curr.end, c.mv), enabled: rawOk && !!c.mv });
-  const hp = useQuery({ ...hotspotsQuery(hb, c.prev.start, c.prev.end, c.mv), enabled: rawOk && prevOk && !!c.mv });
+  const hc = useQuery({ ...hotspotsQuery(hb, c.curr.start, c.curr.end, c.mv), ...RETRY_429, enabled: rawOk && !!c.mv });
+  const hp = useQuery({ ...hotspotsQuery(hb, c.prev.start, c.prev.end, c.mv), ...RETRY_429, enabled: rawOk && prevOk && !!c.mv });
+  /* 점을 못 받으면(503 자료 준비 중·429·그 밖) 결측이 아니라 그 까닭을 쓴다 · 범위가 31일·100 제곱도를 넘으면 「확대」 안내 */
+  const hErr = [hc.error, hp.error].find((e) => e instanceof ApiError) as ApiError | undefined;
+  const rawWhy = !rawOk ? c.t("maplab.zoom_for_points") : hErr ? c.t(hErr.code === "data_not_loaded" ? "shell.err.data_not_loaded" : "shell.err.request") : null;
   const C = side(cq.data as Sum | undefined);
   const P = prevOk ? side(pq.data as Sum | undefined) : null;
   const cnt = (d: unknown) => {
@@ -57,14 +63,14 @@ export function YoyKpis(c: Ctx & { curr: { start: string; end: string }; prev: {
   const fc = c.kor ? c.fires.filter((f) => inR(f, c.curr)).length : null;
   const fp = c.kor && prevOk ? c.fires.filter((f) => inR(f, c.prev)).length : null;
   const OUT_WHY = c.t("data.yoy.out_why", { d: FIRST_DAY });
-  const why = (m: Metric) => (!prevOk ? OUT_WHY : m.curr == null ? c.t("data.yoy.why.missing") : c.t("data.yoy.why.missing_prev"));
+  const why = (m: Metric, raw?: boolean) => (!prevOk ? OUT_WHY : raw && rawWhy ? rawWhy : m.curr == null ? c.t("data.yoy.why.missing") : c.t("data.yoy.why.missing_prev"));
   const n = (v: number | null | undefined, d = 0) => (v == null ? "–" : c.fmt.num(v, d));
   const dg = (v: number | null | undefined) => (v != null && Math.abs(v) < 100 && v % 1 ? 1 : 0);
   const yv = (v: number | null | undefined, d = 0) => (v == null ? <span className={cx("hm-miss-v")}>–</span> : c.fmt.num(v, d));
   const sgn = (v: number, d = 0) => (v > 0 ? "+" : v < 0 ? MINUS : "±") + c.fmt.num(Math.abs(v), d);
-  const delta = (m: Metric, d = 0) => {
+  const delta = (m: Metric, d = 0, raw?: boolean) => {
     if (m.na) {
-      const w = why(m);
+      const w = why(m, raw);
       return (
         <>
           <span className={cx("hm-yd hm-yd-na")} title={w}>
@@ -142,7 +148,7 @@ export function YoyKpis(c: Ctx & { curr: { start: string; end: string }; prev: {
             <b className={cx("num")}>{yv(m.curr)}</b>
             <span className={cx("hm-yrow")}>
               {yprev(m)}
-              {delta(m)}
+              {delta(m, 0, true)}
             </span>
           </div>
         ))}

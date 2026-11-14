@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Check, Info, Search, Truck, X } from "lucide-react";
 import { focusBoundaryQuery, geomMainBounds, linesQuery, MapCanvas, type Bbox, type LayerKey, type MapCanvasHandle, type MapHotspot } from "@/widgets/map-canvas";
@@ -63,8 +63,10 @@ export function HomeMap(c: Ctx) {
   const hotErr = hotQ.error instanceof ApiError ? hotQ.error : null;
 
   /* 원시 점 수를 화면(확인 줄)에 넘긴다 */
-  const { setHot } = c;
+  const { setHot, setDetBox } = c;
   useEffect(() => setHot(hb && hotQ.data ? { v: nV, m: nM } : null), [setHot, hb, hotQ.data, nV, nM]);
+  const hbKey = hb ? hb.join(",") : "";
+  useEffect(() => setDetBox(hbKey ? (hbKey.split(",").map(Number) as unknown as Bbox) : null), [setDetBox, hbKey]);
 
   /* 불·자원·경로(시나리오 목 — 한국만) */
   const live = useMemo(() => c.fires.filter((f) => !f.historical), [c.fires]);
@@ -188,6 +190,28 @@ export function HomeMap(c: Ctx) {
   const flashFire = flash ? c.fires.find((f) => f.id === flash.fire_id) : undefined;
   const hotTxt = c.hot ? `VIIRS ${c.fmt.num(c.hot.v)}, MODIS ${c.fmt.num(c.hot.m)}` : "–";
   const st = c.status;
+  /* 홈 시야 여백(목업 homePad): 왼쪽 위 검색 줄·경보 띠 아래, 왼쪽 아래 범례·배지 위까지 비우고 맞춘다 · 오른쪽은 도구 열 · 합이 높이 절반을 넘으면 비율대로 줄인다 */
+  const tlRef = useRef<HTMLDivElement>(null);
+  const blRef = useRef<HTMLDivElement>(null);
+  const flRef = useRef<HTMLDivElement>(null);
+  const viewPad = useCallback(() => {
+    const tl = tlRef.current;
+    const host = tl?.closest('[data-testid="home-map"]') as HTMLElement | null;
+    if (!tl || !host) return 24;
+    const mr = host.getBoundingClientRect();
+    let top = 12;
+    let bottom = 12;
+    top = Math.max(top, tl.getBoundingClientRect().bottom - mr.top + 10);
+    if (flRef.current) top = Math.max(top, flRef.current.getBoundingClientRect().bottom - mr.top + 10);
+    if (blRef.current) bottom = Math.max(bottom, mr.bottom - blRef.current.getBoundingClientRect().top + 6);
+    const vmax = mr.height * 0.5;
+    if (top + bottom > vmax) {
+      const r = vmax / (top + bottom);
+      top *= r;
+      bottom *= r;
+    }
+    return { top: Math.round(top), bottom: Math.round(bottom), left: 16, right: Math.min(58, Math.round(mr.width * 0.12)) };
+  }, []);
   /* 「고른 기간(26.11.01–11.03) 밖에 {진행 중 n곳}」 — 굵은 몫을 가운데 끼우려고 자리표로 나눈다 */
   const outParts = c.t("home.outv.text", { a: rs.slice(2).replace(/-/g, "."), b: re.slice(2).replace(/-/g, "."), n: "@@N@@" }).split("@@N@@");
 
@@ -221,6 +245,7 @@ export function HomeMap(c: Ctx) {
       annotFire={annot}
       onFire={(id) => c.setSelFire(id)}
       onUnit={onUnit}
+      viewPad={viewPad}
       onRegion={(id) => (S.byId.has(id) ? S.setAoi(id) : undefined)}
       onView={(b) => setVb(b)}
       aoi={c.drawn}
@@ -232,7 +257,7 @@ export function HomeMap(c: Ctx) {
       offView={!c.drawn && !isCountry && view ? { pts: [[(view[1] + view[3]) / 2, (view[0] + view[2]) / 2]], label: c.aoiLabel } : c.drawn ? { pts: [[(c.drawn.type === "bbox" ? (c.drawn.south + c.drawn.north) / 2 : c.drawn.type === "point" ? c.drawn.lat : c.drawn.pts[0]![0]), (c.drawn.type === "bbox" ? (c.drawn.west + c.drawn.east) / 2 : c.drawn.type === "point" ? c.drawn.lon : c.drawn.pts[0]![1])]], label: c.drawnKind } : null}
       status={vb && area > MAX_AREA ? c.t("maplab.zoom_for_points") : null}
     >
-      <div className={cx("hm-ov hm-ov-tl")} style={{ pointerEvents: "none" }}>
+      <div ref={tlRef} className={cx("hm-ov hm-ov-tl")} style={{ pointerEvents: "none" }}>
         <div className={cx("hm-search")} role="search">
           <Search className={cx("ic ic-btn")} aria-hidden="true" strokeWidth={1.9} />
           <input
@@ -273,7 +298,7 @@ export function HomeMap(c: Ctx) {
         </div>
       </div>
       {flash ? (
-        <div className={cx("hm-flash", `hm-l${flash.level}`)} role="alert" data-flash={flash.id} style={{ pointerEvents: "auto" }}>
+        <div ref={flRef} className={cx("hm-flash", `hm-l${flash.level}`)} role="alert" data-flash={flash.id} style={{ pointerEvents: "auto" }}>
           <span className={cx("lv", `l${flash.level}`)}>{c.t(`shell.level.${flash.level}`)}</span>
           <div className={cx("hm-flash-t")}>
             <b>{c.tl("alert", flash.id, "title", flash.title)}</b>
@@ -322,7 +347,7 @@ export function HomeMap(c: Ctx) {
           </>
         ) : null}
       </div>
-      <div className={cx("hm-ov hm-ov-bl")} style={{ pointerEvents: "none" }}>
+      <div ref={blRef} className={cx("hm-ov hm-ov-bl")} style={{ pointerEvents: "none" }}>
         {outside.length ? (
           /* 과거 기간을 볼 때 지금 진행 중인 불(기간 밖) 안내(목업 renderOutside · L10) */
           <div className={cx("hm-outv")} role="note" data-outv="">

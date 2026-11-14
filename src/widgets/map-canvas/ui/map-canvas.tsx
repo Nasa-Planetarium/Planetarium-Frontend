@@ -74,6 +74,8 @@ export interface MapCanvasProps {
   offView?: { pts: LatLon[]; label: string } | null;
   /** 점 자료 상태 한 줄(예 「점 자료 준비 중」) */
   status?: string | null;
+  /** 전체 보기 맞춤 여백(px) — 화면이 지도 위에 띄운 것(검색 줄·범례 등)을 피할 때. 맞출 때마다 부른다(없으면 24) */
+  viewPad?: () => number | { top: number; bottom: number; left: number; right: number };
   className?: string;
   testId?: string;
   children?: ReactNode;
@@ -353,7 +355,7 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
     const m = mapRef.current;
     const v = pRef.current.view;
     if (!m || !v) return;
-    m.fitBounds([[v[0], v[1]], [v[2], v[3]]], { padding: 24, animate: !reduced(), duration: 500 });
+    m.fitBounds([[v[0], v[1]], [v[2], v[3]]], { padding: pRef.current.viewPad?.() ?? 24, animate: !reduced(), duration: 500 });
   }, []);
   const viewKey = p.view ? p.view.join(",") : "";
   useEffect(() => {

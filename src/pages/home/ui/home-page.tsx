@@ -115,6 +115,8 @@ function HomeScreen() {
   const [yoy, setYoySt] = useState(false);
   /* 지도 원시 점 수(VIIRS·MODIS 따로) — 지도가 받은 /hotspots 결과 */
   const [hot, setHot] = useState<{ v: number; m: number } | null>(null);
+  /* 지금 지도 범위(100 제곱도 안일 때) — 한국 밖 감지 묶음이 큰 나라에서 쓴다 */
+  const [detBox, setDetBox] = useState<Bbox | null>(null);
 
   /* 실제 데이터 — 지금 판 + 관심 영역 AOI */
   const mvQ = useQuery(methodQuery());
@@ -263,6 +265,8 @@ function HomeScreen() {
     },
     hot,
     setHot,
+    detBox,
+    setDetBox,
     sensor,
     setSensor,
     vals,
@@ -355,6 +359,8 @@ export type Ctx = {
   setYoy: (v: boolean) => void;
   hot: { v: number; m: number } | null;
   setHot: (h: { v: number; m: number } | null) => void;
+  detBox: Bbox | null;
+  setDetBox: (b: Bbox | null) => void;
   sensor: Sensor;
   setSensor: (s: Sensor) => void;
   vals: boolean;

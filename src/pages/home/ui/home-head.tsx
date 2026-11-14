@@ -176,6 +176,12 @@ function ToolBar(c: Ctx & { head?: boolean }) {
         <span data-aoi="">
           <ScopeButton s={c.scope} label={c.t("home.short_label.choose_area")} />
         </span>
+        {/* 그린 영역이면 그 종류(목업 fillSelect 「custom」 = 사각형·다각형·반경 n km) — 지역 단추는 그 영역을 담은 지역 */}
+        {c.drawn ? (
+          <span className={cx("hm-aoi-tag")} data-aoi-drawn={c.drawn.type} title={c.aoiLabel}>
+            <b>{c.drawnKind}</b>
+          </span>
+        ) : null}
       </div>
       <div className={cx("hm-grp hm-grp-range")} ref={box}>
         <span className={cx("hm-gl")}>{c.t("home.short_label.period")}</span>

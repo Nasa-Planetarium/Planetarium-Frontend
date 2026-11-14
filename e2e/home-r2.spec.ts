@@ -73,3 +73,12 @@ test("상황판 r2: 검색 후보 — 불·지명·자원 · 기간 밖 진행 �
   const t = await root.locator('[data-testid="home-cal"] rect[data-y="2022"][data-m="3"]').getAttribute("aria-label");
   expect(t ?? "").toMatch(/평가 연도 제외|판단 정보 부족|자료 부족/);
 });
+
+test("상황판 r2: 한국 밖 감지 목록 = 실제 /hotspots 24시간 묶음(스냅숏은 자료 준비 중)", async ({ page }) => {
+  await page.goto("/ko/home/?c=TWN");
+  const root = page.locator('[data-testid="home"][data-ready="1"]');
+  await expect(root).toBeVisible({ timeout: 30000 });
+  await expect(root.locator("[data-alert]")).toHaveCount(0);
+  /* MSW 스냅숏 모드: /hotspots 503 → 행 대신 「자료 준비 중」(값을 지어내지 않는다) · 실서버는 묶음 행(data-det) */
+  await expect(root.locator("[data-feed]")).toContainText(/자료 준비 중|미확인 감지|감지 없음|확대하면/);
+});
