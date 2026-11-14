@@ -93,6 +93,19 @@ export interface CommandStats {
   alerts_new: number;
   units_busy: number;
   units_ready: number;
+  /** 지휘 통계 화면 묶음(질의를 넘겼을 때만) — 모양은 화면 모델(pages/cmd/model)이 읽어 좁힌다(필지 Parcel 과 같은 자유 필드 방식) */
+  [k: string]: unknown;
+}
+
+/** 지휘 통계(cmd) 질의 — 나라 · 그 나라 1급 지역(한국 밖) · 고른 지역 · 시간대 기준 */
+export interface CommandQuery {
+  iso3: string;
+  /** 한국 밖: 그 나라 1급 지역(경계 파일 regions 의 id·중심·면적). 한국은 비움(경북 북부 시군 원장) */
+  regions?: { id: string; lat: number; lon: number; area_km2: number }[];
+  /** 고른 지역(빈 배열 = 전체) — 시간대별 분포 범위 */
+  sel?: string[];
+  /** 시간대 기준: occur = 추정 발생 시각 · sat = 위성 관측 시각 */
+  hourly_source?: "occur" | "sat";
 }
 
 export interface DispatchResult {
@@ -113,6 +126,6 @@ export interface AgencyPort {
   recallUnit(unitId: string): Promise<Unit>;
   /** 피해 면적 필지(land) */
   listParcels(fireId: string): Promise<Parcel[]>;
-  /** 지휘 통계(cmd) 요약 */
-  getCommandStats(): Promise<CommandStats>;
+  /** 지휘 통계(cmd) 요약. 질의를 넘기면 화면 묶음(board)을 함께 싣는다 */
+  getCommandStats(q?: CommandQuery): Promise<CommandStats>;
 }

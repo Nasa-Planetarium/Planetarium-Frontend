@@ -10,6 +10,7 @@
 import type {
   AgencyPort,
   Alert,
+  CommandQuery,
   CommandStats,
   DispatchResult,
   Fire,
@@ -20,6 +21,7 @@ import type {
 import ledger from "./ledger.json";
 import { landParcels } from "./land-parcels";
 import { opsAlerts, opsFires, opsHome } from "./ops-scenario";
+import { cmdBoard } from "./cmd-board";
 
 const KST_OFFSET_MIN = 9 * 60;
 
@@ -86,8 +88,10 @@ export class MockAgencyAdapter implements AgencyPort {
     const f = this.fires.find((x) => x.id === fireId);
     return this.tick(f ? landParcels(f, this.alerts, ledger.regions) : []);
   }
-  getCommandStats(): Promise<CommandStats> {
+  /** 지휘 통계 — 질의가 있으면 화면 묶음(목업 cmd.js·core.js 생성기, ./cmd-board.ts)을 board 로 싣는다 */
+  getCommandStats(q?: CommandQuery): Promise<CommandStats> {
     return this.tick({
+      ...(q ? { board: cmdBoard(q, ledger, this.fires, this.units, this.alerts) } : {}),
       fires_live: this.fires.filter((f) => !f.historical && !CLOSED.has(f.status)).length,
       alerts_new: this.alerts.filter((a) => a.status === "new").length,
       units_busy: this.units.filter((u) => u.status === "enroute" || u.status === "onscene").length,
