@@ -316,11 +316,11 @@ export function LandMap(p: LandMapProps) {
       </div>
       <div className={cx("map-ui")}>
         <div className={cx("mtools")} role="toolbar" aria-label={t("shell.map.tools")}>
-          <button type="button" aria-expanded={pop} aria-haspopup="true" onClick={() => setPop((v) => !v)}>
+          <button type="button" data-mt="layers" aria-expanded={pop} aria-haspopup="true" onClick={() => setPop((v) => !v)}>
             <Layers aria-hidden="true" />
             <span>{t("shell.map.layers")}</span>
           </button>
-          <button type="button" onClick={png}>
+          <button type="button" data-mt="png" onClick={png}>
             <ImageIcon aria-hidden="true" />
             <span>PNG</span>
           </button>

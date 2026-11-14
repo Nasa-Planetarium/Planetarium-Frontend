@@ -438,3 +438,51 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 @media print{.an-trend,.an-stepp{display:none}}
 .an-stepp .seg,.an-trend .panel-h .seg{flex-wrap:nowrap}
 
+
+/* ── 경계 미리보기 · 위성 연대 띠(목업 analysis.css .an-prev · index.html .eras, r5 덮개 반영) ── */
+.an-prev > summary{list-style:none;cursor:pointer;min-height:var(--hit)}
+.an-prev > summary::-webkit-details-marker{display:none}
+.an-prev > summary:focus-visible{outline-offset:calc(-1 * var(--ring-w));border-radius:var(--r-l)}
+.an-prevx{flex:none;color:var(--text-2);transition:transform var(--dur-fast) var(--ease-out)}
+.an-prev[open] .an-prevx{transform:rotate(180deg)}
+.an-prev:not([open]) > summary{padding-bottom:var(--sp-3)}
+.an-map{padding:0 var(--sp-4) var(--sp-4)}
+.an-map svg{display:block;width:100%;height:auto;max-height:420px}
+.an-rg{fill:color-mix(in srgb,var(--text-3) 6%,transparent);stroke:var(--map-boundary);stroke-width:var(--map-boundary-w);transition:fill var(--dur-fast) var(--ease-out)}
+.an-rg:hover{fill:var(--surface-2)}
+.an-rg.on{fill:var(--surface-3)}
+.an-rl{font:var(--fw-medium) var(--fs-2) var(--font-body);letter-spacing:.04em;fill:var(--text-2);pointer-events:none;paint-order:stroke;stroke:var(--map-halo);stroke-width:3px}
+.an-rl.on{fill:var(--text-1)}
+.an-eras{margin-top:var(--sp-1)}
+.eras{position:relative;height:calc(8px + var(--sp-1) + var(--fs-1));min-width:0}
+.eras .er-ln{position:absolute;left:0;right:0;top:7px;height:var(--hair);background:var(--cosmo-tick)}
+.eras .er-t{position:absolute;top:0;width:var(--hair);height:8px;background:var(--cosmo-orbit)}
+.eras .er-t.v{width:var(--sp-half)}
+.eras .er-l{position:absolute;top:calc(8px + var(--sp-half));font-family:var(--font-data);font-size:var(--fs-1);line-height:1;color:var(--cosmo-label);white-space:nowrap}
+@media print{.eras,.an-prev{display:none}}
+
+/* ── 인쇄 전용 6절 문서(목업 analysis.css .an-print) — 화면에서는 숨기고, 인쇄 때 셸·화면 대신 이것만 ── */
+.an-print{display:none}
+@media print{
+  :global(html:has([data-printdoc])),:global(body:has([data-printdoc])),:global(body:has([data-printdoc]) :has([data-printdoc])){background:var(--paper-0)!important;color:var(--paper-ink)}
+  :global(body:has([data-printdoc]) [data-slot="shellhead"]),:global(body:has([data-printdoc]) [data-sonner-toaster]){display:none!important}
+  :global(body:has([data-printdoc])) .an-head,:global(body:has([data-printdoc])) .an-screen{display:none!important}
+  :global(body:has([data-printdoc])) .an{padding:0;max-width:none}
+  :global(body:has([data-printdoc])) .an-s3{display:block}
+  .an-print{display:block!important;color:var(--paper-ink);font:10pt/1.55 var(--font-body)}
+  .an-print header{border-bottom:2px solid var(--paper-ink);padding-bottom:8px;margin-bottom:10px}
+  .an-print .pt-brand{font:600 8.5pt var(--font-data);letter-spacing:.08em;color:var(--paper-muted)}
+  .an-print h1{font-size:16pt;margin:3px 0 2px;color:var(--paper-ink)}
+  .an-print section{break-inside:avoid-page;margin:10px 0 0;padding-top:8px;border-top:1px solid var(--paper-out)}
+  .an-print h2{font-size:11.5pt;margin:0 0 5px;color:var(--paper-ink)}
+  .an-print ul{margin:0;padding-left:16px;list-style:disc}
+  .an-print li{margin:1px 0}
+  .an-print .pt-chart{margin:8px 0;break-inside:avoid}
+  .an-print .pt-chart svg{width:100%;height:auto;max-height:62mm}
+  .an-print .pt-chart text{fill:var(--paper-muted);fill-opacity:1}
+  .an-print table{border-collapse:collapse;width:100%;margin:6px 0;font-size:9pt}
+  .an-print th,.an-print td{border:1px solid var(--paper-out);padding:3px 6px;text-align:left;height:auto;color:var(--paper-ink)}
+  .an-print th{background:var(--paper-hatch-bg)}
+  .an-print footer{margin-top:12px;padding-top:6px;border-top:1px solid var(--paper-ink);font-size:8pt;color:var(--paper-muted)}
+  .an-print :is(.num,small,.an-vsc){color:inherit}
+}

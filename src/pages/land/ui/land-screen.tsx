@@ -5,6 +5,7 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { useLocale } from "next-intl";
 import { ArrowDown, Check, ChevronLeft, Download, Layers, Send, Table } from "lucide-react";
 import { useSituation } from "@/entities/situation";
+import { lastPass } from "@/entities/satellite-pass";
 import { useAgency } from "@/shared/agency";
 import { useT, useTl, type TFn } from "@/shared/i18n";
 import { useDevice } from "@/shared/lib/use-device";
@@ -388,7 +389,10 @@ function Detail(p: {
         <dl className={cx("ld-d-meta")}>
           <div>
             <dt>{t("land.stage_at.detected")}</dt>
-            <dd className={cx("num")}>{when(f.detected_at, p.today)}</dd>
+            <dd className={cx("num")}>
+              {when(f.detected_at, p.today)}
+              <DetectPass f={f} />
+            </dd>
           </div>
           <div>
             <dt>{t("land.stage_at.contained")}</dt>
@@ -643,5 +647,24 @@ function Parcels(p: {
         </table>
       </div>
     </>
+  );
+}
+
+/** 감지 시각 옆 직전 위성 통과(목업 land.js passOf · EM.ui.passTick): 감지 앞 60분 안의 통과만. 기준점 = 그 불 위치. 궤도 창 밖이면 없음 */
+const PASS_MAX_MIN = 60;
+function DetectPass({ f }: { f: LandFire }) {
+  const t = useT();
+  const ms = Date.parse(`${f.detected_at.slice(0, 10)}T${f.detected_at.slice(11, 16) || "00:00"}:00+09:00`);
+  const p = useMemo(() => (Number.isFinite(ms) ? lastPass(ms, [f.lat, f.lon]) : null), [ms, f.lat, f.lon]);
+  if (!p || ms - p.ms < 0 || ms - p.ms > PASS_MAX_MIN * 60000) return null;
+  const hm = new Date(p.ms + 9 * 3600e3).toISOString().slice(11, 16);
+  return (
+    <span className={cx("ld-pass")}>
+      {" "}
+      <span className={cx("ptick")} title={t("shell.pass.title", { sat: `${p.sat} ${p.sensor}`, t: hm })} data-pass="">
+        <i className={cx(p.sensor === "MODIS" ? "m" : "v")} aria-hidden="true" />
+        <span className={cx("mono")}>{p.sat}</span> <span className={cx("mono")}>{hm}</span> {t("shell.pass.word")}
+      </span>
+    </span>
   );
 }

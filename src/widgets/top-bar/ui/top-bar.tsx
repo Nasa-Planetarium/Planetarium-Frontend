@@ -1,12 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { usePath, useQueryParams } from "@/shared/lib/nav";
 import { useLocale } from "next-intl";
 import { useCountry, countryName, clockTz } from "@/entities/country";
 import { useSession } from "@/entities/session";
 import { useNowMs, useSituation } from "@/entities/situation";
+import { methodQuery } from "@/entities/release";
+import { calendarQuery } from "@/entities/month-value";
+import { nextPass } from "@/entities/satellite-pass";
 import { AccountDialog } from "@/features/account-menu";
 import { AlertBell } from "@/features/alert-drawer";
 import { LoginDialog } from "@/features/auth-login";
@@ -31,8 +35,10 @@ import { useFitLevel } from "../model/use-fit-level";
  * 폰은 두 줄(목업 g5 · CALENDAR-PIVOT §3.3): 줄 1 = 나라 · 상황 · 나, 줄 2(--strip-h) = 탭. ① 묶음은 폰에서 display:contents 로 풀린다.
  * 상황 구역은 폰에서 기준 폭 0 — 줄 1 이 넘쳐도 줄바꿈 대신 넘침 단계가 칸을 뺀다.
  *
- * 아직 옮기지 않은 칸(다음 단계): 다음 위성 통과(목업 EM.passes 궤도 계산 → entities/satellite-pass),
- * 다른 나라 「이번 달 배수」 값(목업 생성기 EM.anomalyNow → 실제 API 값으로) — 지금은 「–」.
+ * 다음 위성 통과 = entities/satellite-pass(목업 EM.passes 궤도 계산, 기준점 = 나라 표시 중심 — 전 지역).
+ * 자료 판·자료 상태(목업 g5 relChipsHTML) = 실제 API(/methods/current · 지금 나라 AOI 의 올해 /calendar 마지막 달). 누르면 방법·검증.
+ * 다른 나라 「최근 달」 배수 = 같은 /calendar 의 최근 완결 달(정상·NRT) ratio_to_median·verdict(목업 anomChipHTML).
+ * 기상 칸은 시나리오 값(목)이라 로그인 뒤에만 보인다 — 공개 실제 데이터 화면에 경북 시나리오 기상을 섞지 않는다.
  */
 
 /** 단계 색(목업 lvColor: 4 단계만 -ink) — Tailwind 가 볼 수 있게 글자 그대로 둔다 */
@@ -46,6 +52,17 @@ const LV_C = {
 /** 상황 칸 공통(.sc): 이름표 fs-2 text-2 + 값 mono fs-stat. 칸 사이 머리카락 선, 첫 칸은 선 없음 */
 const SC = "inline-flex h-(--sp-6) flex-none items-center gap-2 whitespace-nowrap border-l border-line-soft px-3 text-fs2 text-t2 first:border-l-0 phone:px-2";
 const SC_V_DIM = "mono text-stat font-regular leading-none text-t2";
+/** 자료 칩(목업 .sc-rel): 누르는 칸 — 배경 투명, hover s3, 터치 덮개 */
+const SC_REL = "relative cursor-pointer bg-transparent no-underline transition-[background-color] duration-(--dur-fast) ease-em hover:bg-s3 hit-after";
+/** 자료 상태 낱말 색(목업 .sc-st[data-st]) — Tailwind 가 볼 수 있게 글자 그대로 */
+const ST_C: Record<string, string> = {
+  partial: "text-(--st-partial)",
+  nrt: "text-(--st-nrt)",
+  missing: "text-(--st-missing-ink)",
+};
+const VD_LV: Record<string, 1 | 2 | 3 | 4> = { above: 3, similar: 2, below: 1, uncertain: 2 };
+/** 나라 색인이 오기 전 한국 기준점(표시 중심 근처) */
+const KOR_C: [number, number] = [36.5, 127.9];
 
 function pageOf(pathname: string): PageId | null {
   const seg = pathname.split("/").filter(Boolean)[1];
@@ -70,6 +87,29 @@ export function TopBar() {
   const tz = clockTz(info, { utc: clockUTC === "1", regionChosen: !!sp.get("r"), nowMs: nowMs ?? 0 });
   const KOR = iso3 === "KOR";
   const { go } = useSwitchLocale();
+
+  // 자료 판·자료 상태·최근 달 배수 — release 값만(시나리오 값과 섞지 않는다)
+  const { data: meth } = useQuery(methodQuery());
+  const mv = meth?.method_version ?? null;
+  const dv = meth?.data_version ? (meth.data_version.split("#")[0] ?? null) : null;
+  const verShort = dv && dv.indexOf("-") > 0 ? (dv.split("-")[0] ?? "–") : "–";
+  const relAoi = KOR ? "KR" : `ADM0_${iso3}`;
+  const yr = nowMs != null ? new Date(nowMs).getUTCFullYear() : null;
+  const { data: cal } = useQuery({ ...calendarQuery(relAoi, { start_year: yr ?? 0, end_year: yr ?? 0 }, mv), enabled: !!mv && yr != null });
+  const months = cal && typeof cal === "object" ? cal.months : [];
+  const lastM = months.filter((m) => m.status && m.status !== "out_of_range").pop();
+  const relYm = lastM ? `${lastM.year}-${String(lastM.month).padStart(2, "0")}` : null;
+  const relSt = lastM?.status ?? null;
+  const doneM = months.filter((m) => (m.status === "ok" || m.status === "nrt") && m.value != null && m.ratio_to_median != null).pop();
+  const anomLv = doneM?.verdict ? (VD_LV[doneM.verdict] ?? 2) : 2;
+  const anomYm = doneM ? `${doneM.year}-${String(doneM.month).padStart(2, "0")}` : "–";
+
+  // 다음 위성 통과 — 분이 바뀔 때만 다시 센다
+  const nowMin = nowMs != null ? Math.floor(nowMs / 60000) : null;
+  const atLat = info ? info.c[1] : KOR_C[0];
+  const atLon = info ? info.c[0] : KOR_C[1];
+  const nx = useMemo(() => (nowMin == null ? null : nextPass(nowMin * 60000, [atLat, atLon])), [nowMin, atLat, atLon]);
+  const nxLeft = nx && nowMs != null ? Math.max(0, Math.round((nx.ms - nowMs) / 60000)) : 0;
 
   const [pickOpen, setPickOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
@@ -202,16 +242,31 @@ export function TopBar() {
               </span>
             </span>
           ) : !KOR ? (
-            <span data-sc="risk" title={t("shell.anom.title")} className={cn(SC, LV_C[1], "rounded-xs bg-[color-mix(in_srgb,var(--c,var(--text-3))_16%,transparent)]")}>
+            <span data-sc="risk" title={t("shell.anom.title", { ym: anomYm })} className={cn(SC, LV_C[anomLv], "rounded-xs bg-[color-mix(in_srgb,var(--c,var(--text-3))_16%,transparent)]")}>
               <span className="text-fs2 text-t2 tf5:hidden">
                 <span className="phone:hidden">{t("shell.top.anom")}</span>
                 <span className="hidden phone:inline">{t("shell.top.anom.short")}</span>
               </span>
-              <b className="mono text-stat font-medium leading-none text-t1">–</b>
-              <span className="text-fs3 font-strong text-(--c,var(--text-1)) tf7:hidden">–</span>
+              <b className="mono text-stat font-medium leading-none text-t1">{doneM?.ratio_to_median != null ? `${doneM.ratio_to_median.toFixed(1)}×` : "–"}</b>
+              <span className="text-fs3 font-strong text-(--c,var(--text-1)) tf7:hidden">{doneM?.verdict ? t(`shell.verdict.${doneM.verdict}`) : "–"}</span>
             </span>
           ) : null}
-          {KOR && sit ? (
+          {nx ? (
+            <span
+              data-sc="pass"
+              title={t("shell.pass.title", { sat: `${nx.sat} ${nx.sensor}`, t: localHM(nx.ms, tz) })}
+              className={cn(SC, "midsize:hidden phone:hidden tf4:hidden [.rounded-xs+&]:border-l-0")}
+            >
+              <span className="text-fs2 text-t2">{t("shell.top.next")}</span>
+              <b className={SC_V_DIM} data-pass>
+                {nx.sat} {localHM(nx.ms, tz)}
+              </b>
+              <span className="mono text-fs2 text-t2 tf3:hidden" data-left>
+                ({t("shell.dur.m", { n: nxLeft })})
+              </span>
+            </span>
+          ) : null}
+          {KOR && sit && role ? (
             <span data-sc="wx" className={cn(SC, "web:narrow-web:hidden midsize:hidden phone:hidden tf1:hidden [.rounded-xs+&]:border-l-0")}>
               <span className="text-fs2 text-t2">{tl("weather", "station", null, sit.weather.station)}</span>
               <b className={SC_V_DIM}>
@@ -238,6 +293,33 @@ export function TopBar() {
               <span className="font-sans text-fs2 text-t2 tf6:hidden phone:hidden">{tzAbbr(tz, nowMs)}</span>
             </span>
           ) : null}
+          <Link
+            href={pageHref(locale, "method", keep.toString())}
+            data-sc="ver"
+            title={t("shell.top.version_t", { v: meth?.data_version ?? "–" })}
+            className={cn(SC, SC_REL, "phone:hidden tf5:hidden")}
+          >
+            <span className="text-fs2 text-t2">{t("shell.top.version")}</span>
+            <b className={cn(SC_V_DIM, "text-t1")}>
+              <span className="tf2:hidden">{dv ?? "–"}</span>
+              <span className="hidden tf2:inline">{verShort}</span>
+            </b>
+          </Link>
+          <Link
+            href={pageHref(locale, "method", [keep.toString(), "sec=status"].filter(Boolean).join("&"))}
+            data-sc="st"
+            data-st={relSt ?? ""}
+            aria-label={`${t("shell.top.status")} · ${relYm ?? "–"} ${relSt ? t(`shell.st.${relSt}`) : "–"}`}
+            title={relSt ? t(`shell.st_t.${relSt}`) : t("shell.top.status")}
+            className={cn(SC, SC_REL, "phone:min-w-(--hit) phone:justify-center tf7:hidden")}
+          >
+            <span className="text-fs2 text-t2 phone:hidden">{t("shell.top.status")}</span>
+            {relSt ? (
+              <span aria-hidden="true" className={cn("size-2 flex-none rounded-full", relSt === "ok" ? "bg-ok" : cn("border border-current", ST_C[relSt] ?? "text-t2"))} />
+            ) : null}
+            <b className={cn(SC_V_DIM, "text-t1 phone:hidden")}>{relYm ?? "–"}</b>
+            <span className={cn("text-fs2 font-medium phone:hidden tf4:hidden", ST_C[relSt ?? ""] ?? "text-t2")}>{relSt ? t(`shell.st.${relSt}`) : "–"}</span>
+          </Link>
         </div>
         {vr()}
 

@@ -313,3 +313,11 @@
 .dt-none{margin:0;padding:var(--sp-5) var(--sp-4);color:var(--text-2);font-size:var(--fs-2)}
 :global(html:not([data-device="web"])) .dp-g{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(300px,45vh) auto}
 :global(html:not([data-device="web"])) .dp{height:auto}
+
+/* 감지 시각 옆 위성 통과 틱(목업 index.html .ptick · land.css .ld-pass) */
+.ld-pass{color:var(--text-2);white-space:nowrap}
+.ptick{display:inline-flex;align-items:center;gap:var(--sp-1);white-space:nowrap;color:var(--text-2);font-family:var(--font-body)}
+.ptick i{flex:none;display:block;width:calc(var(--pass-dot) + var(--sp-half));height:calc(var(--pass-dot) + var(--sp-half));background:var(--cosmo-orbit)}
+.ptick i.m{background:transparent;border:var(--hair) solid var(--cosmo-orbit)}
+.ptick .mono{color:var(--text-1);font-family:var(--font-data)}
+@media print{.ptick i{display:none}}

@@ -20,6 +20,7 @@ import { Status, StIcon } from "./bits";
 import { Track, useNf } from "./charts";
 import { cx } from "./cx";
 import { S2 } from "./s2";
+import { BoundaryPreview, Eras } from "./s1-side";
 import { S3 } from "./s3";
 import type { Ctx, MethodDoc } from "./types";
 import { VdMark } from "./vd-mark";
@@ -28,7 +29,8 @@ import { VdMark } from "./vd-mark";
  * ② 비교 분석 3단계(S1 범위 → S2 캘린더·비교 → S3 근거·보고) — 원천: 목업 pages/analysis.js · analysis.css(g6 확정본).
  * 데이터: 계약 /api/v1 만(aois · calendar · comparison · cells · summary · methods/current). 값·판정은 release 그대로(A1), 경우 가르기는 judgeMonth(E4).
  * 주소: ?step=1|2|3&aoi=<aoi_id>&ym=YYYY-MM&view=… (목업 #analysis?… 와 같은 키). 캘린더 「비교 분석」이 step=2 로 넘긴다.
- * 목업과 다른 점(남은 차이): S1 경계 미리보기·전 세계 1° 재생 없음 · 홈/출동 넘김 칩 없음 · 인쇄 전용 6절 문서 없음(브라우저 인쇄) · 캘린더 다른 달 흐림 덮개 없음.
+ * S1 경계 미리보기 = 지금 나라 1급 경계 + 고른 지역 강조(전 지역, s1-side.tsx) · 지원 기간 아래 위성 연대 띠.
+ * 목업과 다른 점(남은 차이): 미리보기 하천 없음(전국 선 자료 없음) · 전 세계 1° 재생 없음 · 홈/출동 넘김 칩 없음 · 인쇄 전용 6절 문서 없음(브라우저 인쇄) · 캘린더 다른 달 흐림 덮개 없음.
  */
 export function AnalysisPage() {
   return (
@@ -401,6 +403,17 @@ function S1({ x, KOR, yr, setYr, inScope, iso3 }: { x: Ctx; KOR: boolean; yr: nu
         </section>
       </div>
       <aside className={cx("an-side")}>
+        <BoundaryPreview
+          iso3={aoi === "WORLD" ? "" : (iso3OfAoi(aoi) ?? iso3)}
+          info={countries.find((c) => c.iso3 === (iso3OfAoi(aoi) ?? iso3))}
+          aoi={aoi}
+          rec={rec}
+          parent={rec?.parent_id ? ((aq.data ?? []).find((q) => q.aoi_id === rec.parent_id) ?? null) : null}
+          lang={lang}
+          title={T("ui.boundary_preview")}
+          label={T("ui.boundary_preview2", { aoi: x.aoiName(rec), rw: "" })}
+          open={x.device === "web"}
+        />
         <section className={cx("panel an-span")}>
           <div className={cx("panel-h")}>
             <h3>{T("ui.supported_period")}</h3>
@@ -422,6 +435,14 @@ function S1({ x, KOR, yr, setYr, inScope, iso3 }: { x: Ctx; KOR: boolean; yr: nu
                   tail={cov.partial_month ? { from: cov.partial_month, label: `${W("st.partial")} · ${cov.as_of ?? ""}` } : null}
                   mark={KOR && inScope ? { k: ymK(ymIso(x.y, x.m)), label: ymIso(x.y, x.m) } : null}
                   ticks={[first, 2012, lastY]}
+                />
+              ) : null}
+              {cal ? (
+                <Eras
+                  from={ymK(cov.first_month) / 12}
+                  to={(ymK(lastM) + 1) / 12}
+                  label={W("eras.label")}
+                  tip={(sat, ym) => `${sat} · ${W("eras.start", { d: ym })}`}
                 />
               ) : null}
               <ul className={cx("an-segl")}>

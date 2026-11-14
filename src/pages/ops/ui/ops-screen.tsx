@@ -8,6 +8,7 @@ import { useNowMs, useSituation } from "@/entities/situation";
 import { useAgency } from "@/shared/agency";
 import { useT, useTl } from "@/shared/i18n";
 import { useDevice } from "@/shared/lib/use-device";
+import { useQueryParams } from "@/shared/lib/nav";
 import { Dialog } from "@/shared/ui/dialog";
 import { toast } from "@/shared/ui/toast";
 import {
@@ -93,6 +94,7 @@ export function OpsScreen({ role }: { role: Role }) {
   const F = useFmt();
   const agency = useAgency();
   const device = useDevice();
+  const sp = useQueryParams();
   const phone = device === "phone";
   const isFF = role === "firefighter";
   const w = useWorld();
@@ -129,8 +131,10 @@ export function OpsScreen({ role }: { role: Role }) {
   const fire = useCallback((id: string | undefined) => M?.fires.find((f) => f.id === id), [M]);
   const unit = useCallback((id: string) => M?.units.find((u) => u.id === id), [M]);
 
-  /* 처음 고를 경보(목업): 미읽음 → 열린 것 → 첫 줄. 화면이 스스로 고른 것이라 읽음 처리 없음 — 사람이 고르기 전까지는 처음 열 때 고른 것을 쓴다 */
-  const firstId = ready ? firstPick(inbox, unread) : null;
+  /* 처음 고를 경보(목업): 알림 서랍에서 고른 경보(?alert=, 목업 EM.state.focusAlert) → 미읽음 → 열린 것 → 첫 줄.
+     화면이 스스로 고른 것이라 읽음 처리 없음 — 사람이 고르기 전까지는 처음 열 때 고른 것을 쓴다 */
+  const focusId = sp.get("alert");
+  const firstId = ready ? (focusId && inbox.some((a) => a.id === focusId) ? focusId : firstPick(inbox, unread)) : null;
   const selId = ui.sel ?? firstId;
   const sel = inbox.find((a) => a.id === selId) ?? null;
   const selFire = sel ? fire(sel.fire_id) : undefined;
@@ -1017,6 +1021,11 @@ export function OpsScreen({ role }: { role: Role }) {
             onFire={(id) => {
               const x = inbox.find((y) => y.fire_id === id && !isClosed(y.status)) ?? inbox.find((y) => y.fire_id === id);
               if (x) select(x.id);
+              else {
+                // 목업 onFire: 이 불로 온 경보가 없으면 불 이름 + 상태 토스트
+                const f = fire(id);
+                if (f) opToast({ text: fname(f), sub: t("ops.toast.no_alert", { st: STATUS(f.status) }) });
+              }
             }}
             onUnit={(id) => {
               const u = unit(id);

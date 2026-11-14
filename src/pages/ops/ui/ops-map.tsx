@@ -5,6 +5,8 @@ import type { GeoJSONSource, Map as MlMap } from "maplibre-gl";
 import { useQuery } from "@tanstack/react-query";
 import { Helicopter, Layers, LocateFixed, Minus, Plus, RadioTower, Truck, Users } from "lucide-react";
 import { boundaryQuery } from "@/entities/country";
+import { nextPass } from "@/entities/satellite-pass";
+import { useNowMs } from "@/entities/situation";
 import type { Weather } from "@/shared/agency";
 import { useT, useTl } from "@/shared/i18n";
 import { DIRS, isClosed, type OpsFire } from "../model/ops";
@@ -403,7 +405,10 @@ export function OpsMap(p: OpsMapProps) {
               <small>{t("ops.wind.station", { s: tl("weather", "station", null, p.weather.station) })}</small>
             </span>
           </div>
-          <div className={cx("op-swath")} hidden />
+          <OpsSwath at={(() => {
+            const f = p.M.fires.find((x) => x.id === p.selFireId);
+            return f ? ([f.lat, f.lon] as const) : null;
+          })()} />
         </div>
         <div className={cx("op-legend")} aria-hidden="true">
           <span>
@@ -488,6 +493,37 @@ export function OpsMap(p: OpsMapProps) {
         ) : null}
       </div>
       {p.sheet}
+    </div>
+  );
+}
+
+/**
+ * 관측폭 칩(목업 ops.js swathCheck): 다음 위성 통과가 15분 안이면 「S-NPP 14:44 통과 예정(12분 후) · 관측폭 안, VIIRS 375 m」.
+ * 통과는 entities/satellite-pass(기준점 = 고른 불, 없으면 경북 북부 중심 — 이 화면은 경북 시나리오 목 화면). 통과 정의가 「기준점이 관측폭 절반 안」이라
+ * 칩이 뜨면 늘 관측폭 안이다. 목업의 지도 위 관측폭 가장자리 점선은 옮기지 않았다(공통 지도 부품 몫).
+ */
+const SWATH_MIN = 15;
+function OpsSwath({ at }: { at: readonly [number, number] | null }) {
+  const t = useT();
+  const nowMs = useNowMs();
+  const lat = at ? at[0] : 36.6;
+  const lon = at ? at[1] : 128.7;
+  const min = nowMs != null ? Math.floor(nowMs / 60000) : null;
+  const nx = useMemo(() => (min == null ? null : nextPass(min * 60000, [lat, lon])), [min, lat, lon]);
+  const left = nx && nowMs != null ? (nx.ms - nowMs) / 60000 : Infinity;
+  const on = !!nx && left >= 0 && left <= SWATH_MIN;
+  if (!on || !nx) return <div className={cx("op-swath")} hidden />;
+  const n = Math.max(0, Math.round(left));
+  const d = n < 60 ? t("shell.dur.m", { n }) : n % 60 ? t("shell.dur.hm", { h: Math.floor(n / 60), m: n % 60 }) : t("shell.dur.h", { h: Math.floor(n / 60) });
+  const hm = new Date(nx.ms + 9 * 3600e3).toISOString().slice(11, 16);
+  return (
+    <div className={cx("op-swath")} data-swath="">
+      <i className={cx("op-swath-k")} aria-hidden="true" />
+      <span>
+        <b className={cx("num")}>{`${nx.sat} ${hm}`}</b>
+        {t("ops.swath.next", { d })}
+        <small>{t("ops.swath.inside", { s: `${nx.sensor} ${nx.sensor === "VIIRS" ? "375 m" : "1 km"}` })}</small>
+      </span>
     </div>
   );
 }
