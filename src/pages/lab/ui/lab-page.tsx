@@ -2,14 +2,16 @@
 
 import { Suspense, useMemo, useState } from "react";
 import { useLocale } from "next-intl";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { boundaryQuery, countryName, useCountry } from "@/entities/country";
 import { useSession } from "@/entities/session";
+import { ScopeButton, bboxCenter, rowWordKey, useAoiScope, type Bbox } from "@/features/pick-aoi";
+import { api, unwrap } from "@/shared/api";
 import { PAGES } from "@/shared/config";
-import { useT, useTl } from "@/shared/i18n";
+import { useT } from "@/shared/i18n";
 import { useDevice } from "@/shared/lib/use-device";
 import { PageFrame } from "@/widgets/page-frame";
-import { KR_REGIONS, KR_TOTAL, LV_RANK, dimYM, lvOf, olRow, type LvKey, type Outlook, type Row } from "../model/outlook";
+import { LV_RANK, dimYM, lvOf, olRow, type LvKey, type Outlook, type Row } from "../model/outlook";
 import { LabBand } from "./lab-band";
 import { LabMap } from "./lab-map";
 import { cx } from "./cx";
@@ -19,7 +21,9 @@ import { downloadText, toCSV, useFmt, useTv } from "./use-lab";
  * 예측 분석(lab, 과학자) — 원천: 목업 pages/lab.js · lab.css(g6 확정본).
  * 숫자: 평년 기반 전망 스냅숏 /data/snap/outlook.json(결정 F8 — 실서버에 전망 경로 없음, 두 모드 같은 정적 파일) ·
  * 과거 관측은 /aois/{id}/calendar · 보정 검증은 /methods/current. 화면은 다시 계산하지 않는다.
- * 지도 = MapLibre 2D 원(결정 F9): 지역 중심에 수준 3단 색 원 + 이름·중앙값 표지.
+ * 지도 = MapLibre 2D: 지역 경계 면을 수준 3단 색으로 채움(목업 lb-fc — 경계를 못 받으면 지역 중심 원, 결정 F9) + 이름·중앙값 표지.
+ * 범위(2026-11-15 사용자 지적 「경북 북부 11개 시군만」): 한국은 고른 지역(?aoi=, 기본 대한민국)의 아래 단 전부 — 대한민국 → 17 시도, 시도 → 시군구.
+ * 전망 스냅숏에 519 지역(세계·나라·시도·시군구)이 이미 있다(잰 것) — 그 par(위 단) 그대로 고른다.
  */
 export function LabPage() {
   return (
@@ -61,6 +65,8 @@ export interface Region {
   lon: number;
   aoi: string | null;
   area: number;
+  /** 경계(계약 /aois/{id}/boundary — 한국 지역만, 못 받으면 null → 원) */
+  geom?: unknown;
 }
 export type TV = (k: string, p?: Record<string, string | number>) => string;
 export interface Sel {
@@ -70,7 +76,6 @@ export interface Sel {
 
 function LabScreen() {
   const t = useT();
-  const tl = useTl();
   const lang = useLocale();
   const device = useDevice();
   const { iso3, info } = useCountry();
@@ -81,28 +86,53 @@ function LabScreen() {
   const { data: boundary } = useQuery({ ...boundaryQuery(iso3), enabled: !kor });
   const cname = countryName(info, lang, iso3);
 
+  /* 한국: 고른 범위의 아래 단(전망 스냅숏 par) · 위치는 /aois bbox 가운데 · 면은 /aois/{id}/boundary */
+  const S = useAoiScope();
+  const scopeId = kor ? S.scope : `ADM0_${iso3}`;
+  const krRows = useMemo(() => (kor && O ? O.aoi.filter((a) => a.par === scopeId) : []), [kor, O, scopeId]);
+  const geoms = useQueries({
+    queries: krRows.map((a) => ({
+      queryKey: ["lab", "boundary", a.id, S.mv],
+      queryFn: ({ signal }: { signal: AbortSignal }) => api.GET("/aois/{aoiId}/boundary", { params: { path: { aoiId: a.id } }, signal }).then(unwrap) as Promise<unknown>,
+      enabled: !!S.mv,
+      staleTime: Infinity,
+      retry: false,
+    })),
+  });
+  const geomKey = geoms.map((g) => (g.data ? 1 : 0)).join("");
   const regions: Region[] = useMemo(() => {
-    if (kor) return KR_REGIONS.map((r) => ({ id: r.id, name: tl("region", r.id, null, r.name), lat: r.lat, lon: r.lon, aoi: r.sgg, area: 0 }));
+    if (kor)
+      return krRows.map((a, i) => {
+        const rec = S.byId.get(a.id);
+        const c = bboxCenter(rec?.bbox);
+        return { id: a.id, name: rec ? S.nameOf(rec) : a.name, lat: c?.lat ?? NaN, lon: c?.lon ?? NaN, aoi: a.id, area: 0, geom: geoms[i]?.data ?? null };
+      });
     const adm = ((boundary as { regions?: AdmRegion[] } | undefined)?.regions ?? []).slice();
     return adm.map((r) => ({ id: r.id, name: (lang === "ko" && r.name_ko) || r.name_en, lat: r.c[1], lon: r.c[0], aoi: null, area: r.area_km2 }));
-  }, [kor, boundary, tl, lang]);
+    // geoms 는 쿼리마다 새 배열이라 받은 여부(geomKey)로만 다시 만든다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kor, krRows, S.byId, S.nameOf, boundary, lang, geomKey]);
+  const fitBbox: Bbox | null = kor ? ((S.byId.get(scopeId)?.bbox as Bbox | undefined) ?? null) : null;
 
-  const aoiLabel = kor ? tl("aoi", "gb-north", "label", "경북 북부") : cname;
-  const T_ = useTv({ rw: t(kor ? "data.rw.kor" : "data.rw.adm1"), rw1: t(kor ? "lab.w.rw1_kor" : "lab.w.rw1_adm1"), Rw1: t(kor ? "lab.w.Rw1_kor" : "lab.w.Rw1_adm1"), aoi: aoiLabel, tz: kor ? "KST" : "UTC" });
-  const totId = kor ? KR_TOTAL : `ADM0_${iso3}`;
+  const rowLevel = kor ? (S.byId.get(krRows[0]?.id ?? "")?.level ?? (scopeId === "KR" ? "kr_sido" : "kr_sgg")) : "adm1";
+  const aoiLabel = kor ? S.nameOf(scopeId) : cname;
+  const rw = t(rowWordKey(rowLevel));
+  const T_ = useTv({ rw, rw1: rw, Rw1: rw, aoi: aoiLabel, tz: kor ? "KST" : "UTC" });
+  const totId = scopeId;
 
   const FC = useMemo(() => {
     if (!O) return null;
     const ix = new Map(O.aoi.map((a) => [a.id, a]));
     const tm = O.method.targets[0] as string;
     const rows: Row[] = regions.map((r) => olRow(r.aoi ? (ix.get(r.aoi) ?? null) : null, 0, r.id, r.name));
-    const total = olRow(ix.get(totId) ?? null, 0, "all", kor ? T_("lab.g6.tot_kor") : cname);
+    const total = olRow(ix.get(totId) ?? null, 0, "all", aoiLabel);
     return { ix, rows, total, issued: O.method.computed_at.slice(0, 10), month: tm, days: dimYM(tm), targets: O.method.targets.slice(), m: O.method };
-  }, [O, regions, totId, kor, T_, cname]);
+  }, [O, regions, totId, aoiLabel]);
 
-  const [sel, setSel] = useState<{ iso: string; id: string | null }>({ iso: iso3, id: null });
-  const selId = sel.iso === iso3 ? sel.id : null;
-  const select = (id: string | null) => setSel({ iso: iso3, id });
+  /* 고른 행: 범위가 바뀌면 비운다 · 시군구 하나를 골라 들어왔으면(?aoi=SGG_…) 그 행 */
+  const [sel, setSel] = useState<{ iso: string; scope: string; id: string | null } | null>(null);
+  const selId = sel && sel.iso === iso3 && sel.scope === scopeId ? sel.id : kor ? S.focus : null;
+  const select = (id: string | null) => setSel({ iso: iso3, scope: scopeId, id });
   const [lvf, setLvf] = useState<LvKey | null>(null);
   const [sort, setSort] = useState<{ k: string; dir: number }>({ k: "median", dir: -1 });
 
@@ -128,6 +158,11 @@ function LabScreen() {
         <div className={cx("ph-1")}>
           <h1>{T_("lab.ui.forecast2")}</h1>
           {scope ? <span className={cx("ph-scope")}>{scope}</span> : null}
+          {kor ? (
+            <div className={cx("ph-tools")}>
+              <ScopeButton s={S} size="sm" />
+            </div>
+          ) : null}
         </div>
         <div className={cx("cntbar")} role="group" aria-label={t("shell.counts.aria")}>
           {C.map((c) => (
@@ -319,7 +354,7 @@ function LabScreen() {
     );
   })();
 
-  const ctx = { FC, O, F, T_, t, kor, regions, sel: selId, select, rowOf, selRow, regLabel, selAoi, lang, device };
+  const ctx = { FC, O, F, T_, t, kor, regions, sel: selId, select, rowOf, selRow, regLabel, selAoi, lang, device, fitBbox };
 
   return (
     <div className="min-h-0 min-w-0" data-page="lab">
@@ -389,4 +424,5 @@ export type LabCtx = {
   selAoi: string | null;
   lang: string;
   device: string;
+  fitBbox: Bbox | null;
 };

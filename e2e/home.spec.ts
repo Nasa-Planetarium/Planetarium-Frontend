@@ -31,6 +31,23 @@ test("상황판: 머리·감지 목록·캘린더·달 상세", async ({ page },
     await expect(root.locator('[data-testid="home-cal"] rect[data-y="2005"][data-m="3"]')).toHaveAttribute("aria-label", /운용 전/);
   }
   await expect(root.locator("[data-hcount]")).toHaveText("자료 준비 중");
+  /* 전 지역(2026-11-15): 기본 지역 = 대한민국(KR), 경북 북부 11개 시군 고정 목록 없음 */
+  await expect(root).toHaveAttribute("data-aoi", "KR");
+  await expect(root.locator("[data-aoi-pick]")).toContainText("대한민국");
   const over = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(over).toBeLessThanOrEqual(0);
+});
+
+test("상황판: 지역 고르기 — 시도·시군구로 내려가면 실제 값 AOI 가 바뀐다", async ({ page }) => {
+  await page.goto("/ko/home/?aoi=SIDO_11");
+  const root = page.locator('[data-testid="home"][data-ready="1"]');
+  await expect(root).toBeVisible({ timeout: 30000 });
+  await expect(root).toHaveAttribute("data-aoi", "SIDO_11");
+  await expect(root.locator("[data-aoi-pick]")).toContainText("서울특별시");
+  await root.locator("[data-aoi-pick]").click();
+  const dlg = page.getByRole("dialog", { name: "지역 고르기" });
+  await expect(dlg).toBeVisible();
+  await expect(dlg.locator('[data-a="SIDO_11"]')).toBeVisible();
+  await dlg.locator('[role="option"][data-a^="SGG_11"]').first().click();
+  await expect(page.locator('[data-testid="home"]')).toHaveAttribute("data-aoi", /^SGG_11/);
 });

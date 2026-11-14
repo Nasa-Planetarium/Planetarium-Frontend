@@ -191,7 +191,7 @@ function Src(c: Ctx & { board: Board }) {
     [T_("cmd.ui.formula"), T_("cmd.ui.method_now")],
     [T_("cmd.ui.convert"), T_("cmd.ui.modis_2001_2011_converted_to")],
     [T_("cmd.ui.zero_vs_missing"), T_("cmd.ui.0_is_0_missing_is_an_empty_h")],
-    [T_("cmd.ui.validation"), `${T_("cmd.ui.leave_one_year_out_refit")}${V.n_loo}${T_("cmd.ui.runs_mae")}${mae}${T_("cmd.ui.mo_bias")}${sg(V.bias_pct, 1)}%`],
+    [T_("cmd.ui.validation"), V.n_loo ? `${T_("cmd.ui.leave_one_year_out_refit")}${V.n_loo}${T_("cmd.ui.runs_mae")}${mae}${T_("cmd.ui.mo_bias")}${sg(V.bias_pct, 1)}%` : V.mae_month == null ? "–" : T_("cmd.real.val", { mae, bias: `${sg(V.bias_pct, 1)}%` })],
     [T_("cmd.ui.same_month_comparison"), `${T_("cmd.ui.same_region_and_month_in_pas")}${board.cm.min_limited}${T_("cmd.ui.baseline_years")}`],
   ];
   const ver: [string, string][] = [

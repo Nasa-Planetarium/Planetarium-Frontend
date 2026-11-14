@@ -7,5 +7,6 @@
   },
   "page": { "calendar": "Calendar", "method": "Method & validation" },
   "locked": { "any": "{page} opens after a sample sign-in" }
- }
+ },
+ "cmd": {"aoi": {"name_lv": "{aoi} · {n} {rw}"}, "real": {"hr_wide": "{a} is too large to fetch detections at once (server limit 100 sq. deg). Pick a first-level region under “Region” to see the hourly distribution.", "pts_wide": "Area too large to draw detections — narrow the region", "loading": "Loading detections…", "no_occur": "Real data has no ignition time; only satellite overpass time is used", "val": "Adopted model, Korea monthly total MAE {mae} · bias {bias}", "det_n": "{n} detections in {a}, {y} (real data)"}}
 }

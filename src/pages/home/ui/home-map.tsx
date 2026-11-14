@@ -108,8 +108,12 @@ export function HomeMap(c: Ctx) {
     };
   }, []);
 
-  /* 전체 보기: 한국 = 시나리오 권역(경북 북부 원장 범위), 밖 = 나라 본토 범위 */
-  const bb = useMemo((): [number, number, number, number] | null => (c.kor ? KR_VIEW : (info?.bbox_main ?? info?.bbox ?? null)), [c.kor, info]);
+  /* 전체 보기: 고른 지역 상자(실서버 /aois bbox) — 나라 전체(밖)는 본토 범위, 상자를 모르면(스냅숏) 한국 = 시나리오 권역 */
+  const isCountry = c.aoi === c.scope.own;
+  const bb = useMemo(
+    (): [number, number, number, number] | null => (c.aoiBbox && !(isCountry && !c.kor) ? c.aoiBbox : c.kor ? KR_VIEW : (info?.bbox_main ?? info?.bbox ?? null)),
+    [c.aoiBbox, isCountry, c.kor, info],
+  );
   const fit = () => {
     if (map && bb) map.fitBounds([[bb[0], bb[1]], [bb[2], bb[3]]], { padding: { top: 56, bottom: 64, left: 16, right: 58 }, animate: false });
   };

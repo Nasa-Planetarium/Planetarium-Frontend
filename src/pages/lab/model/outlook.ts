@@ -8,6 +8,10 @@
 export interface OutlookAoi {
   id: string;
   name: string;
+  /** 단(0 세계 · 1 나라 · 2 시도 · 3 시군구 · 4 다른 나라) */
+  lv?: number;
+  /** 위 단 id(한국 시군구 → 시도 → KR) */
+  par?: string | null;
   p: (number | null)[];
   lo: (number | null)[];
   hi: (number | null)[];
@@ -120,26 +124,6 @@ export function niceMax(v: number) {
   const steps = [1, 2, 2.5, 5, 10];
   return (steps.find((s) => n <= s) ?? 10) * p;
 }
-
-/**
- * 한국 지역 원장: 경북 북부 11개 시군(목업 EM.L.regions · api.js SGG_OF). 군위는 2023-07 대구 편입이라 release 에서 SGG_27720.
- * 좌표·이름은 지리 정의(값이 아님) — 지도 원 자리와 이름표에만 쓴다.
- */
-export const KR_REGIONS = [
-  { id: "yeongju", sgg: "SGG_47210", name: "영주시", lat: 36.83, lon: 128.6 },
-  { id: "bonghwa", sgg: "SGG_47920", name: "봉화군", lat: 36.92, lon: 128.92 },
-  { id: "uljin", sgg: "SGG_47930", name: "울진군", lat: 36.93, lon: 129.33 },
-  { id: "yecheon", sgg: "SGG_47900", name: "예천군", lat: 36.66, lon: 128.42 },
-  { id: "andong", sgg: "SGG_47170", name: "안동시", lat: 36.6, lon: 128.78 },
-  { id: "yeongyang", sgg: "SGG_47760", name: "영양군", lat: 36.69, lon: 129.12 },
-  { id: "sangju", sgg: "SGG_47250", name: "상주시", lat: 36.4, lon: 128.17 },
-  { id: "uiseong", sgg: "SGG_47730", name: "의성군", lat: 36.35, lon: 128.66 },
-  { id: "cheongsong", sgg: "SGG_47750", name: "청송군", lat: 36.4, lon: 129.06 },
-  { id: "yeongdeok", sgg: "SGG_47770", name: "영덕군", lat: 36.45, lon: 129.33 },
-  { id: "gunwi", sgg: "SGG_27720", name: "군위군", lat: 36.21, lon: 128.58 },
-] as const;
-/** 한국 권역(전체) AOI = 경상북도 */
-export const KR_TOTAL = "SIDO_47";
 
 /** 보정 검증 행: meta.validation 이 있으면 그것, 없으면(실서버) m2v_evaluation.korea_pooled 를 행 모양으로만 옮긴다(목업 api.js hMethod 와 같은 옮김) */
 export interface ValRow {

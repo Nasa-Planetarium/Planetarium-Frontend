@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronLeft, ChevronRight, ChartColumn, FlaskConical, Ruler, Siren } from "lucide-react";
 import { LoginDialog } from "@/features/auth-login";
+import { ScopeButton } from "@/features/pick-aoi";
 import { pageHref, ROLE_DEF, type Locale, type PageId, type RoleId } from "@/shared/config";
 import { useDevice } from "@/shared/lib/use-device";
 import { ACTIVE, addDays, dayCount, grid, ytdRatio, ymKey, daysIn } from "../model/home";
@@ -171,18 +172,10 @@ function ToolBar(c: Ctx & { head?: boolean }) {
     <div className={cx("hm-bar", c.head && "is-head")} role="toolbar" aria-label={c.t("home.short_label.area_period_download")}>
       <div className={cx("hm-grp hm-grp-aoi")}>
         <span className={cx("hm-gl")}>{c.t("home.short_label.area")}</span>
-        <select className={cx("select hm-sel")} data-aoi="" aria-label={c.t("home.short_label.choose_area")} value={c.region ?? "all"} onChange={(e) => c.setRegion(e.target.value === "all" ? null : e.target.value)}>
-          <option value="all">{c.kor ? c.t("home.aoi.all", { a: c.tl("aoi", "gb-north", "label", c.t("home.aoi.default")) }) : c.cname}</option>
-          {c.regions.length ? (
-            <optgroup label={c.t("home.aoi.group_kor")}>
-              {c.regions.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {c.regName(g.id)}
-                </option>
-              ))}
-            </optgroup>
-          ) : null}
-        </select>
+        {/* 지역 고르기(전 세계 → 나라 → 시도·1급 → 시군구) — 경북 북부 11개 시군 고정 목록 대신(2026-11-15 사용자 지적) */}
+        <span data-aoi="">
+          <ScopeButton s={c.scope} label={c.t("home.short_label.choose_area")} />
+        </span>
       </div>
       <div className={cx("hm-grp hm-grp-range")} ref={box}>
         <span className={cx("hm-gl")}>{c.t("home.short_label.period")}</span>

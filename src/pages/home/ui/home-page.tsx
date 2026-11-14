@@ -7,12 +7,13 @@ import { useCountry, countryName } from "@/entities/country";
 import { calendarQuery } from "@/entities/month-value";
 import { methodQuery } from "@/entities/release";
 import { useSession } from "@/entities/session";
+import { useAoiScope, type AoiScope, type Bbox } from "@/features/pick-aoi";
 import { useAgency, type Alert, type Fire, type Unit } from "@/shared/agency";
 import { api, unwrap, qk } from "@/shared/api";
 import { useT, useTl } from "@/shared/i18n";
 import { prefs } from "@/shared/lib/prefs";
 import { outlookQuery } from "../api/queries";
-import { addDays, grid, partialOf, realAoi, SENSORS, worstMonth, type MonthRow, type Sensor } from "../model/home";
+import { addDays, grid, partialOf, realAoi, regionOfAoi, SENSORS, worstMonth, type MonthRow, type Sensor } from "../model/home";
 import { cx } from "./cx";
 import { HomeBand } from "./home-band";
 import { HomeHead } from "./home-head";
@@ -25,6 +26,7 @@ import { useFmt, useTok } from "./use-ui";
  * 데이터 둘로 나눈다(결정 F4·F7):
  *  - 경북 시나리오(감지 목록 경보·불·자원·개수 띠·역할 화면 수·시계·계절) = AgencyPort(useAgency) 목.
  *  - 통합 값(과거 같은 달 대비·관측 활동 캘린더·가장 많았던 달/해·달 일별·지도 점·예측 칸) = 실제 API(계약 /api/v1, MSW 스냅숏 또는 실서버).
+ *    지역은 전 지역(지역 고르기 ?aoi= — 기본 나라 AOI, 대한민국 → 시도 → 시군구 · 다른 나라 → 1급). 지도 범위 = 그 지역 상자.
  * 화면은 둘을 섞어 다시 계산하지 않는다 — 통합 값은 release 그대로(A1), 시나리오 값은 원장 그대로.
  */
 export function HomePage() {
@@ -101,7 +103,9 @@ function HomeScreen() {
   /* 실제 데이터 — 지금 판 + 관심 영역 AOI */
   const mvQ = useQuery(methodQuery());
   const mv = mvQ.data?.method_version ?? null;
-  const aoi = realAoi(iso3, kor ? region : null);
+  const S = useAoiScope();
+  const aoi = realAoi(S.chosen, kor ? region : null);
+  const aoiBbox = (S.byId.get(aoi)?.bbox as Bbox | undefined) ?? null;
   const aoiQ = useQuery({
     queryKey: qk(`aois/${aoi}`, undefined, mv),
     queryFn: ({ signal }) => api.GET("/aois/{aoiId}", { params: { path: { aoiId: aoi } }, signal }).then(unwrap),
@@ -115,10 +119,11 @@ function HomeScreen() {
   const partial = useMemo(() => partialOf(months), [months]);
   const outlook = useQuery(outlookQuery());
 
-  /* 나라가 바뀌면 고른 시군·달을 비운다 */
-  const [isoSeen, setIsoSeen] = useState(iso3);
-  if (isoSeen !== iso3) {
-    setIsoSeen(iso3);
+  /* 나라·고른 지역이 바뀌면 지도 도구로 고른 시군·달을 비운다 */
+  const seenKey = `${iso3}|${S.chosen}`;
+  const [isoSeen, setIsoSeen] = useState(seenKey);
+  if (isoSeen !== seenKey) {
+    setIsoSeen(seenKey);
     setRegion(null);
     setPop(null);
   }
@@ -126,7 +131,7 @@ function HomeScreen() {
   /* 이름 */
   const cname = countryName(info, lang, iso3);
   const regName = (id: string) => tl("region", id, null, ag.regions.find((r) => r.id === id)?.name ?? id);
-  const aoiLabel = kor ? (region ? regName(region) : tl("aoi", "gb-north", "label", t("home.aoi.default"))) : cname;
+  const aoiLabel = region ? regName(region) : S.nameOf(S.chosen) || cname;
   const apiAoi = aoiQ.data as { name_ko?: string; name_en?: string | null } | undefined;
   const dataAoiName = apiAoi ? (lang === "ko" ? apiAoi.name_ko : apiAoi.name_en || apiAoi.name_ko) || aoi : aoi;
 
@@ -153,12 +158,15 @@ function HomeScreen() {
     role: session?.role ?? null,
     regions: kor ? ag.regions : [],
     regName,
-    region,
+    /* 시나리오 불 거르기: 지도 도구 시군 또는 고른 시군구가 시나리오 시군이면 그 시군 */
+    region: region ?? regionOfAoi(S.chosen),
     setRegion: (r) => {
       setRegion(r);
       setPop(null);
     },
     aoi,
+    aoiBbox,
+    scope: S,
     aoiLabel,
     dataAoiName,
     range,
@@ -227,6 +235,9 @@ export type Ctx = {
   region: string | null;
   setRegion: (r: string | null) => void;
   aoi: string;
+  /** 고른 지역 상자(실서버 /aois bbox — 스냅숏 모드엔 없음) */
+  aoiBbox: Bbox | null;
+  scope: AoiScope;
   aoiLabel: string;
   dataAoiName: string;
   range: Range | null;

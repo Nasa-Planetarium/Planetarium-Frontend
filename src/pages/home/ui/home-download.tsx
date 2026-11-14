@@ -74,7 +74,7 @@ export function HomeDownload(c: Ctx) {
   const hotCsv = async () => {
     if (!c.range) return;
     try {
-      const d = (await qc.fetchQuery(hotspotsQuery(KR_VIEW, c.range.start, c.range.end, c.mv))) as unknown as { hotspots?: Record<string, unknown>[] };
+      const d = (await qc.fetchQuery(hotspotsQuery(c.aoiBbox ?? KR_VIEW, c.range.start, c.range.end, c.mv))) as unknown as { hotspots?: Record<string, unknown>[] };
       const rows = d.hotspots ?? [];
       if (!rows.length) {
         setNote(c.t("home.export_it.no_raw_detections_to"));

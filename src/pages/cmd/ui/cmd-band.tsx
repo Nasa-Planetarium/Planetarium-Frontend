@@ -94,7 +94,7 @@ function CalPanel(c: Ctx & { board: Board }) {
   const acsv = () => {
     if (!a || a.state === "unavailable") return;
     downloadText(
-      `emberline_analysis_${q.regions.length ? q.regions.join("-") : c.kor ? "gb-north" : c.iso3}_${a.year}-${String(a.month).padStart(2, "0")}_${a.metric}.csv`,
+      `emberline_analysis_${q.regions.length ? q.regions.join("-") : c.scope.scope}_${a.year}-${String(a.month).padStart(2, "0")}_${a.metric}.csv`,
       toCSV([a], [
         { label: "year", get: (x) => x.year },
         { label: "month", get: (x) => x.month },

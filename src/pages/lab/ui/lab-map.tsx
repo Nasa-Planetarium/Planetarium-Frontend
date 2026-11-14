@@ -23,7 +23,7 @@ function niceLen(maxM: number) {
  * 선택 = --cosmo-star 2px 링 + --map-halo 헤일로 · 원 위 표지 = 이름 + 예측 중앙값(글자 색 = 그 단계 --on-cls). 지도 위 경보 칩 0.
  */
 export function LabMap(c: LabCtx) {
-  const { FC, F, T_, kor, regions, sel, select, rowOf } = c;
+  const { FC, F, T_, kor, regions, sel, select, rowOf, fitBbox } = c;
   const glEl = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<MlMap | null>(null);
   const [frame, setFrame] = useState(0);
@@ -55,8 +55,17 @@ export function LabMap(c: LabCtx) {
       m.on("load", () => {
         m.addSource("bounds", { type: "geojson", data: fc([]) });
         m.addSource("reg", { type: "geojson", data: fc([]) });
+        m.addSource("face", { type: "geojson", data: fc([]) });
         m.addLayer({ id: "bounds-fill", type: "fill", source: "bounds", paint: { "fill-color": tk("surface-1"), "fill-opacity": 0.55 } });
         m.addLayer({ id: "bounds-line", type: "line", source: "bounds", paint: { "line-color": tk("text-3"), "line-width": 1, "line-opacity": 0.6 } });
+        /* 지역 면 단계 채움(목업 lb-fc) — 경계를 받은 한국 지역만 */
+        m.addLayer({ id: "lb-face", type: "fill", source: "face", paint: { "fill-color": ["get", "c"], "fill-opacity": 0.86 } });
+        m.addLayer({ id: "lb-face-line", type: "line", source: "face", paint: { "line-color": tk("line-strong"), "line-width": 0.8 } });
+        m.addLayer({ id: "lb-face-on", type: "line", source: "face", filter: ["==", ["get", "on"], 1], paint: { "line-color": tk("cosmo-star"), "line-width": 2.2 } });
+        m.on("click", "lb-face", (e) => {
+          const id = e.features?.[0]?.properties?.id as string | undefined;
+          if (id) select(id);
+        });
         m.addLayer({
           id: "lb-halo",
           type: "circle",
@@ -98,16 +107,18 @@ export function LabMap(c: LabCtx) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* 맞춤: 한국 = 원장 시군 범위, 밖 = 나라 본토 범위 */
+  /* 맞춤: 한국 = 고른 범위 상자(없으면 행 중심들), 밖 = 나라 본토 범위 */
   const bb = useMemo((): [number, number, number, number] | null => {
     if (kor) {
-      const la = regions.map((r) => r.lat);
-      const lo = regions.map((r) => r.lon);
+      if (fitBbox) return fitBbox;
+      const ok = regions.filter((r) => Number.isFinite(r.lat) && Number.isFinite(r.lon));
+      const la = ok.map((r) => r.lat);
+      const lo = ok.map((r) => r.lon);
       return la.length ? [Math.min(...lo) - 0.2, Math.min(...la) - 0.16, Math.max(...lo) + 0.2, Math.max(...la) + 0.16] : null;
     }
     const inf = info as (CountryInfo & { bbox_main?: [number, number, number, number] }) | undefined;
     return inf?.bbox_main ?? inf?.bbox ?? null;
-  }, [kor, regions, info]);
+  }, [kor, regions, info, fitBbox]);
   const fit = () => {
     if (map && bb) map.fitBounds([[bb[0], bb[1]], [bb[2], bb[3]]], { padding: 32, animate: false });
   };
@@ -127,10 +138,23 @@ export function LabMap(c: LabCtx) {
   /* 지역 원(자료 붙으면 수준 색) */
   useEffect(() => {
     if (!map || !tok) return;
-    const r0 = kor ? 26 : 7;
+    const r0 = kor ? (regions.length > 12 ? 15 : 22) : 7;
+    const colorOf = (id: string) => tok[CLS_TOK[clsOf(rowOf(id))] as keyof typeof tok] || tok["hatch-bg"];
+    (map.getSource("face") as GeoJSONSource | undefined)?.setData(
+      fc(
+        regions
+          .filter((r) => r.geom)
+          .map((r) => {
+            const g = r.geom as { geometry?: unknown };
+            return { type: "Feature", properties: { id: r.id, c: colorOf(r.id), on: sel === r.id ? 1 : 0 }, geometry: g.geometry ?? g };
+          }),
+      ) as GeoData,
+    );
     (map.getSource("reg") as GeoJSONSource | undefined)?.setData(
       fc(
-        regions.map((r) => {
+        regions
+          .filter((r) => !r.geom && Number.isFinite(r.lat) && Number.isFinite(r.lon))
+          .map((r) => {
           const row = rowOf(r.id);
           const k = clsOf(row);
           return { type: "Feature", properties: { id: r.id, c: tok[CLS_TOK[k] as keyof typeof tok] || tok["hatch-bg"], r: r0, on: sel === r.id ? 1 : 0 }, geometry: { type: "Point", coordinates: [r.lon, r.lat] } };
@@ -144,7 +168,7 @@ export function LabMap(c: LabCtx) {
     void frame;
     if (!map || !FC) return [];
     if (!kor && regions.length > 40) return [];
-    return regions.map((r) => {
+    return regions.filter((r) => Number.isFinite(r.lat) && Number.isFinite(r.lon)).map((r) => {
       const p = map.project([r.lon, r.lat]);
       const row = rowOf(r.id);
       return { id: r.id, name: r.name, x: p.x, y: p.y, row, cls: clsOf(row) };

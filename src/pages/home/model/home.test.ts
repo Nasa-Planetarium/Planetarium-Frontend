@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { annual, eraPlace, grid, last12, realAoi, worstMonth, ytdRatio, type MonthRow } from "./home";
+import { annual, eraPlace, grid, last12, realAoi, regionOfAoi, worstMonth, ytdRatio, type MonthRow } from "./home";
 
 const row = (year: number, month: number, value: number | null, status = "ok", extra: Partial<MonthRow> = {}): MonthRow => ({
   year,
@@ -15,11 +15,14 @@ const row = (year: number, month: number, value: number | null, status = "ok", e
 });
 
 describe("상황판 모델", () => {
-  it("관심 영역 → 실제 AOI(경북 북부 전체는 SIDO_47, 시군은 SGG, 다른 나라는 ADM0)", () => {
-    expect(realAoi("KOR", null)).toBe("SIDO_47");
-    expect(realAoi("KOR", "andong")).toBe("SGG_47170");
-    expect(realAoi("KOR", "gunwi")).toBe("SGG_27720");
-    expect(realAoi("USA", "x")).toBe("ADM0_USA");
+  it("관심 영역 → 실제 AOI(고른 지역 그대로 — 기본 KR, 지도 도구 시군은 SGG, 다른 나라는 시군 무시)", () => {
+    expect(realAoi("KR", null)).toBe("KR");
+    expect(realAoi("SIDO_11", null)).toBe("SIDO_11");
+    expect(realAoi("KR", "andong")).toBe("SGG_47170");
+    expect(realAoi("SIDO_47", "gunwi")).toBe("SGG_27720");
+    expect(realAoi("ADM0_USA", "andong")).toBe("ADM0_USA");
+    expect(regionOfAoi("SGG_47170")).toBe("andong");
+    expect(regionOfAoi("SGG_11110")).toBeNull();
   });
 
   it("격자: 행 없는 달은 out_of_range, 결측(null)은 0 이 아니라 missing(E2), 진행 중 달은 partial", () => {

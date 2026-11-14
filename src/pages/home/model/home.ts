@@ -28,16 +28,19 @@ export const SGG_OF: Record<string, string> = {
 };
 
 /**
- * 관심 영역 → 실제 API AOI.
- * - 한국 「경북 북부 전체」: 계약 확장 `group:gb-north` 는 실서버·스냅숏 둘 다 없다(실서버 404 unknown_aoi 잼, 2026-11-14) →
- *   경북 북부 11개 시군 중 10개가 들어 있는 경상북도(SIDO_47) 값을 쓰고, 화면에 그 이름을 그대로 적는다(합을 우리가 만들지 않음 — E1).
- * - 시군 하나: SGG_<코드>
- * - 다른 나라: ADM0_<ISO3>
+ * 관심 영역 → 실제 API AOI(2026-11-15 사용자 지적 「경북 북부 11개 시군만」 → 전 지역).
+ * - 기본 = 지역 고르기 값(주소 ?aoi=, 없으면 나라 AOI — 한국 KR · 밖 ADM0_<ISO3>). 전 세계 → 나라 → 시도·1급 → 시군구 어디든.
+ * - 지도 도구(시나리오 시군 이름·좌표)로 시군 하나를 고르면 그 시군 SGG_<코드>(한국만).
  */
-export function realAoi(iso3: string, region: string | null): string {
-  if (iso3 !== "KOR") return `ADM0_${iso3}`;
+export function realAoi(chosen: string, region: string | null): string {
   const code = region ? SGG_OF[region] : undefined;
-  return code ? `SGG_${code}` : "SIDO_47";
+  return code && isKorAoi(chosen) ? `SGG_${code}` : chosen;
+}
+const isKorAoi = (id: string) => id === "KR" || /^(SIDO|SGG)_/.test(id);
+/** SGG 코드 → 시나리오 시군 slug(시나리오 불·경보를 그 시군으로 거르는 데만) */
+export function regionOfAoi(aoi: string): string | null {
+  const hit = Object.entries(SGG_OF).find(([, c]) => `SGG_${c}` === aoi);
+  return hit ? hit[0] : null;
 }
 
 /** API 달 행(계약 CalendarMonth + 실서버 v1.1 확장 value_projected·as_of_date — E1 실서버 정본) */

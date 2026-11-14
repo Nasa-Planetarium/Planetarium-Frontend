@@ -127,6 +127,7 @@ table.tbl{width: 100%; border-collapse: collapse; font-size: var(--fs-3); font-v
 .dt-none{margin:0;padding:var(--sp-5) var(--sp-4);color:var(--text-2);font-size:var(--fs-2)}
 .gl{position:absolute;inset:0}
 .m-lbl{position:absolute;transform:translate(-50%,-50%);font-size:var(--fs-2);color:var(--text-2);white-space:nowrap;pointer-events:none;text-shadow:0 0 3px var(--map-void),0 0 6px var(--map-void)}
+.m-note{position:absolute;left:50%;top:var(--sp-3);transform:translateX(-50%);z-index:2;margin:0;max-width:calc(100% - 2 * var(--sp-3));padding:var(--sp-1) var(--sp-3);border-radius:var(--r-s);background:color-mix(in srgb,var(--surface-1) 90%,transparent);border:1px solid var(--line-strong);color:var(--text-2);font-size:var(--fs-2);pointer-events:none}
 .m-fire{position:absolute;pointer-events:none}
 
 /* ── cmd.css ── */

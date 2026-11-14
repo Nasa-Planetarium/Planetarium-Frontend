@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Download, Play, Square } from "lucide-react";
+import { ScopeButton } from "@/features/pick-aoi";
 import type { Fire } from "@/shared/agency";
 import { annualOf, ids, years, ytdCompare, type Board, type Sensor } from "../model/cmd";
 import type { Ctx } from "./cmd-page";
@@ -18,7 +19,7 @@ export const sensorName = (T_: Ctx["T_"], s: Sensor) => T_(SENSOR_KEY[s]);
 
 /** 지역 이름표(목업 regionLabel) */
 export function regionLabel(c: Pick<Ctx, "T_" | "names" | "kor" | "aoiLabel" | "cname">, regions: string[], n: number) {
-  if (!regions.length) return c.kor ? c.T_("cmd.aoi.name", { aoi: c.aoiLabel, n }) : c.cname;
+  if (!regions.length) return c.T_("cmd.aoi.name_lv", { aoi: c.aoiLabel, n });
   const ns = regions.map((r) => c.names[r] ?? r);
   return ns.length <= 2 ? ns.join("·") : c.T_("cmd.rg.more", { a: ns[0] ?? "", n: ns.length - 1 });
 }
@@ -130,13 +131,14 @@ function Head(c: Ctx) {
         { key: "fa", label: T_("cmd.ui.median_first_arrival"), value: R?.med == null ? null : F.num(R.med, R.med % 1 ? 1 : 0), unit: T_("cmd.ui.min"), go: "resp" },
         { key: "done", label: T_("cmd.ui.contained"), value: done, go: "ev" },
       ]
-    : [...C1, { key: "det", label: T_("shell.det.clusters"), value: null, go: "resp" }, { key: "pts", label: T_("shell.det.points"), value: null, go: "resp" }];
+    : [...C1, { key: "det", label: T_("shell.det.clusters"), value: null, go: "resp" }, { key: "pts", label: T_("shell.det.points"), value: c.ptsState === "ok" && !c.view.cum ? F.num(c.ptsTotal) : null, title: String(c.view.year), go: "resp" }];
   return (
     <header className={cx("pghd cm-head")}>
       <div className={cx("ph-1")}>
         <h1>{T_("cmd.ui.command_stats")}</h1>
         <span className={cx("ph-scope")}>{(q.regions.length ? regionLabel(c, q.regions, nAll) : c.aoiLabel) + T_("cmd.ui.this_year")}</span>
         <div className={cx("ph-tools cm-filt")} role="group" aria-label={T_("cmd.ui.page_filters")}>
+          <ScopeButton s={c.scope} label={T_("cmd.ui.region")} />
           <div className={cx("cm-rgwrap")} ref={wrap}>
             <button type="button" className={cx("cm-rgbtn")} aria-haspopup="true" aria-expanded={open} aria-label={T_("cmd.ui.region")} onClick={() => setOpen((o) => !o)}>
               <span>{q.regions.length ? regionLabel(c, q.regions, nAll) : T_("cmd.rg.all_n", { name: regionLabel(c, [], nAll) })}</span>
@@ -434,13 +436,18 @@ export const fireName = (c: Pick<Ctx, "T_">, f: Fire) => {
 
 /* ── 한국 밖: 감지 묶음(감지 점 자료가 아직 없어 「자료 준비 중」) ── */
 function Det(c: Ctx) {
+  /* 대응 성과는 한국 시나리오(목)만 — 밖은 실제 감지 점 수(고른 해 · 고른 범위)를 적는다 */
   return (
     <div data-scroll="resp">
       <div className={cx("cm-rhd")}>
         <h2 className={cx("cm-rt")}>{c.T_("shell.det.title")}</h2>
       </div>
       <p className={cx("dt-none")} role="status">
-        {c.T_("shell.err.data_not_loaded")}
+        {c.ptsState === "ok" && !c.view.cum
+          ? c.T_("cmd.real.det_n", { y: c.view.year, a: c.aoiLabel, n: new Intl.NumberFormat().format(c.ptsTotal) })
+          : c.ptsState === "wide"
+            ? c.T_("cmd.real.pts_wide")
+            : c.T_("shell.err.data_not_loaded")}
       </p>
     </div>
   );

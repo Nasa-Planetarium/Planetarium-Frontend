@@ -15,7 +15,7 @@ const UNIT_NAME: Record<string, string> = { day: "cmd.ui.days", week: "cmd.ui.we
  * 표로 보기 · 기간 다이얼(요일 · 빠른 기간 · 막대 브러시 + 손잡이 · 눈금).
  * 일 자료는 AgencyPort 묶음(board.hourly.days — 2001-01-01 부터 결측 날 포함).
  */
-export function CmdHourly({ board, T_, src, setSrc }: { board: Board; q: Query; T_: Ctx["T_"]; kor: boolean; src: "occur" | "sat"; setSrc: (s: "occur" | "sat") => void }) {
+export function CmdHourly({ board, T_, src, setSrc, occurOff }: { board: Board; q: Query; T_: Ctx["T_"]; kor: boolean; src: "occur" | "sat"; setSrc: (s: "occur" | "sat") => void; occurOff?: boolean }) {
   const F = useFmt();
   const days = board.hourly.days;
   const N = days.length;
@@ -98,7 +98,8 @@ export function CmdHourly({ board, T_, src, setSrc }: { board: Board; q: Query; 
         <h2>{T_("cmd.ui.hourly_distribution")}</h2>
         <div className={cx("cm-hr-ctl")}>
           <div className={cx("seg cm-seg")} role="group" aria-label={T_("cmd.ui.time_basis")}>
-            <button type="button" title={T_("cmd.ui.estimated_distribution_daily")} aria-pressed={src === "occur"} onClick={() => setSrc("occur")}>
+            {/* 실제 자료(release)에는 발생 시각이 없다 — 위성 관측 시각만(지어내지 않음) */}
+            <button type="button" title={occurOff ? T_("cmd.real.no_occur") : T_("cmd.ui.estimated_distribution_daily")} aria-pressed={src === "occur"} disabled={occurOff} onClick={() => setSrc("occur")}>
               {T_("cmd.ui.ignition_time")}
               <span className={cx("cm-hr-q")}>{T_("cmd.ui.est")}</span>
             </button>
