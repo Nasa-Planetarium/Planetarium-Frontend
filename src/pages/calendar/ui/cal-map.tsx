@@ -1,0 +1,130 @@
+"use client";
+
+import { useMemo } from "react";
+import { useLocale } from "next-intl";
+import { useQuery } from "@tanstack/react-query";
+import { boundaryQuery } from "@/entities/country";
+import { ApiError } from "@/shared/api";
+import { useT } from "@/shared/i18n";
+import { boundaryApiQuery, cellsQuery, hotspotsMonthQuery } from "../api/queries";
+import type { CalView } from "../model/calendar";
+import { caseFor, cellCase, fmtNum, fmtVal, iso3OfAoi, monthIndex, ymIso } from "../model/calendar";
+import { Status } from "./bits";
+import { unitWord } from "./cal-grid";
+import { cx } from "./cx";
+import { DotMap, type DotCell } from "./dot-map";
+import { WorldReplay } from "./world-replay";
+
+/**
+ * M 그 달 지도(목업 drawMap): 전 세계 = 재생 층을 그 달에 멈춘 상태 · 그 밖 = 점(원) 지도(칸 원 + 한국이면 감지 점 재생).
+ * 윤곽 = /aois/{id}/boundary(계약). 목(MSW)은 경계·칸·점이 503 이라 한국 밖은 셸이 이미 받은 나라 1급 경계(geo/c)로, 한국은 윤곽 없이 그린다.
+ */
+const K_T = [0.3, 0.48, 0.66, 0.84, 1];
+
+export function CalMap(o: { aoi: string; y: number; m: number; view: CalView; mv: string | null; inGb: boolean; ramp: (t: number) => string; onCountry: (iso3: string, i: number) => void; onWorldMonth: (i: number) => void }) {
+  const t = useT();
+  const lang = useLocale();
+  const ym = ymIso(o.y, o.m);
+  const world = o.aoi === "WORLD";
+  const cq = useQuery(cellsQuery(o.aoi, ym, o.mv, !world));
+  const bq = useQuery(boundaryApiQuery(o.aoi, o.mv, !world));
+  const iso3 = iso3OfAoi(o.aoi);
+  const geoQ = useQuery({ ...boundaryQuery(iso3 ?? "KOR"), enabled: !world && bq.isError && !!iso3 && iso3 !== "KOR" });
+  const sel = world ? null : caseFor(ym, o.aoi, o.inGb);
+  const hq = useQuery(hotspotsMonthQuery(o.aoi, ym, sel?.caseId ?? null, o.mv, !!sel));
+  const ramp = o.ramp;
+  const rampAt = useMemo(() => (k: number) => ramp(K_T[k] ?? 1), [ramp]);
+
+  const unit = unitWord(t, o.view);
+  const feats = useMemo(
+    () =>
+      (cq.data?.features ?? []).map((f) => {
+        const k = cellCase(f.properties, o.view, o.y, o.m);
+        return { p: f.properties, ...k };
+      }),
+    [cq.data, o.view, o.y, o.m],
+  );
+  const shown = useMemo(() => feats.filter((k) => k.value != null && k.value > 0 && k.p.cell_lon != null && k.p.cell_lat != null), [feats]);
+  const cells: DotCell[] = useMemo(
+    () =>
+      shown.map((k) => ({
+        lon: k.p.cell_lon as number,
+        lat: k.p.cell_lat as number,
+        value: k.value as number,
+        valueText: fmtVal(lang, k.value),
+        extra: [unit, k.lo != null && k.hi != null && k.lo !== k.hi ? `${t("calendar.k.interval")} ${fmtVal(lang, k.lo)} – ${fmtVal(lang, k.hi)}` : "", k.io ? t("calendar.flag.interval_out") : "", k.status && k.status !== "ok" ? t(`shell.st.${k.status}`) : ""]
+          .filter(Boolean)
+          .join(" · "),
+      })),
+    [shown, lang, unit, t],
+  );
+  const outlines = useMemo(() => {
+    if (bq.data) return bq.data;
+    const g = geoQ.data as { geometry?: { features?: { geometry?: { type: string; coordinates: unknown } }[] } } | undefined;
+    const fs = g?.geometry?.features ?? [];
+    const thin = (ring: number[][]) => (ring.length > 200 ? ring.filter((_, i) => i % Math.ceil(ring.length / 200) === 0) : ring);
+    const rings = fs.flatMap((f) => {
+      const gg = f.geometry;
+      if (!gg) return [];
+      const polys = (gg.type === "Polygon" ? [gg.coordinates] : gg.type === "MultiPolygon" ? gg.coordinates : []) as number[][][][];
+      return polys.map((p) => thin(p[0] ?? []));
+    });
+    /* 날짜 변경선을 넘는 나라: 윤곽 범위가 반구를 넘으면 윤곽 없이 */
+    let w = 999;
+    let e = -999;
+    rings.forEach((r) => r.forEach((q) => ((w = Math.min(w, q[0] as number)), (e = Math.max(e, q[0] as number)))));
+    return e - w > 180 ? [] : rings;
+  }, [bq.data, geoQ.data]);
+
+  if (world)
+    return (
+      <div className={cx("cl-map is-wf")}>
+        <WorldReplay mv={o.mv} month={monthIndex(o.y, o.m)} ramp={o.ramp} partialLine={(p) => t("calendar.ui.partial_line", p)} onCountry={o.onCountry} onMonth={o.onWorldMonth} />
+      </div>
+    );
+
+  const waiting = cq.isPending || bq.isPending || (!!sel && hq.isPending);
+  const cellErr = cq.error instanceof ApiError ? cq.error : null;
+  const size = cq.data?.properties?.cell_size_deg ?? 0.1;
+  const st = cq.data?.properties?.month_status ?? "ok";
+  const nIo = shown.filter((k) => k.io).length;
+  const nMiss = feats.filter((k) => k.value == null).length;
+  const errWord = (e: unknown) => t(e instanceof ApiError && e.code === "data_not_loaded" ? "shell.err.data_not_loaded" : "shell.err.network");
+
+  return (
+    <>
+      <div className={cx("cl-map")} data-map="" data-cells={cq.data ? String(cells.length) : ""}>
+        {waiting ? <div className={cx("cl-dm")}><div className={cx("cl-dmw")}><div className={cx("cl-dmmap")} /></div></div> : (
+          <DotMap
+            cells={cells}
+            size={size}
+            outlines={outlines}
+            pts={hq.data ?? null}
+            ptsWanted={!!sel}
+            focus={sel?.focus ?? null}
+            label={`${t("calendar.ui.map")} ${ym}`}
+            rampAt={rampAt}
+            extra={hq.error ? <span className={cx("cl-dmnote")}>{`${t("calendar.dm.pts")} · ${errWord(hq.error)}`}</span> : null}
+          />
+        )}
+      </div>
+      <div className={cx("cl-mleg")}>
+        {cellErr ? (
+          <span className={cx("cl-cm")}>{errWord(cellErr)}</span>
+        ) : (
+          <>
+            <span className={cx("cl-cm num")}>{`${t("calendar.ui.cells_n", { n: fmtNum(lang, cells.length) })} · ${t("calendar.ui.deg", { d: size })}`}</span>
+            {st !== "ok" ? <Status st={st} /> : null}
+            {nMiss ? <span className={cx("cl-cm num")}>{`${t("shell.st.missing")} ${fmtNum(lang, nMiss)}`}</span> : null}
+            {nIo ? (
+              <span className={cx("cl-flag")}>
+                {t("calendar.flag.interval_out")} <span className={cx("num")}>{nIo}</span>
+              </span>
+            ) : null}
+          </>
+        )}
+        <span className={cx("cl-cm")}>{unit}</span>
+      </div>
+    </>
+  );
+}
