@@ -1,0 +1,831 @@
+/* 경보·출동(ops) — 생성물: scratchpad gen-ops-css.py(목업 index.html 공통 부품 + pages/ops.css 그대로).
+   클래스 이름은 목업 그대로(ui/cx.ts 가 모듈 이름으로 바꾼다). 문서 선택자(html[data-device…])는 :global. 값은 토큰만 */
+
+/* MapLibre 칸(2D 판): 목업 .map canvas 규칙이 MapLibre 캔버스에도 맞게 칸 하나를 둔다 */
+.gl{position:absolute;inset:0}
+.ovl{position:absolute;inset:0;pointer-events:none;width:100%;height:100%;overflow:visible}
+/* 이음매 셸(목업 index.html: html:is(tablet,foldable) #view[data-shell="seam"]>:first-child) — 태블릿·폴더블 화면 뿌리는 바깥 여백·줄 틈 0.
+   목업은 #view 선택자(ID)라 ops.css 의 .op 여백 규칙을 이긴다 → 여기서는 .op.op.op 으로 같은 우선을 낸다 */
+:global(html:is([data-device="tablet"],[data-device="foldable"])) .op.op.op{padding:0;row-gap:0;column-gap:var(--hinge-gap)}
+
+/* ── 공통 부품(목업 index.html) ── */
+.num{font-family:var(--font-body);font-variant-numeric:tabular-nums}
+.mono{font-family:var(--font-data);font-variant-numeric:tabular-nums}
+.muted{color:var(--text-2)} .dim{color:var(--text-3)}
+.btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-2);height:var(--ctl-h);padding:0 var(--sp-3);border-radius:var(--r-s);border:1px solid transparent;background:var(--surface-2);color:var(--text-1);font-size:var(--fs-3);font-weight:var(--fw-medium);cursor:pointer;white-space:nowrap;transition:background-color var(--dur-fast) var(--ease-out),border-color var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out)}
+.btn:hover{background:var(--surface-3)}
+/* 보조 단추 = surface-2 면, 테두리 없음(r8 §3.2). surface-2 위(대화상자·서랍·머리줄)에서는 한 단 올린 surface-3 */
+.btn svg{width:var(--ic-btn);height:var(--ic-btn)}
+/* 주 버튼: 흰 면 + 바탕색 글자, 화면당 하나. 출동 지시만 .danger */
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:var(--fw-strong)}
+.btn.primary:hover{background:var(--accent-strong);border-color:var(--accent-strong)}
+.btn.danger{background:var(--alert-4-strong);border-color:var(--alert-4-strong);color:var(--on-alert-strong)}
+.btn.warn{background:var(--alert-3);border-color:var(--alert-3);color:var(--on-warm)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--text-2)}
+.btn.ghost:hover{color:var(--text-1);background:var(--surface-3)}
+.btn.sm{height:var(--ctl-h-sm);padding:0 var(--sp-2);font-size:var(--fs-2)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.panel{background:var(--surface-1);border:0;border-radius:var(--r-l);box-shadow:var(--seam-ring);min-width:0}
+.panel-h{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-2);padding:var(--sp-3) var(--sp-4) var(--sp-2);min-width:0}
+.panel-h h2,.panel-h h3{font-size:var(--fs-4);font-weight:var(--fw-strong);display:flex;align-items:baseline;gap:var(--sp-2);min-width:0}
+.panel-h h2 small,.panel-h h3 small{font-size:var(--fs-2);font-weight:var(--fw-regular);color:var(--text-2);font-family:var(--font-body);font-variant-numeric:tabular-nums;letter-spacing:0}
+.panel-b{padding:0 var(--sp-4) var(--sp-4);min-width:0}
+.chip{position:relative;display:inline-flex;align-items:center;gap:var(--sp-1);height:var(--chip-h);padding:0 var(--sp-3);border-radius:var(--r-xs);border:1px solid var(--line-strong);background:color-mix(in srgb,var(--surface-1) 82%,transparent);font-size:var(--fs-2);color:var(--text-1);cursor:pointer;white-space:nowrap;transition:background-color var(--dur-fast) var(--ease-out),border-color var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out)}
+.map .chip{backdrop-filter:blur(6px)}
+.chip svg{width:var(--ic-inline);height:var(--ic-inline)}
+/* 선택 = surface-3 면 + 아래 2px text-1 막대(무채) */
+.chip[aria-pressed="true"]{border-color:var(--line-strong);color:var(--text-1);background:var(--accent-soft);box-shadow:var(--sel-b)}
+
+.lv{display:inline-flex;align-items:center;gap:var(--sp-1);height:var(--badge-h);padding:0;border-radius:0;font-size:var(--fs-2);font-weight:var(--fw-strong);white-space:nowrap}
+.lv::before{content:"";width:8px;height:8px;border-radius:var(--r-round);background:currentColor;flex:none}
+.lv.l1{color:var(--alert-1)}
+.lv.l2{color:var(--alert-2)}
+.lv.l3{color:var(--alert-3)}
+.lv.l4{color:var(--alert-4-ink)} .lv.l4::before{background:var(--alert-4)}
+/* 처리 상태: 칩이 아니라 낱말(12, text-2). 아직 아무도 안 본 「신규」만 text-1 600, 끝난 것만 ok 색 */
+.st{display:inline-flex;align-items:center;height:var(--badge-h);padding:0;border-radius:0;font-size:var(--fs-2);font-weight:var(--fw-regular);border:0;color:var(--text-2);white-space:nowrap}
+.st.new{color:var(--text-1);font-weight:var(--fw-strong)}
+.st.contained,.st.resolved{color:var(--ok)}
+.seg{display:inline-flex;border:0;outline:1px solid var(--line-strong);outline-offset:-1px;border-radius:var(--r-xs);overflow:hidden;background:var(--surface-0);min-width:0}
+.seg button{height:var(--ctl-h);padding:0 var(--sp-3);border:0;background:transparent;color:var(--text-2);font-size:var(--fs-2);cursor:pointer;white-space:nowrap;transition:background-color var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out)}
+.seg button+button{border-left:1px solid var(--line-strong)}
+.seg button[aria-pressed="true"]{background:var(--surface-3);color:var(--text-1);box-shadow:var(--sel-b)}
+.seg button:focus-visible{outline-offset:-2px}
+/* g5 수리(회귀 #4): 터치에서 세그먼트 단추 폭도 누름 칸 이상(재생 배속 1×·2×·4× 39–41px · 폰 「통합」 47px) */
+:global(html:not([data-device="web"])) .seg button,:global(html[data-touch="1"]) .seg button{min-width:var(--hit)}
+.up{color:var(--alert-3)} .down{color:var(--ok)}
+.map{position:relative;overflow:hidden;background:var(--map-void);border-radius:var(--r-l);border:0;box-shadow:var(--seam-ring);min-height:300px;touch-action:none;user-select:none}
+.map canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.map .map-ui{position:absolute;inset:0;pointer-events:none}
+.map .map-ui>*{pointer-events:auto}
+.map .zoom{position:absolute;right:var(--sp-3);bottom:44px;display:flex;flex-direction:column;border:1px solid var(--line-strong);border-radius:var(--r-xs);overflow:hidden;background:var(--surface-2);box-shadow:var(--elev-2)}
+.map .zoom button{width:max(32px,var(--hit));height:max(32px,var(--hit));border:0;background:transparent;cursor:pointer;display:grid;place-items:center;color:var(--text-1);transition:background-color var(--dur-fast) var(--ease-out)}
+.map .zoom button:hover{background:var(--surface-3)}
+.map .zoom button:focus-visible{outline-offset:-2px}
+.map .zoom button+button{border-top:1px solid var(--line-strong)}
+.map .zoom svg{width:var(--ic-map);height:var(--ic-map)}
+.map .scale{position:absolute;right:var(--sp-3);bottom:var(--sp-3);font-family:var(--font-data);font-size:var(--fs-1);font-variant-numeric:tabular-nums;color:var(--text-2);display:flex;align-items:center;gap:var(--sp-1);pointer-events:none}
+.map .scale i{display:block;height:5px;border:1px solid var(--text-2);border-top:0}
+.map .attrib{position:absolute;left:var(--sp-3);bottom:10px;font-size:var(--fs-1);color:var(--text-3);font-family:var(--font-body);pointer-events:none;white-space:nowrap}
+.map .map-key{position:absolute;left:var(--sp-3);bottom:var(--sp-7);z-index:2;display:flex;align-items:center;gap:var(--sp-3);max-width:calc(100% - 72px);min-height:28px;padding:var(--sp-1) var(--sp-2);border-radius:var(--r-2xs);border:0;background:color-mix(in srgb,var(--surface-0) 72%,transparent);font-size:var(--fs-1);line-height:1.3;color:var(--text-2);white-space:nowrap;overflow:hidden;pointer-events:none}
+.map .map-key[hidden]{display:none}
+.map .map-key>span{display:inline-flex;align-items:center;gap:var(--sp-1);flex:none}
+.map .map-key>b{flex:none;font-weight:var(--fw-medium);color:var(--text-1)}
+.map .map-key i{flex:none;display:block;width:10px;height:10px;border-radius:var(--r-2xs);background:var(--c,var(--text-2))}
+.map .map-key i.dot{border-radius:var(--r-round)}
+.map .map-key i.ring{background:transparent;border:2px solid var(--c,var(--text-2));border-radius:var(--r-round)}
+.map .map-key i.line{width:14px;height:2px}
+.map .map-key i.dash{width:14px;height:0;background:none;border-top:2px dashed var(--c,var(--text-2))}
+.map .map-key i.ramp{width:56px;height:8px;background:linear-gradient(90deg,var(--h1),var(--h3),var(--h4),var(--h5),var(--h6))}
+.map .map-key i.hatch{background:var(--hatch);border:1px solid var(--text-3)}
+:global(html[data-device="phone"]) .map .map-key{flex-wrap:wrap;row-gap:var(--sp-1);column-gap:var(--sp-2);padding:var(--sp-1) var(--sp-2);max-width:calc(100% - 64px)}
+/* 폰: 줌 단추 대신 핀치, 「전체 보기」만 남긴다 */
+:global(html[data-device="phone"]) .map .zoom [data-z="1"],:global(html[data-device="phone"]) .map .zoom [data-z="-1"]{display:none}
+.ptick{display:inline-flex;align-items:center;gap:var(--sp-1);white-space:nowrap;color:var(--text-2)}
+.ptick i{flex:none;display:block;width:calc(var(--pass-dot) + var(--sp-half));height:calc(var(--pass-dot) + var(--sp-half));background:var(--cosmo-orbit)}
+.ptick i.m{background:transparent;border:var(--hair) solid var(--cosmo-orbit)}
+.ptick .mono{color:var(--text-1)}
+.stages{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:var(--hair);min-width:0;list-style:none;margin:0;padding:0}
+.stages>li{display:flex;flex-direction:column;justify-content:flex-end;gap:var(--sp-1);min-width:0;font-size:var(--fs-2);color:var(--text-3)}
+.stages>li::before{content:"";display:block;height:6px;background:var(--surface-3)}
+.stages>li.is-done{color:var(--text-2)}
+.stages>li.is-done::before{background:var(--text-2)}
+.stages>li.is-now{color:var(--text-1);font-weight:var(--fw-strong)}
+.stages>li.is-now::before{background:var(--text-1)}
+.stages>li .sg-t{font-family:var(--font-data);font-variant-numeric:tabular-nums;font-weight:var(--fw-regular);color:var(--text-3)}
+.utabs,.tabs{display:flex;gap:var(--sp-4);border-bottom:1px solid var(--line-soft);min-width:0;overflow-x:auto;scrollbar-width:none}
+.utabs>button,.tabs>button{position:relative;height:var(--ctl-h);padding:0 var(--sp-half);border:0;background:transparent;color:var(--text-2);font-size:var(--fs-3);cursor:pointer;white-space:nowrap;flex:none}
+.utabs>button:hover,.tabs>button:hover{color:var(--text-1)}
+.utabs>button[aria-selected="true"],.utabs>button[aria-pressed="true"],.tabs>button[aria-selected="true"],.tabs>button[aria-pressed="true"]{color:var(--text-1);font-weight:var(--fw-strong);box-shadow:var(--sel-b)}
+.utabs>button:focus-visible,.tabs>button:focus-visible{outline-offset:-2px}
+/* 요약 목록(키 회색 왼쪽 · 값 오른쪽, hairline) */
+.sumlist{display:grid;grid-template-columns:auto minmax(0,1fr);margin:0;min-width:0}
+.sumlist>dt,.sumlist>dd{margin:0;padding:var(--sp-2) 0;border-bottom:var(--hair) solid var(--line-soft);font-size:var(--fs-3)}
+.sumlist>dt{color:var(--text-2);padding-right:var(--sp-4)}
+.sumlist>dd{color:var(--text-1);text-align:right;font-variant-numeric:tabular-nums;min-width:0}
+.map .mtools{position:absolute;right:var(--sp-3);top:var(--sp-3);z-index:3;display:flex;flex-direction:column;border:1px solid var(--line-strong);border-radius:var(--r-xs);overflow:hidden;background:var(--surface-2);box-shadow:var(--elev-2)}
+.map .mtools>button{position:relative;width:max(48px,var(--hit));min-height:max(44px,var(--hit));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--sp-half);border:0;background:transparent;color:var(--text-1);font-size:var(--fs-1);cursor:pointer;padding:var(--sp-1) 0}
+.map .mtools>button+button{border-top:1px solid var(--line-strong)}
+.map .mtools>button:hover,.map .mtools>button[aria-expanded="true"]{background:var(--surface-3)}
+.map .mtools>button:focus-visible{outline-offset:-2px}
+.map .mtools svg{width:var(--ic-map);height:var(--ic-map)}
+.map .mtools-pop{position:absolute;right:calc(var(--sp-3) + max(48px,var(--hit)) + var(--sp-2));top:var(--sp-3);z-index:4;min-width:200px;max-width:calc(100% - 96px);background:var(--surface-2);border:1px solid var(--line-strong);border-radius:var(--r-xs);box-shadow:var(--elev-2);padding:var(--sp-1) 0}
+.map .mtools-pop[hidden]{display:none}
+.map .mtools-pop label{display:flex;align-items:center;gap:var(--sp-2);min-height:var(--hit);padding:0 var(--sp-3);font-size:var(--fs-3);cursor:pointer}
+.map .mtools-pop label:hover{background:var(--surface-3)}
+.map .mtools-pop input{accent-color:var(--text-1);width:16px;height:16px;margin:0}
+/* 폰 바닥 시트(Watch Duty 원리): 머리 = 손잡이 + 검색 한 줄, 정지점 112px / 50% / 전체. 윗모서리만 --r-sheet */
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:6;display:flex;flex-direction:column;height:var(--sheet-h,112px);max-height:calc(100% - var(--sp-6));background:var(--surface-1);border-top:1px solid var(--line-strong);border-radius:var(--r-sheet) var(--r-sheet) 0 0;box-shadow:var(--elev-3);transition:height var(--dur-base) var(--ease-out);padding-bottom:env(safe-area-inset-bottom,0px)}
+.sheet[data-stop="half"]{--sheet-h:50%}
+.sheet[data-stop="full"]{--sheet-h:100%}
+.sheet .sh-grip{position:relative;flex:none;height:var(--sp-6);border:0;background:transparent;cursor:grab;display:grid;place-items:center;width:100%}
+.sheet .sh-grip::before{content:"";width:36px;height:4px;border-radius:var(--r-2xs);background:var(--line-strong)}
+.sheet .sh-grip::after{content:"";position:absolute;inset:min(0px,calc(50% - var(--hit) / 2)) 0}
+.sheet .sh-h{flex:none;padding:0 var(--gutter) var(--sp-2)}
+.sheet .sh-b{flex:1;min-height:0;overflow:auto;border-top:var(--hair) solid var(--line-soft)}
+.cnt{display:inline-grid;place-items:center;min-width:var(--sp-5);height:var(--sp-5);padding:0 var(--sp-1);border-radius:var(--r-pill);background:var(--surface-3);color:var(--text-1);font-family:var(--font-data);font-size:var(--fs-2);font-weight:var(--fw-strong);font-variant-numeric:tabular-nums;line-height:1}
+.cnt.is-overdue{background:var(--alert-4-strong);color:var(--on-alert-strong)}
+.utabs>button,.tabs>button,.seg button{display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-2)}
+.stages>li .sg-ck{display:inline-flex;align-items:center;gap:var(--sp-1);min-width:0}
+.stages>li .sg-ck svg{width:var(--ic-inline);height:var(--ic-inline);flex:none;color:var(--text-2)}
+.pghd{display:flex;flex-direction:column;min-width:0;padding:var(--sp-2) var(--gutter) 0;background:var(--surface-0);border-bottom:var(--hair) solid var(--line-soft)}
+.pghd .ph-1{display:flex;align-items:center;flex-wrap:wrap;column-gap:var(--sp-3);row-gap:var(--sp-1);min-height:var(--ctl-h);min-width:0}
+.pghd h1{font-size:var(--fs-page);font-weight:var(--fw-bold);line-height:1.2;text-wrap:nowrap}
+.pghd .ph-scope{font-size:var(--fs-3);color:var(--text-2);min-width:0}
+.pghd .ph-tools{display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-2);margin-left:auto;min-width:0}
+/* 심각 미확인 배너(조건부, 줄 1 위): 넓은 유채 면은 여기와 「출동 지시」 단추뿐. 자동으로 닫히지 않는다 */
+.pghd .ph-alert{display:flex;align-items:center;gap:var(--sp-3);min-height:var(--ctl-h);margin:0 calc(-1 * var(--gutter)) var(--sp-2);padding:0 var(--gutter);background:var(--alert-4-strong);color:var(--on-alert-strong);font-size:var(--fs-3);font-weight:var(--fw-strong)}
+.pghd .ph-alert .btn{margin-left:auto;background:var(--on-alert-strong);color:var(--alert-4-strong);height:var(--ctl-h-sm)}
+.cntbar{display:flex;align-items:stretch;min-width:0;overflow:hidden}
+.cntbar>.cb{position:relative;display:inline-flex;align-items:center;gap:var(--sp-2);flex:none;min-height:max(var(--sp-8),var(--hit));padding:0 var(--sp-4);border:0;border-left:var(--hair) solid var(--line-soft);background:transparent;color:inherit;font:inherit;text-decoration:none;white-space:nowrap;cursor:pointer;transition:background-color var(--dur-fast) var(--ease-out)}
+.cntbar>.cb:first-child{border-left:0;padding-left:0}
+.cntbar>.cb:hover .cb-k{color:var(--text-1)}
+.cntbar>.cb:focus-visible{outline-offset:-2px}
+.cntbar>.cb[aria-pressed="true"]{box-shadow:var(--sel-b)}
+.cntbar>.cb[aria-pressed="true"] .cb-k{color:var(--text-1);font-weight:var(--fw-strong)}
+.cb .cb-k{font-size:var(--fs-3);color:var(--text-2)}
+.cb .cb-v{font-family:var(--font-data);font-size:var(--fs-count);font-weight:var(--fw-strong);line-height:1.2;color:var(--text-1);font-variant-numeric:tabular-nums}
+.cb .cb-u{font-size:var(--fs-3);color:var(--text-2)}
+.cb .cb-dot{flex:none;width:8px;height:8px;border-radius:var(--r-round);background:var(--c,var(--text-3))}
+.cb .cb-d{font-size:var(--fs-2);color:var(--text-2);font-variant-numeric:tabular-nums}
+.cb .cb-vw{display:inline-flex;align-items:center;gap:var(--sp-2)}
+:global(html[data-device="phone"]) .cntbar{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
+:global(html[data-device="phone"]) .cntbar>.cb{flex-direction:column;align-items:flex-start;justify-content:space-between;gap:0;min-width:0;padding:var(--sp-1) var(--sp-2);white-space:normal}
+:global(html[data-device="phone"]) .cntbar>.cb:first-child{padding-left:0}
+:global(html[data-device="phone"]) .cb .cb-k{line-height:1.2}
+:global(html[data-device="phone"]) .cb .cb-d{display:none}
+/* 구역 머리 띠: [구역 이름 --fs-sec 600] [개수 mono text-2] …… [구역 도구]. 설명 문장 없음 */
+.sechd{display:flex;align-items:center;gap:var(--sp-2);min-height:var(--ctl-h);padding:0 var(--sp-4);background:var(--surface-1);border-bottom:var(--hair) solid var(--line-soft);min-width:0}
+.sechd h2,.sechd h3{font-size:var(--fs-sec);font-weight:var(--fw-strong);line-height:1.3}
+.sechd .sh-n{font-family:var(--font-data);font-size:var(--fs-3);color:var(--text-2);font-variant-numeric:tabular-nums}
+.sechd .sh-a{display:flex;align-items:center;gap:var(--sp-2);margin-left:auto;min-width:0}
+.row-t{font-size:var(--fs-row);line-height:1.4;color:var(--row-ink);font-weight:var(--fw-strong)}
+.dp{display:flex;flex-direction:column;gap:var(--gap-panel);height:100%;min-height:0}
+.dp-g{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:var(--gap-panel);margin:0 var(--gutter) var(--gutter)}
+.dp-map{min-width:0;min-height:300px;height:100%}
+.dp-list{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.dp-list .dt-wrap{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden}
+.cb-s{display:none}
+:global(html[data-device="phone"]) .cb .cb-l{display:none}
+:global(html[data-device="phone"]) .cb .cb-s{display:inline}
+.dt-tbl thead th{position:sticky;top:0;z-index:1;background:var(--surface-1);white-space:normal;word-break:keep-all}
+.dt-tbl td{white-space:nowrap}
+.dt-tbl td:first-child{white-space:normal}
+.dt-pl{display:inline-flex;align-items:baseline;gap:var(--sp-2)}
+.dt-dot{flex:none;width:8px;height:8px;border-radius:50%;background:var(--c)}
+.dt-ll{display:block;padding-left:var(--sp-4);font-size:var(--fs-3);color:var(--text-3)}
+.dt-none{margin:0;padding:var(--sp-5) var(--sp-4);color:var(--text-2);font-size:var(--fs-2)}
+:global(html:not([data-device="web"])) .dp-g{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(300px,45vh) auto}
+:global(html:not([data-device="web"])) .dp{height:auto}
+:global(html:not([data-device="web"])) .dp-list .dt-wrap{overflow:visible}
+:global(html[data-device="phone"]) .dt-o,.dt-compact .dt-o{display:none}
+:global(html[data-device="phone"]) .dt-tbl td,:global(html[data-device="phone"]) .dt-tbl th{padding-left:var(--sp-1);padding-right:var(--sp-1);font-size:var(--fs-3)}
+:global(html[data-device="phone"]) .dt-tbl td:first-child,:global(html[data-device="phone"]) .dt-tbl th:first-child{padding-left:var(--sp-3)}
+:global(html[data-device="phone"]) .dt-tbl td:last-child,:global(html[data-device="phone"]) .dt-tbl th:last-child{padding-right:var(--sp-3)}
+/* 숫자+단위 한 덩어리(「대기 1건」 「–50%」): 줄 경계에서 갈리지 않게 */
+.nw{white-space:nowrap}
+
+/* ── 화면(목업 pages/ops.css) ── */
+/* ops: 경보·출동. 접두어 .op-  — 토큰은 index.html :root(TOKENS.md). 지도가 화면의 주인공이고, 패널은 면 단계(surface)로 가른다.
+   기기군 골격(DIRECTION §5.4): 웹 = 수신함 · 지도 · 상세 세 칸 / 태블릿 가로 = 지도 + 오른쪽 판(수신함 | 상세) / 태블릿 세로·폰 = 지도 위, 판 아래 /
+   폴더블 펼침 = 왼쪽 판 지도, 오른쪽 판 요약 + 수신함 | 상세. 폭 중단점은 쓰지 않고 셸이 정한 html[data-device] 를 읽는다. */
+.op{display:grid;grid-template-rows:auto minmax(0,1fr);gap:var(--sp-3);padding:var(--sp-4);height:100%;min-height:0;min-width:0}
+.op-grid{display:grid;grid-template-columns:var(--list-w) minmax(0,1fr) var(--panel-w);gap:var(--sp-3);min-height:0;min-width:0}
+/* 판 전환 막대(수신함 | 상세): 웹은 세 칸이 다 보이므로 숨긴다 */
+.op .op-pane{display:none}
+/* 보이는 높이가 --hit 보다 낮은 단추는 누르는 영역만 넓힌다(TOKENS §기기군) */
+.op-pane button::after,.op-tabs button::after,.op-lvseg button::after{content:"";position:absolute;inset:min(0px,calc(50% - var(--hit) / 2)) 0}
+.op-pane button{position:relative;flex:1;display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-2);height:var(--ctl-h-sm);font-size:var(--fs-3)}
+.op-pane .op-tab-n[hidden]{display:none}
+
+
+/* ── 요약 띠: 한 면 위에 숫자만. 칸 경계선·아이콘 상자 없음 ── */
+.op-sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--surface-1);border-radius:var(--r-l);overflow:hidden;min-width:0}
+.op-sum>*{min-width:0}
+.op-k{display:flex;align-items:center;gap:var(--sp-3);padding:var(--sp-3) var(--sp-5)}
+.op-k-t{display:flex;flex-direction:column;gap:var(--sp-half);min-width:0}
+.op-k-k{font-size:var(--fs-2);color:var(--text-2);white-space:nowrap}
+.op-k-v{font-size:var(--fs-num-m,var(--fs-big,var(--fs-page)));font-weight:var(--fw-strong);line-height:1.15;letter-spacing:-.01em}
+.op-k-v small{font-size:var(--fs-2);color:var(--text-2);font-weight:var(--fw-medium);margin-left:var(--sp-1);font-family:var(--font-body)}
+/* 설명 줄은 자르지 않는다: 칸이 모자라면 한 번 줄바꿈 */
+.op-k-d{font-size:var(--fs-2);line-height:1.35;color:var(--text-3);display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-half) var(--sp-1)}
+.op-pip{display:inline-block;width:100%;max-width:20px;min-width:8px;height:12px;border-radius:var(--r-2xs);background:var(--line-strong);flex:1}
+/* 대기·귀소 = 지도 자원 표지와 같은 토큰(무채색 — accent 는 선택 전용) */
+.op-pip.standby{background:var(--data-unit-standby)}
+/* 이동 중 자원은 실제로 움직이는 동안만 깜빡인다(살아 있는 상태). reduced-motion 은 셸이 끈다 */
+.op-pip.enroute{background:var(--route);animation:op-blink 1.2s var(--ease-out) infinite}
+.op-pip.onscene{background:var(--alert-3)}
+.op-pip.return{background:var(--data-unit-return)}
+
+/* ── 수신함 ── */
+.op-inbox,.op-detail{display:flex;flex-direction:column;min-height:0;overflow:hidden;position:relative}
+.op-ih{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-2);padding:var(--sp-3) var(--sp-4) var(--sp-2);min-height:44px}
+.op-ih h2{font-size:var(--fs-body)}
+.op-ih-x{display:none;width:28px;height:28px;border-radius:var(--r-s);border:0;background:var(--surface-2);color:var(--text-2);place-items:center;cursor:pointer;transition:background-color var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out)}
+.op-ih-x:hover{color:var(--text-1);background:var(--surface-3)}
+/* 접힌 레일(옛 1100–1360 폭 배치)은 기기군 골격에서 쓰지 않는다 */
+.op-rail{display:none}
+.op-tabs{display:grid;grid-template-columns:repeat(3,1fr);margin:0 var(--sp-3) var(--sp-2);padding:var(--sp-1);border-radius:var(--r-m);background:var(--surface-0)}
+.op-tabs button{position:relative;display:flex;align-items:center;justify-content:center;gap:var(--sp-2);height:var(--ctl-h-sm);border:0;border-radius:var(--r-s);background:transparent;color:var(--text-2);font-size:var(--fs-2);cursor:pointer;transition:background-color var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out)}
+.op-tabs button:hover{color:var(--text-1)}
+.op-tabs button:focus-visible{outline-offset:-2px}
+.op-tabs button[aria-selected="true"]{background:var(--surface-3);color:var(--text-1)}
+.op-tab-n{font-size:var(--fs-1);min-width:18px;height:16px;padding:0 var(--sp-1);border-radius:var(--r-xs);background:var(--line-soft);color:var(--text-2);display:inline-grid;place-items:center}
+.op-tab-n.un{background:var(--crit);color:var(--on-alert)}
+.op-list{flex:0 1 auto;min-height:96px;overflow:auto;padding:0 var(--sp-2) var(--sp-3);display:flex;flex-direction:column;gap:var(--sp-1)}
+/* 경보 카드: 왼쪽 색 막대는 경보 단계(경보 카드에만 쓴다) */
+.op-it{position:relative;display:flex;flex-direction:column;gap:var(--sp-1);width:100%;text-align:left;padding:var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-4);border-radius:var(--r-m);border:0;background:transparent;cursor:pointer;color:var(--text-1);transition:background-color var(--dur-fast) var(--ease-out)}
+.op-it::before{content:"";position:absolute;left:var(--sp-1);top:var(--sp-3);bottom:var(--sp-3);width:3px;border-radius:var(--r-2xs);background:var(--tone,var(--alert-1))}
+.op-it.l1{--tone:var(--alert-1)} .op-it.l2{--tone:var(--alert-2)} .op-it.l3{--tone:var(--alert-3)} .op-it.l4{--tone:var(--alert-4)}
+.op-it:hover{background:var(--surface-2)}
+.op-it:focus-visible{outline-offset:-2px}
+.op-it.sel{background:var(--surface-3)}
+.op-it.un{background:color-mix(in srgb,var(--crit) 8%,transparent)}
+/* 선택된 미처리 행도 선택 면(surface-3) 그대로: 경보색을 섞은 면 위에서는 「신규」·흐림 글자가 AA 에 못 미쳤다 */
+.op-it.un.sel{background:var(--surface-3)}
+.op-it.done{opacity:.72}
+.op-it.done::before{background:var(--line-strong)}
+.op-it-top{display:flex;align-items:center;gap:var(--sp-2)}
+.op-it-time{font-size:var(--fs-2);color:var(--text-2)}
+.op-it-dot{margin-left:auto;width:8px;height:8px;border-radius:var(--r-round);background:var(--crit)}
+.op-it-title{font-size:var(--fs-3);font-weight:var(--fw-medium);line-height:1.35}
+.op-it.un .op-it-title{font-weight:var(--fw-strong)}
+.op-it-place{font-size:var(--fs-2);color:var(--text-2);overflow-wrap:anywhere}
+.op-it-meta{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-2);font-size:var(--fs-1);color:var(--text-3)}
+.op-it-meta .st{height:20px;font-size:var(--fs-1)}
+.op-it.arrive{animation:op-arrive 1.6s var(--ease-out) both}
+/* 새 경보: 위에서 내려오며 한 번만 진하게 켜졌다가 은은한 잔색으로 가라앉는다(깜빡임 한 번). 수신함 테두리도 같은 박자로 한 번. */
+@keyframes op-arrive{
+  0%{transform:translateY(-12px);opacity:0;background:color-mix(in srgb,var(--crit) 36%,transparent)}
+  14%{transform:none;opacity:1;background:color-mix(in srgb,var(--crit) 36%,transparent)}
+  100%{background:color-mix(in srgb,var(--crit) 8%,transparent)}
+}
+/* 신규 경보 도착: 한 번만 켜지는 테두리 빛(신규 경보는 글로우 허용 대상) */
+.op-inbox.op-ping{animation:op-ping 1.6s var(--ease-out)}
+@keyframes op-ping{0%,14%{box-shadow:0 0 0 1px var(--crit),0 0 24px color-mix(in srgb,var(--crit) 45%,transparent)}100%{box-shadow:0 0 0 1px transparent,0 0 0 transparent}}
+@keyframes op-blink{50%{opacity:.35}}
+.op-empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:var(--sp-2);padding:var(--sp-7) var(--sp-5);color:var(--text-2);font-size:var(--fs-2)}
+.op-empty b{color:var(--text-1);font-size:var(--fs-3);font-weight:var(--fw-strong)}
+.op-empty svg{color:var(--text-3)}
+.op-empty.tall{padding:72px var(--sp-6)}
+
+/* ── 지도 ── */
+.op-mapcell{position:relative;min-width:0;min-height:0}
+.op-map{height:100%;min-height:300px}
+.op-mapcell{container-type:inline-size;container-name:opmap}
+.op-ov{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;mix-blend-mode:screen}
+/* 3D: 덧그림이 MapLibre 캔버스 칸 안(지형 위·표지 아래)에 들어간다. 그 칸의 캔버스 규칙(position:static)을 되돌린다 */
+/* 관제 화면은 자원·불이 산등성이 뒤로 가도 흐려지면 안 된다 — 셸 map3d.js _marker 가 opacity·opacityWhenCovered 를 「1」로 만든다(2026-11-13 refs2: 여기 있던 강제 우선 규칙 둘을 걷었다).
+   진화 완료 불은 인라인 opacity 를 건드리지 않게 filter 로 낮춘다 */
+.op-map .m3-fire.is-closed{filter:opacity(.8)}
+.op-map .op-edge{visibility:hidden}
+/* 화점 이름표 비키기(ops.js geometry): 이웃 핀에 걸리면 왼쪽, 양쪽 다 걸리면 숨김. 고른 불은 숨기지 않는다 */
+.op-map .m3-fire.op-lbl-l .m3-label{left:auto;right:34px;text-align:right}
+.op-map .m3-fire.op-lbl-x:not(.is-sel) .m3-label{display:none}
+/* 자리를 정하기 전(op-lbl-r·l·x 가 붙기 전) 화점 이름표는 숨긴다: 처음 뜨는 프레임에 기본 오른쪽 자리로 한 번 그려져 이웃 이름표와 겹치지 않게 */
+.op-map .m3-fire:not(.op-lbl-r):not(.op-lbl-l):not(.op-lbl-x) .m3-label{visibility:hidden}
+/* 화면 밖 표지 칩(ops.js offChips): 그 방향 가장자리에 화살표 + 종류별 수. 누르면 전체 보기 */
+.map .map-ui>.op-off{position:absolute;inset:0;pointer-events:none}
+.op-off .op-off-chip{position:absolute;left:0;top:0;pointer-events:auto;gap:var(--sp-1);padding:0 var(--sp-3) 0 var(--sp-2);color:var(--text-1);background:color-mix(in srgb,var(--surface-1) 86%,transparent);backdrop-filter:blur(6px);box-shadow:var(--elev-2);font-size:var(--fs-2)}
+.op-off .op-off-chip:hover{border-color:var(--text-3)}
+.op-off-ar{display:inline-grid;place-items:center;color:var(--text-2)}
+.op-off .op-off-chip::after{inset:min(0px,calc(50% - var(--hit) / 2))}
+.op-mchips{position:absolute;left:var(--sp-3);top:var(--sp-3);right:192px;display:flex;flex-wrap:wrap;gap:var(--sp-2)}
+.op-mchips .chip[aria-pressed="false"]{color:var(--text-2);background:color-mix(in srgb,var(--surface-0) 80%,transparent)}
+.op-mchips .chip[aria-pressed="false"] svg{opacity:.5}
+.op-mchips .chip:hover{border-color:var(--text-3)}
+.op-mchips .chip[aria-pressed="true"]:hover{border-color:var(--text-2)}
+/* 지도 칸이 좁으면 칩은 아이콘만(글자는 화면 읽기용으로 남긴다) */
+@container opmap (max-width:580px){
+  .op-mchips .chip{width:var(--chip-h);padding:0;justify-content:center}
+  .op-mchips .op-chip-t{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  /* 아이콘만 남은 칩은 폭이 --chip-h(폰 36)뿐이다 → 칸 사이를 「--hit − --chip-h」(폰·폴더블 12, 그 아래는 --sp-2)로 벌리고
+     누르는 영역을 가로로 칸 사이 절반씩 넓혀 이웃 칩 영역과 겹치지 않게 --hit 까지(--sp-2 로는 44 에 그쳤다) */
+  .op-mchips{--op-chip-gap:max(var(--sp-2),calc(var(--hit) - var(--chip-h)));gap:var(--op-chip-gap)}
+  .op-mchips .chip::after{inset:min(0px,calc(50% - var(--hit) / 2)) calc(var(--op-chip-gap) / -2 - var(--hair))} /* ::after 는 테두리 안쪽 기준이라 테두리 1px 만큼 더 */
+  .op-mapcell .op-legend-heat{display:none}
+}
+/* 오른쪽 위 묶음: 바람 · 자료 신선도 · 다음 통과 예고. 오른쪽 맞춤으로 위에서 아래로 쌓는다(칩 줄과 가로로 다투지 않게) */
+.op-tr{position:absolute;right:var(--sp-3);top:var(--sp-3);display:flex;flex-direction:column;align-items:flex-end;gap:var(--sp-2);pointer-events:none;max-width:calc(100% - var(--sp-6))}
+/* 지도 공통 규칙(.map .map-ui>*{pointer-events:auto})이 이 묶음을 다시 누르게 만들어, 폴더블에서 넷째 칩(경로)을 덮었다 → 묶음은 누르지 않는다 */
+.map .map-ui>.op-tr{pointer-events:none}
+.op-tr>*{border-radius:var(--r-m);background:color-mix(in srgb,var(--surface-1) 86%,transparent);backdrop-filter:blur(6px);box-shadow:var(--elev-2)}
+.op-tr>[hidden]{display:none}
+.op-wind{display:flex;align-items:center;gap:var(--sp-2);padding:var(--sp-1) var(--sp-3) var(--sp-1) var(--sp-1);font-size:var(--fs-2);color:var(--text-1)}
+.op-wind b{display:block;color:var(--text-1);font-weight:var(--fw-strong);white-space:nowrap}
+.op-wind small{display:block;color:var(--text-2);font-size:var(--fs-1);white-space:nowrap}
+.op-wind-dial{position:relative;display:grid;place-items:center;width:40px;height:40px;flex:none}
+.op-wind-dial svg{width:100%;height:100%}
+/* 고리는 3시 방향에서 시계 방향으로 그려진다(pathLength 100): 69–81 구간(12시 둘레)을 비워 「N」 자리를 만든다 */
+.op-wind-ring{fill:none;stroke:var(--line-strong);stroke-width:2}
+/* 북쪽 표지 「N」: 고리 위쪽을 비운 자리에 글자 토큰 크기로 얹는다 */
+.op-wind-n{position:absolute;left:50%;top:0;transform:translate(-50%,-25%);font-family:var(--font-data);font-size:var(--fs-1);line-height:1;color:var(--text-2)}
+/* 자료 신선도: 원호(EM.ui.freshArc) + 마지막 수신 통과(통과 틱). 원호 움직임은 Moment ① 한 번 */
+/* 트랙(점선 1px)과 경과 호(3px)를 굵기·모양으로 가른다 — 같은 회색 두 줄이면 꽉 찬 원처럼 읽혔다 */
+/* 다음 통과 예고(15분 안): 관측폭 가장자리선 견본(점선) + 「NOAA-21 14:32 통과 예정 · 12분 후」 */
+.op-swath{display:flex;align-items:flex-start;gap:var(--sp-2);padding:var(--sp-2) var(--sp-3);font-size:var(--fs-1);color:var(--cosmo-label);max-width:100%}
+.op-swath b{color:var(--text-1);font-weight:var(--fw-medium)}
+.op-swath small{display:block;color:var(--text-3);font-size:var(--fs-1)}
+.op-swath-k{flex:none;width:var(--sp-4);height:0;margin-top:var(--sp-2);border-top:var(--hair) dashed var(--cosmo-orbit)}
+.op-legend{position:absolute;left:var(--sp-3);bottom:var(--sp-7);display:flex;flex-wrap:wrap;gap:var(--sp-1) var(--sp-3);padding:var(--sp-2) var(--sp-3);border-radius:var(--r-s);background:color-mix(in srgb,var(--surface-0) 78%,transparent);font-size:var(--fs-1);color:var(--text-2);pointer-events:none;max-width:calc(100% - 80px)}
+.op-legend span{display:inline-flex;align-items:center;gap:var(--sp-1);white-space:nowrap}
+/* 범례 두 줄: 자원 상태 / 확산·마을·열 지도 — 넘쳐서 한 칸만 내려가는 줄바꿈을 만들지 않는다 */
+.op-legend-br{flex-basis:100%;height:0}
+.op-row-b small{word-break:keep-all}
+.op-legend .op-pip{width:10px;height:10px;min-width:10px;flex:none;border-radius:var(--r-2xs);animation:none}
+/* 범례 견본(데이터 램프라 그라데이션 허용) */
+.op-legend-fan::before{content:"";width:14px;height:10px;border-radius:0 var(--r-xs) var(--r-xs) 0;background:linear-gradient(90deg,var(--alert-4),color-mix(in srgb,var(--alert-3) 30%,transparent))}
+.op-legend-vil::before{content:"";width:10px;height:10px;border:var(--sp-half) solid var(--text-1);border-radius:var(--r-2xs);clip-path:polygon(50% 0,100% 40%,100% 100%,0 100%,0 40%)}
+.op-legend-heat::before{content:"";width:22px;height:6px;border-radius:var(--r-2xs);background:linear-gradient(90deg,var(--h2),var(--h4),var(--h6))}
+
+/* ── 상세 ── */
+.op-dtop{padding:var(--sp-3) var(--sp-4);border-bottom:1px solid var(--line-soft)}
+.op-dtop:empty{display:none}
+.op-tone1{--tone:var(--alert-1)} .op-tone2{--tone:var(--alert-2)} .op-tone3{--tone:var(--alert-3)} .op-tone4{--tone:var(--alert-4)}
+.op-dh-row{display:flex;align-items:center;gap:var(--sp-2);min-width:0}
+.op-dh-id{font-size:var(--fs-1);color:var(--text-3)}
+.op-grow{flex:1}
+.op-dh-age{font-size:var(--fs-2);color:var(--text-2);white-space:nowrap}
+.op-dh-title{font-size:var(--fs-5,var(--fs-page));font-weight:var(--fw-strong);line-height:1.3;margin-top:var(--sp-2);letter-spacing:-.01em}
+.op-dh-place{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap;margin-top:var(--sp-1);font-size:var(--fs-2);color:var(--text-2)}
+.op-dh-place svg{color:var(--tone)}
+.op-dh-place .num{font-size:var(--fs-1)}
+.op-steps{list-style:none;margin:var(--sp-3) 0 0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr))}
+.op-step{position:relative;display:flex;flex-direction:column;align-items:center;gap:var(--sp-1);font-size:var(--fs-1);color:var(--text-3);text-align:center}
+.op-step+.op-step::before{content:"";position:absolute;top:7px;right:calc(50% + 12px);left:calc(-50% + 12px);height:2px;border-radius:var(--hair);background:var(--line-strong)}
+/* 지난 단계는 무채(글자 2단)로, 지금 단계만 경보 단계 색 — 강조색은 선택·주 버튼·포커스에만 쓴다 */
+.op-step.done+.op-step::before{background:var(--text-3)}
+.op-step-dot{width:16px;height:16px;border-radius:var(--r-round);border:2px solid var(--line-strong);background:var(--surface-1);display:grid;place-items:center;color:var(--surface-1)}
+.op-step-dot svg{width:calc(var(--sp-2) + var(--sp-half));height:calc(var(--sp-2) + var(--sp-half))}
+.op-step.done .op-step-dot{background:var(--text-2);border-color:var(--text-2)}
+.op-step.done{color:var(--text-2)}
+.op-step.cur{color:var(--text-1);font-weight:var(--fw-strong)}
+/* 지금 단계: 단계 색 점 + 옅은 고리 하나(맥동 없음) */
+.op-step.cur .op-step-dot{border-color:var(--tone);background:var(--tone);box-shadow:0 0 0 var(--sp-1) color-mix(in srgb,var(--tone) 22%,transparent)}
+.op-step-l{white-space:nowrap}
+.op-detail-b{flex:1;min-height:0;overflow:auto;padding-bottom:var(--sp-3)}
+.op-sec{padding:var(--sp-3) var(--sp-4);border-top:1px solid var(--line-soft)}
+.op-sec:first-child{border-top:0}
+.op-sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:var(--sp-3);margin-bottom:var(--sp-2)}
+.op-sec-h h3{font-size:var(--fs-2);font-weight:var(--fw-strong);color:var(--text-2)}
+.op-sec-h small{display:inline-flex;align-items:center;gap:var(--sp-1);font-size:var(--fs-1);color:var(--text-3);text-align:right}
+.op-sec-act .op-sec-h h3{color:var(--text-1)}
+
+/* 대응 담당: 단계별 조치 줄 — 한 단 올린 면, 줄 사이만 가는 선. 다음 할 줄은 면 한 단 + 강조색 2px 안쪽 띠(반투명 강조 면을 쓰지 않는다) */
+.op-acts{display:flex;flex-direction:column;border-radius:var(--r-m);overflow:hidden;background:var(--surface-2)}
+.op-row{position:relative;display:grid;grid-template-columns:24px minmax(0,1fr) auto;align-items:center;gap:var(--sp-3);padding:var(--sp-2) var(--sp-3);border-top:1px solid var(--line-soft)}
+.op-row:first-child{border-top:0}
+.op-row-n{width:24px;height:24px;border-radius:var(--r-round);display:grid;place-items:center;font-size:var(--fs-1);color:var(--text-2);border:1px solid var(--line-strong)}
+.op-row.next .op-row-n{border-color:var(--text-1);color:var(--text-1);background:var(--surface-3)}
+.op-row.ok .op-row-n{border-color:var(--ok);background:var(--ok);color:var(--surface-0)}
+.op-row.next{background:var(--surface-3)}
+.op-row.next::before,.op-res.on::before,.op-fr.cur::before{content:"";position:absolute;left:0;top:0;bottom:0;width:var(--sp-half);background:var(--text-1)}
+/* 막힌 조치 줄: 제목만 흐림 글자로 낮추고, 왜 막혔는지 알리는 small 은 불투명 text-2 로 둔다(투명도는 안내 글자까지 AA 아래로 내렸다) */
+.op-row.off .op-row-b b{color:var(--text-3);font-weight:var(--fw-medium)}
+.op-row-b{display:flex;flex-direction:column;gap:var(--sp-half);min-width:0}
+.op-row-b b{font-size:var(--fs-3);font-weight:var(--fw-strong)}
+.op-row-b small{display:flex;align-items:center;gap:var(--sp-1);flex-wrap:wrap;font-size:var(--fs-2);color:var(--text-2)}
+.op-row.ok .op-row-b small{color:var(--ok)}
+.op-row.lvrow{grid-template-columns:24px minmax(0,1fr) auto;grid-template-areas:"n b go" ". seg seg"}
+.op-row.lvrow .op-row-n{grid-area:n} .op-row.lvrow .op-row-b{grid-area:b} .op-row.lvrow>.btn{grid-area:go}
+.op-lvseg{grid-area:seg;display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-1)}
+.op-lvseg button{--c:var(--alert-1);position:relative;display:flex;align-items:center;justify-content:center;gap:var(--sp-1);height:var(--ctl-h-sm);border-radius:var(--r-s);border:1px solid var(--line-strong);background:var(--surface-1);color:var(--text-2);font-size:var(--fs-2);cursor:pointer;transition:background-color var(--dur-fast) var(--ease-out),border-color var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out)}
+.op-lvseg button::before{content:"";width:8px;height:8px;border-radius:var(--r-round);background:var(--c)}
+.op-lvseg .v2{--c:var(--alert-2)} .op-lvseg .v3{--c:var(--alert-3)} .op-lvseg .v4{--c:var(--alert-4)}
+.op-lvseg button:hover:not([disabled]){color:var(--text-1);border-color:var(--c)}
+.op-lvseg button[aria-pressed="true"]{color:var(--c);border-color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent);font-weight:var(--fw-strong)}
+.op-lvseg button[disabled]{cursor:not-allowed;opacity:.5}
+.op-confirm{margin:0;padding:var(--sp-3);border-top:1px solid color-mix(in srgb,var(--warn) 45%,transparent);background:color-mix(in srgb,var(--warn) 6%,var(--surface-2));display:flex;flex-direction:column;gap:var(--sp-2)}
+.op-confirm-h{display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-2);font-size:var(--fs-2);font-weight:var(--fw-strong);color:var(--warn)}
+.op-confirm-k{display:block;margin-bottom:var(--sp-1);font-size:var(--fs-1);color:var(--text-3)}
+.op-confirm-dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--sp-1) var(--sp-3);margin:0;font-size:var(--fs-2)}
+.op-confirm-dl dt{color:var(--text-2)} .op-confirm-dl dd{margin:0}
+.op-confirm-msg{font-size:var(--fs-2);line-height:1.55;padding:var(--sp-2) var(--sp-3);border-radius:var(--r-s);background:var(--surface-0)}
+.op-confirm-f{display:flex;justify-content:flex-end;gap:var(--sp-2)}
+
+/* 소방: 출동 */
+.op-banner{display:flex;align-items:center;gap:var(--sp-2);padding:var(--sp-2) var(--sp-3);border-radius:var(--r-m);margin-bottom:var(--sp-3);font-size:var(--fs-2);color:var(--text-1);background:color-mix(in srgb,var(--alert-3) 14%,transparent)}
+.op-banner svg{color:var(--alert-3);flex:none}
+.op-sub{display:flex;align-items:baseline;justify-content:space-between;gap:var(--sp-2);margin-bottom:var(--sp-2);font-size:var(--fs-2)}
+.op-sub small{font-size:var(--fs-1);color:var(--text-3);text-align:right}
+.op-reslist{display:flex;flex-direction:column;border-radius:var(--r-m);overflow:hidden;background:var(--surface-2)}
+.op-res{position:relative;display:grid;grid-template-columns:auto 32px minmax(0,1fr) auto;align-items:center;gap:var(--sp-3);min-height:var(--row-h);padding:var(--sp-2) var(--sp-3);border-top:1px solid var(--line-soft);cursor:pointer;transition:background-color var(--dur-fast) var(--ease-out)}
+.op-res.ro{grid-template-columns:32px minmax(0,1fr) auto;cursor:default}
+.op-res:first-child{border-top:0}
+.op-res:not(.ro):hover{background:var(--surface-3)}
+.op-res.on{background:var(--surface-3)}
+.op-res:has(input:focus-visible){outline:var(--ring-w) solid var(--focus-ring);outline-offset:calc(0px - var(--ring-w))}
+.op-res input{width:16px;height:16px;margin:0;accent-color:var(--text-1);cursor:pointer}
+.op-res input:focus-visible{outline:none}
+.op-res-ic{width:32px;height:32px;border-radius:var(--r-s);display:grid;place-items:center;background:var(--surface-3);color:var(--text-2)}
+.op-res-main{display:flex;flex-direction:column;min-width:0}
+.op-res-main b{font-size:var(--fs-2);font-weight:var(--fw-medium);line-height:1.35;word-break:keep-all;overflow-wrap:anywhere}
+.op-res-main small{font-size:var(--fs-1);color:var(--text-3);line-height:1.35;word-break:keep-all;overflow-wrap:anywhere} /* 소속 · 종류는 말줄임 없이 줄바꿈(360: 「관할 안전센터 A·C · 펌프·진화차」) */
+.op-res-eta{display:flex;flex-direction:column;align-items:flex-end;text-align:right}
+.op-res-eta b{font-size:var(--fs-4);font-weight:var(--fw-strong);line-height:1.2}
+.op-res-eta b small{font-size:var(--fs-1);color:var(--text-2);font-weight:var(--fw-regular);margin-left:var(--sp-half);font-family:var(--font-body)}
+.op-res-eta>small{font-size:var(--fs-1);color:var(--text-3);white-space:nowrap}
+.op-pick{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);margin-top:var(--sp-2);min-height:32px}
+.op-pick-sum{font-size:var(--fs-2);color:var(--text-2);min-width:0}
+.op-pick-sum b{color:var(--text-1)}
+.op-two{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-2);margin-top:var(--sp-3)}
+.op-two .btn{height:max(40px,var(--ctl-h))}
+.op-cnt{min-width:18px;height:18px;border-radius:var(--r-xs);padding:0 var(--sp-1);display:inline-grid;place-items:center;font-size:var(--fs-1);background:var(--surface-0);color:var(--text-1)}
+.op-two .btn.op-ok{background:color-mix(in srgb,var(--ok) 16%,var(--surface-2));border-color:color-mix(in srgb,var(--ok) 55%,transparent);color:var(--ok)}
+.op-two .btn.op-ok:hover{background:color-mix(in srgb,var(--ok) 24%,var(--surface-2))}
+.op-hint{margin-top:var(--sp-2);font-size:var(--fs-2);color:var(--text-3)}
+.op-more{display:flex;align-items:center;justify-content:center;gap:var(--sp-2);width:100%;height:max(32px,var(--ctl-h-sm));border:0;border-top:1px solid var(--line-soft);background:transparent;color:var(--text-2);font-size:var(--fs-2);cursor:pointer;transition:background-color var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out)}
+.op-more:hover{background:var(--surface-3);color:var(--text-1)}
+.op-more:focus-visible{outline-offset:-2px}
+/* 상세 판이 스크롤되면 본문 아래 제 줄에 「아래 더 보기」: 본문 위에 띄우지 않는다(띄운 알약이 확산 방향·조치 줄 글자를 덮었다).
+   본문 스크롤 칸과 행동 바 사이의 고정 줄 — 위 가는 선이 「여기서 잘렸다」를 알리고, 단추는 그 줄 가운데 작은 글자 단추 */
+.op-morehint{flex:none;display:flex;justify-content:center;padding:var(--sp-1) var(--sp-3);border-top:1px solid var(--line-strong);background:var(--surface-1)}
+.op-morehint:has(button[hidden]){display:none}
+.op-morehint button{position:relative;display:inline-flex;align-items:center;gap:var(--sp-1);height:var(--ctl-h-sm);padding:0 var(--sp-3);border:0;border-radius:var(--r-s);background:transparent;color:var(--text-2);font-size:var(--fs-2);white-space:nowrap;cursor:pointer;transition:background-color var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out)}
+.op-morehint button::after{content:"";position:absolute;inset:min(0px,calc(50% - var(--hit) / 2)) 0}
+.op-morehint button:hover{background:var(--surface-2);color:var(--text-1)}
+.op-morehint button:focus-visible{outline-offset:-2px}
+.op-morehint button[hidden]{display:none}
+/* 소방 행동 바: 상세 아래 고정 */
+.op-dfoot{flex:none;padding:var(--sp-3) var(--sp-4);border-top:1px solid var(--line-soft);background:var(--surface-1)}
+.op-dfoot:empty{display:none}
+.op-dfoot .op-pick{margin-top:0}
+.op-dfoot .op-two{margin-top:var(--sp-2)}
+.op-none{font-size:var(--fs-2);color:var(--text-3);padding:var(--sp-1) 0}
+.op-closed{display:flex;gap:var(--sp-3);align-items:flex-start;padding:var(--sp-3);border-radius:var(--r-m);background:color-mix(in srgb,var(--ok) 10%,transparent);font-size:var(--fs-2)}
+.op-closed svg{color:var(--ok);flex:none;margin-top:var(--sp-half)}
+.op-closed small{display:block;color:var(--text-2);font-size:var(--fs-2);margin-top:var(--sp-half)}
+
+/* 근거: 한 면 안의 칸, 칸 경계선 없음. 첫 줄 = 센서 두 칸(화소 견본 · 개수 · 마지막 통과), 둘째 줄 = FRP·확산·바람, 끝 줄 = 신고 한 줄 */
+.op-ev{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;background:var(--surface-2);border-radius:var(--r-m);overflow:hidden}
+.op-ev-c{grid-column:span 2;display:flex;flex-direction:column;gap:var(--sp-half);padding:var(--sp-2) var(--sp-3);min-width:0}
+.op-ev-c.op-ev-sen{grid-column:span 3}
+.op-ev-c.op-ev-wide{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:var(--sp-1) var(--sp-3)}
+.op-ev-wide .op-ev-v{font-size:var(--fs-3)}
+.op-ev-k{display:flex;align-items:center;gap:var(--sp-2);font-size:var(--fs-1);color:var(--text-2)}
+.op-ev-v{display:flex;align-items:baseline;gap:var(--sp-1);font-size:var(--fs-4);line-height:1.3}
+.op-ev-v b{font-weight:var(--fw-strong)}
+.op-ev-v small{font-size:var(--fs-1);color:var(--text-2)}
+.op-ev-s{font-size:var(--fs-1);line-height:1.35;color:var(--text-3);overflow-wrap:anywhere;word-break:keep-all}
+/* 센서 화소 비율 그림: VIIRS 375 m : MODIS 1 km ≈ 6 : 16 사각을 바닥 맞춰 붙이고 옆에 「375 m : 1 km」(고정 크기 — 비율이 뜻이다).
+   빈 사각 하나는 체크박스로 읽혀서, 채운 면(cosmo-orbit 옅게)으로 그리고 감지 근거 머리 한 곳에만 둔다 */
+.op-pxr{display:inline-flex;align-items:flex-end;margin-right:var(--sp-2);color:var(--cosmo-label)}
+.op-pxr .num{margin-left:var(--sp-2);font-family:var(--font-data)}
+.op-px{flex:none;display:inline-block;border:var(--hair) solid var(--cosmo-orbit);background:color-mix(in srgb,var(--cosmo-orbit) 35%,transparent)}
+.op-px.v{width:calc(var(--sp-1) + var(--sp-half));height:calc(var(--sp-1) + var(--sp-half))}
+.op-px.m{width:var(--sp-4);height:var(--sp-4);border-left:0}
+/* 통과 줄: 「▪ NOAA-21 · 13:52 통과 04:52Z」. 새 통과 수신 때 바탕이 surface-3 → surface-2 로 한 번 바뀐다(Moment ①) */
+.op-ev-pass{display:flex;flex-direction:column;align-items:flex-start;gap:0;margin:var(--sp-half) calc(0px - var(--sp-1)) 0;padding:var(--sp-half) var(--sp-1);border-radius:var(--r-xs);background:var(--surface-2);font-size:var(--fs-1);transition:background-color var(--dur-moment) var(--ease-out)}
+.op-ev-pass.is-new{background:var(--surface-3)}
+.op-ev-pass .ptick{color:var(--cosmo-label)}
+.op-utc{color:var(--cosmo-label);white-space:nowrap}
+.op-ev-pass .ptick{white-space:nowrap}
+.op-arrow{align-self:center;color:var(--alert-3);flex:none}
+.op-ok-t{color:var(--ok);font-size:var(--fs-body)} .op-warn-t{color:var(--alert-3);font-size:var(--fs-body)}
+.op-vil{display:flex;align-items:center;gap:var(--sp-2);margin-top:var(--sp-2);padding:var(--sp-2) var(--sp-3);border-radius:var(--r-s);background:var(--surface-2);font-size:var(--fs-2)}
+.op-vil svg{color:var(--alert-2);flex:none}
+.op-vil span:first-of-type{flex:1;min-width:0}
+.op-vil .dim{font-size:var(--fs-1)}
+.op-body{display:flex;gap:var(--sp-2);align-items:flex-start;margin-top:var(--sp-2);font-size:var(--fs-2);color:var(--text-2);line-height:1.55}
+.op-body svg{flex:none;margin-top:var(--sp-half);color:var(--text-3)}
+
+/* 투입 자원 */
+.op-asg{display:flex;flex-direction:column;gap:var(--sp-2)}
+.op-asg-r{display:grid;grid-template-columns:32px minmax(0,1fr) auto;align-items:center;gap:var(--sp-3)}
+.op-asg-r.enroute .op-res-ic{color:var(--route)} .op-asg-r.onscene .op-res-ic{color:var(--alert-3)} .op-asg-r.return .op-res-ic{color:var(--text-2)}
+.op-bar{display:block;height:4px;margin-top:var(--sp-1);border-radius:var(--r-2xs);background:var(--line-soft);overflow:hidden}
+.op-bar i{display:block;height:100%;border-radius:var(--r-2xs);background:var(--route);transition:width var(--dur-fast) linear}
+.op-asg-r.onscene .op-bar i{background:var(--alert-3)} .op-asg-r.return .op-bar i{background:var(--text-2)}
+.op-asg-s{display:flex;flex-direction:column;align-items:flex-end;gap:var(--sp-half)}
+.op-asg-s small{font-size:var(--fs-1);color:var(--text-3)}
+.op-ust{font-size:var(--fs-1);font-weight:var(--fw-medium);padding:0 var(--sp-2);line-height:20px;border-radius:var(--r-s);white-space:nowrap}
+.op-ust.enroute{color:var(--route);background:color-mix(in srgb,var(--route) 14%,transparent)}
+.op-ust.onscene{color:var(--alert-3);background:color-mix(in srgb,var(--alert-3) 14%,transparent)}
+.op-ust.return{color:var(--text-2);background:var(--surface-3)}
+
+/* 이력 */
+.op-tl{list-style:none;margin:0;padding:0;position:relative}
+.op-tl li{position:relative;display:grid;grid-template-columns:64px minmax(0,1fr);gap:var(--sp-3);padding:0 0 var(--sp-3) var(--sp-4)}
+.op-tl li::before{content:"";position:absolute;left:3px;top:6px;width:7px;height:7px;border-radius:var(--r-round);background:var(--line-strong)}
+.op-tl li::after{content:"";position:absolute;left:6px;top:15px;bottom:-2px;width:1px;background:var(--line-soft)}
+.op-tl li:last-child::after{display:none}
+.op-tl li.last::before{background:var(--text-1)}
+.op-tl-at{font-size:var(--fs-2);color:var(--text-2)}
+.op-tl-t{font-size:var(--fs-2);line-height:1.45;min-width:0}
+.op-tl-t small{display:block;font-size:var(--fs-1);color:var(--text-3)}
+.op-mlist{margin:var(--sp-2) 0 0;padding-left:var(--sp-5);color:var(--text-2);font-size:var(--fs-3);line-height:1.7}
+
+/* 진화 끝난 현장: 투명도 대신 글자만 흐림(text-3, s1 위 5.69). 상태 칩은 그대로 */
+.op-fr-dot{width:8px;height:8px;border-radius:var(--r-round);background:var(--alert-1)}
+.op-fr-dot.v2{background:var(--alert-2)} .op-fr-dot.v3{background:var(--alert-3)} .op-fr-dot.v4{background:var(--alert-4)}
+
+
+
+/* ── 지역 비교(같은 달 과거 대비): 올린 면 하나, 장식 막대·그라데이션 없음 ── */
+.op-prod{--st:var(--st-ok);position:relative;display:flex;flex-direction:column;gap:var(--sp-3);padding:var(--sp-3);border-radius:var(--r-m);background:var(--surface-2);overflow:hidden}
+.op-prod-h{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-2)}
+.op-prod-cap{display:inline-flex;align-items:center;gap:var(--sp-2);font-size:var(--fs-2);font-weight:var(--fw-medium);color:var(--text-2)}
+.op-prod-st{display:inline-flex;align-items:center;gap:var(--sp-1);height:20px;padding:0 var(--sp-2);border-radius:var(--r-xs);font-size:var(--fs-1);font-weight:var(--fw-strong);color:var(--st);background:color-mix(in srgb,var(--st) 14%,transparent)}
+.op-prod-st::before{content:"";width:6px;height:6px;border-radius:var(--r-round);background:currentColor}
+.op-prod-st.limited{--st:var(--st-limit)} .op-prod-st.unavailable{--st:var(--st-na)}
+.op-prod-ms{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp-1)}
+.op-prod-m{display:flex;flex-direction:column;gap:var(--sp-half);padding:var(--sp-2) var(--sp-3);border-radius:var(--r-s);background:var(--surface-1);min-width:0}
+.op-prod-k{font-size:var(--fs-1);color:var(--text-2);line-height:1.3;word-break:keep-all;overflow-wrap:anywhere} /* 칸이 좁으면(1024·390·360) 「일수 환산 중앙값」이 말줄임 대신 두 줄로 */
+.op-prod-v{display:flex;align-items:baseline;gap:var(--sp-half);line-height:1.2}
+.op-prod-v b{font-size:var(--fs-5,var(--fs-page));font-weight:var(--fw-strong);letter-spacing:-.01em}
+.op-prod-v small{font-size:var(--fs-1);color:var(--text-2)}
+.op-prod-s{font-size:var(--fs-1);color:var(--text-3);line-height:1.35;word-break:keep-all;overflow-wrap:anywhere}
+.op-prod-go{align-self:stretch;justify-content:flex-start;gap:var(--sp-2)}
+.op-prod-go .num{margin-left:auto;font-family:var(--font-data);font-size:var(--fs-1)}
+
+/* ── 기기군 골격 ── */
+/* 웹이 아니면: 판 전환 막대를 보이고, 고른 판 하나만 둔다. 요약 띠의 자원 배치 막대·역할 표지는 뺀다(같은 수가 위 칸과 머리줄에 있다) */
+:global(html:not([data-device="web"])) .op-pane{display:flex}
+:global(html:not([data-device="web"])) .op[data-pane="inbox"] .op-detail,
+:global(html:not([data-device="web"])) .op[data-pane="detail"] .op-inbox{display:none}
+/* 판 전환 막대는 .seg(overflow:hidden) 안이라 ::after 로 넓힌 누르는 영역이 잘린다 → 보이는 높이를 --hit 로 */
+:global(html:not([data-device="web"])) .op-pane button{height:var(--hit);min-height:var(--hit)}
+:global(html:not([data-device="web"])) .op-pane{flex:none;min-height:calc(var(--hit) + 2 * var(--hair))} /* 테두리 1px 안에서 단추가 --hit 를 다 갖게(줄어들지 않게) */
+:global(html:not([data-device="web"])) .op-more{height:var(--hit)}
+/* 작은 단추(「지정」 등)는 폭도 좁다: 누르는 영역을 가로로도 --hit 까지 넓힌다(% 는 각 축의 크기로 풀려 넓은 단추는 그 축이 0) */
+:global(html:not([data-device="web"])) .op .btn.sm::after{inset:min(0px,calc(50% - var(--hit) / 2))}
+:global(html:not([data-device="web"])) .op-sum{grid-template-columns:repeat(4,minmax(0,1fr))}
+:global(html:not([data-device="web"])) .op-k{padding:var(--sp-3) var(--sp-4)}
+
+/* 태블릿 가로: 지도 + 오른쪽 판(--panel-w). 판 위에 전환 막대 */
+:global(html[data-device="tablet"]) .op{padding:var(--sp-3) var(--gutter)}
+:global(html[data-device="tablet"]) .op-grid{grid-template-columns:minmax(0,1fr) var(--panel-w);grid-template-rows:auto minmax(0,1fr)}
+:global(html[data-device="tablet"]) .op-mapcell{grid-column:1;grid-row:1/-1}
+:global(html[data-device="tablet"]) .op-pane{grid-column:2;grid-row:1}
+:global(html[data-device="tablet"]) .op-inbox,:global(html[data-device="tablet"]) .op-detail{grid-column:2;grid-row:2}
+
+/* 태블릿 세로·폰: 한 열. 지도(높이 고정) → 전환 막대 → 판. 페이지가 스크롤하고, 판은 자기 스크롤을 갖지 않는다 */
+:global(html[data-device="phone"]) .op{height:auto;grid-template-rows:auto auto;padding:var(--sp-3) var(--gutter);gap:var(--gap-panel)}
+:global(html[data-device="phone"]) .op-grid{grid-template-columns:minmax(0,1fr);grid-template-rows:auto;gap:var(--gap-panel)}
+:global(html[data-device="phone"]) .op-mapcell{grid-row:1}
+:global(html[data-device="phone"]) .op-pane{grid-row:2}
+:global(html[data-device="phone"]) .op-inbox,:global(html[data-device="phone"]) .op-detail{grid-row:3}
+:global(html[data-device="phone"]) .op-map{height:50dvh;min-height:300px}
+:global(html[data-device="phone"]) .op-inbox,:global(html[data-device="phone"]) .op-detail,:global(html[data-device="phone"]) .op-detail-b{overflow:visible}
+:global(html[data-device="phone"]) .op-detail-b{padding-bottom:0}
+:global(html[data-device="phone"]) .op-list{max-height:none}
+@media (orientation:portrait){
+  :global(html[data-device="tablet"]) .op{height:auto;grid-template-rows:auto auto}
+  :global(html[data-device="tablet"]) .op-grid{grid-template-columns:minmax(0,1fr);grid-template-rows:auto}
+  :global(html[data-device="tablet"]) .op-mapcell{grid-column:1;grid-row:1}
+  :global(html[data-device="tablet"]) .op-pane{grid-column:1;grid-row:2}
+  :global(html[data-device="tablet"]) .op-inbox,:global(html[data-device="tablet"]) .op-detail{grid-column:1;grid-row:3}
+  :global(html[data-device="tablet"]) .op-map{height:55dvh;min-height:360px}
+  :global(html[data-device="tablet"]) .op-inbox,:global(html[data-device="tablet"]) .op-detail,:global(html[data-device="tablet"]) .op-detail-b{overflow:visible}
+  /* 한 열에서는 행동 바가 화면 바닥에 붙는다(출동 지시가 늘 손 닿는 자리) */
+  :global(html[data-device="tablet"]) .op-dfoot{position:sticky;bottom:0;z-index:2;border-radius:0 0 var(--r-l) var(--r-l)}
+}
+/* 폰: 요약은 2×2, 행동 바는 바닥 고정 · 출동 지시는 전체 폭 심각 면 */
+:global(html[data-device="phone"]) .op-sum{grid-template-columns:repeat(2,minmax(0,1fr))}
+:global(html[data-device="phone"]) .op-k{padding:var(--sp-2) var(--sp-3)}
+:global(html[data-device="phone"]) .op-k-k{white-space:normal;line-height:1.35}
+:global(html[data-device="phone"]) .op-dfoot{position:sticky;bottom:0;z-index:2;border-radius:0 0 var(--r-l) var(--r-l)}
+:global(html[data-device="phone"]) .op-pick{flex-wrap:wrap}
+:global(html[data-device="phone"]) .op-pick .btn{flex:1 0 100%}
+:global(html[data-device="phone"]) .op-dh-age{display:none}
+:global(html[data-device="phone"]) .op-legend{display:none}
+:global(html[data-device="phone"]) .op-wind small{display:none}
+:global(html[data-device="phone"]) .op-fresh-t{display:none}
+:global(html[data-device="phone"]) .op-wind-dir{display:none}
+:global(html[data-device="phone"]) .op-tr{flex-direction:row;flex-wrap:wrap;justify-content:flex-end;align-items:stretch;gap:0}
+:global(html[data-device="phone"]) .op-wind{border-top-right-radius:var(--r-2xs);border-bottom-right-radius:var(--r-2xs);padding-right:var(--sp-2)}
+:global(html[data-device="phone"]) .op-fresh{border-top-left-radius:var(--r-2xs);border-bottom-left-radius:var(--r-2xs);padding:var(--sp-1) var(--sp-2) var(--sp-1) 0}
+/* 폰: 바람 다이얼·신선도 원호를 32 로 줄이고 칩 간격을 좁혀 360 폭에서도 칩 넷과 한 줄에 둔다 */
+:global(html[data-device="phone"]) .op-wind-dial,:global(html[data-device="phone"]) .op-tr .fresh{width:var(--sp-7);height:var(--sp-7)}
+:global(html[data-device="phone"]) .op-swath{flex-basis:100%;margin-top:var(--sp-2)}
+/* 폰: 바람 묶음이 칩 줄 아래로 내려가지 않게 칩은 아이콘만 쓰고 오른쪽 묶음 폭만큼 비운다 */
+:global(html[data-device="phone"]) .op-mchips{right:auto;flex-wrap:nowrap;left:var(--sp-2)}
+
+/* 폴더블 펼침: 왼쪽 판 지도(높이 전체), 오른쪽 판 = 요약 → 전환 막대 → 수신함 | 상세. 접힘선 ±--hinge-gap 은 비운다 */
+:global(html[data-device="foldable"]) .op{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr);column-gap:var(--hinge-gap);padding:var(--sp-3) var(--gutter)}
+:global(html[data-device="foldable"]) .op-grid{display:contents}
+:global(html[data-device="foldable"]) .op-mapcell{grid-column:1;grid-row:1/-1}
+:global(html[data-device="foldable"]) .op-sum{grid-column:2;grid-row:1;grid-template-columns:repeat(2,minmax(0,1fr))}
+:global(html[data-device="foldable"]) .op-pane{grid-column:2;grid-row:2}
+:global(html[data-device="foldable"]) .op-inbox,:global(html[data-device="foldable"]) .op-detail{grid-column:2;grid-row:3}
+:global(html[data-device="foldable"]) .op-k{padding:var(--sp-2) var(--sp-3)}
+:global(html[data-device="foldable"]) .op-wind small{display:none}
+/* 폴더블: 칩 사이를 12 로 벌리자 오른쪽 192 px 비움 때문에 넷째 칩이 둘째 줄로 내려갔다 → 폰처럼 한 줄로 두고 바람 묶음과의 간격은 측정으로 확인(칩 끝 ↔ 바람 상자 37 px) */
+:global(html[data-device="foldable"]) .op-mchips{right:auto;flex-wrap:nowrap}
+
+/* 아주 좁은 지도 칸(360 폰 · 칸 340 이하): 칩 사이를 --hit 맞춤으로 12 벌리자 넷째 칩(경로)이 바람 묶음을 8 px 덮었다 →
+   칩 줄 왼쪽 여백·바람 묶음 오른쪽 여백·묶음 안 간격을 한 단계씩 줄여 16 px 를 되찾는다(칩 누르는 영역은 48 그대로) */
+@container opmap (max-width:340px){
+  :global(html[data-device="phone"]) .op-mchips{left:var(--sp-1)}
+  :global(html[data-device="phone"]) .op-tr{right:var(--sp-2)}
+  :global(html[data-device="phone"]) .op-wind{gap:var(--sp-1)}
+  :global(html[data-device="phone"]) .op-fresh{padding-right:var(--sp-1)}
+}
+@media print{.op-prod-go,.op-tr,.op-pane{display:none}}
+
+/* ══ 레퍼런스 개정(2026-11-13, DESIGN-REFS §2·§3·§4.2 묶음 A) — 이 블록이 위 규칙을 덮는다 ══
+   ① Watch Duty: 지도 끝까지 · 목록은 hairline 행 · 지도 도구 묶음. ② Grafana: KPI 줄 · 진행 단계 띠 · 크롬 무채. Tablet Command: 큰 경과 시계 하나 */
+/* 이음매 배치(웹): 바깥 여백·틈 0 → 요약 띠·수신함·지도·상세가 1px 이음선으로 붙는다 */
+:global(html[data-device="web"]) .op{padding:0;gap:0}
+:global(html[data-device="web"]) .op-grid{gap:0}
+.op-sum{border-radius:0;gap:var(--hair);background:var(--seam);box-shadow:var(--seam-ring)}
+.op-sum>*{background:var(--surface-1)}
+/* KPI 칸: 라벨 위 · 값 큰 mono 600 + 단위 13 · 보조 한 줄. 값 색은 무채(임계 표시는 보조 줄의 단계 낱말) */
+.op-k{padding:var(--sp-3) var(--sp-4)}
+.op-k-t{gap:var(--sp-1)}
+.op-k-v{font-family:var(--font-data);font-size:var(--fs-num-l,var(--fs-count));line-height:1.1;letter-spacing:0}
+.op-k-v small{font-size:var(--fs-3);font-weight:var(--fw-regular)}
+.op-k-d{color:var(--text-2)}
+.op-k-lv{color:var(--c);font-weight:var(--fw-strong)}
+/* 수신함: 둥근 카드 + 옆줄 → hairline 행. 단계는 행 머리의 점 + 낱말(.lv), 미처리는 빨간 점 하나 */
+.op-tabs{margin:0 var(--sp-4) 0;padding:0;border-radius:0;background:transparent;border-bottom:var(--hair) solid var(--line-soft)}
+.op-tabs button{border-radius:0}
+.op-tabs button[aria-selected="true"]{background:transparent;box-shadow:var(--sel-b)}
+.op-tab-n{background:transparent;color:var(--text-2);min-width:0;padding:0}
+.op-tab-n.un{background:var(--crit);color:var(--on-alert);min-width:18px;padding:0 var(--sp-1)}
+.op-list{padding:0;gap:0}
+.op-it{border-radius:0;border-bottom:var(--hair) solid var(--line-soft);padding:var(--sp-3) var(--sp-4)}
+.op-it::before{content:none}
+.op-it.un{background:transparent}
+.op-it.sel,.op-it.un.sel{background:var(--surface-3);box-shadow:var(--sel-l)}
+.op-it-title{font-size:var(--fs-4)}
+.op-it-meta{font-size:var(--fs-2);color:var(--text-2)}
+.op-it-meta .st{height:auto;font-size:inherit}
+.op-it-place{font-size:var(--fs-body)}
+
+/* 지도 위: 레이어는 오른쪽 위 도구 묶음(.mtools), 바람·신선도·다음 통과는 왼쪽 위 떠 있는 띠 하나(surface-1 + elev-2) */
+.op-mapcell .map-ui>.op-tr{left:var(--sp-3);right:auto;top:var(--sp-3);flex-direction:row;flex-wrap:wrap;justify-content:flex-start;align-items:stretch;gap:0;max-width:calc(100% - var(--sp-3) * 3 - max(48px,var(--hit)));border-radius:var(--r-xs);background:color-mix(in srgb,var(--surface-1) 86%,transparent);backdrop-filter:blur(6px);box-shadow:var(--elev-2)}
+.op-mapcell .map-ui>.op-tr>*{border-radius:0;background:transparent;backdrop-filter:none;box-shadow:none}
+.op-mapcell .map-ui>.op-tr>.op-fresh{border-left:var(--hair) solid var(--line-soft)}
+.op-mapcell .map-ui>.op-tr>.op-swath{flex-basis:100%;border-top:var(--hair) solid var(--line-soft);margin-top:0}
+.op-legend{border-radius:0;background:color-mix(in srgb,var(--surface-0) 72%,transparent)}
+
+/* ── 상세 ── */
+.op-dh-place svg{color:var(--text-3)}
+/* 제목 줄 오른쪽: 감지 뒤 경과 시계(이 화면에서 가장 큰 숫자 하나) */
+.op-dh-tr{display:flex;align-items:flex-start;gap:var(--sp-3);margin-top:var(--sp-2);min-width:0}
+.op-dh-tr .op-dh-title{flex:1 1 auto;min-width:0;margin-top:0}
+.op-dh-el{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:var(--sp-1);line-height:1}
+.op-dh-el:empty{display:none}
+.op-dh-el b{font-family:var(--font-data);font-size:var(--fs-num-l,var(--fs-count));font-weight:var(--fw-strong);color:var(--text-1);letter-spacing:0}
+.op-dh-el small{font-size:var(--fs-2);color:var(--text-2)}
+/* 진행 단계: 원·선 → 띠(셸 .stages). 칸 사이 hairline 틈 */
+.op-steps{display:block;margin:var(--sp-3) 0 0}
+.op-sec-h h3{font-size:var(--fs-4);color:var(--text-1)}
+/* 대응 조치: 번호 원 없는 행 넷. 올린 면 상자 대신 hairline. 지금 할 행만 surface-3 + 왼쪽 2px 막대 */
+.op-acts{border-radius:0;background:transparent;border-top:var(--hair) solid var(--line-soft);border-bottom:var(--hair) solid var(--line-soft)}
+.op-row,.op-row.lvrow{grid-template-columns:minmax(0,1fr) auto;padding:var(--sp-3) var(--sp-3)}
+.op-row.lvrow{grid-template-areas:"b go" "seg seg"}
+/* 단계 지정: 테두리 칸 넷 → 밑줄 세그먼트. 고른 칸만 단계색 글자 + 아래 2px */
+.op-lvseg{gap:0;border-bottom:var(--hair) solid var(--line-soft)}
+.op-lvseg button{border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent}
+.op-lvseg button::before{width:6px;height:6px}
+.op-lvseg button:hover:not([disabled]){border-color:transparent;border-bottom-color:var(--line-strong);color:var(--text-1)}
+.op-lvseg button[aria-pressed="true"]{color:var(--c);background:transparent;border-bottom-color:var(--c)}
+.op-lvseg .v4[aria-pressed="true"]{color:var(--alert-4-ink)}
+/* 근거·자원·지역 비교: 상자 안의 상자 → 이음매 칸·hairline 행, 상태 칩 → 낱말 */
+.op-reslist{border-radius:0;background:transparent;border-top:var(--hair) solid var(--line-soft);border-bottom:var(--hair) solid var(--line-soft)}
+.op-res-ic{background:transparent;color:var(--text-2)}
+.op-ust,.op-ust.enroute,.op-ust.onscene,.op-ust.return{padding:0;background:transparent;border-radius:0}
+.op-prod{padding:0;border-radius:0;background:transparent}
+.op-prod-ms{gap:var(--hair);background:var(--seam);box-shadow:var(--seam-ring)}
+.op-prod-m{border-radius:0}
+.op-prod-st{height:auto;padding:0;border:0;border-radius:0;background:transparent}
+.op-vil{border-radius:0;background:transparent;padding:var(--sp-2) 0;border-top:var(--hair) solid var(--line-soft)}
+.op-banner,.op-closed{border-radius:var(--r-xs)}
+/* 폰: 요약 2×2 의 값은 한 단 작게(--fs-num-m) — 값이 커져 요약 띠가 17px 높아지자 지도 시야가 밀려 왼쪽 끝 자원 표지 누르는 영역이 37x32 로 잘렸다(390 측정) */
+:global(html[data-device="phone"]) .op-k-v{font-size:var(--fs-num-m,var(--fs-big,var(--fs-page)))}
+
+/* ══ 레퍼런스 2차(2026-11-13 refs2, 묶음 ops) — 이 블록이 위 규칙을 덮는다 ══ */
+/* 판 전환(수신함 · 상세) = 보기 전환 → 셸 밑줄 탭(.utabs, role=tab) */
+.op-pane.utabs{gap:0;background:transparent}
+.op-pane.utabs>button{flex:1 1 0;padding:0 var(--sp-2)}
+/* 감지 근거: 상자 안의 상자(칸 6개) → 요약 목록(키 회색 왼쪽 · 값 오른쪽 · hairline, 셸 .sumlist) */
+.op-ev{display:block;background:transparent;border-radius:0;box-shadow:none;overflow:visible}
+.op-ev .sumlist>dd{display:flex;flex-direction:column;align-items:flex-end;gap:var(--sp-half)}
+.op-evv{display:inline-flex;align-items:baseline;justify-content:flex-end;gap:var(--sp-1);font-size:var(--fs-4);line-height:1.3}
+.op-evv b{font-weight:var(--fw-strong)}
+.op-evv small{font-size:var(--fs-2);color:var(--text-2)}
+.op-evv .op-arrow{align-self:center}
+.op-evs{font-size:var(--fs-2);line-height:1.35;color:var(--text-2);word-break:keep-all}
+.op-ev .op-ev-pass{align-items:flex-end;margin:0 calc(0px - var(--sp-1)) 0 0;background:transparent}
+.op-ev .op-ev-pass.is-new{background:var(--surface-3)}
+.op-ev .op-ok-t,.op-ev .op-warn-t{font-size:inherit}
+/* 한글이 든 숫자 묶음(「대기 4」 · 「13:54 감지」): 본문 서체 + 자리 고정. mono 는 숫자만 */
+.op .tn{font-family:var(--font-body);font-variant-numeric:tabular-nums}
+/* 폰: 경보 목록은 지도 위 바닥 시트(셸 .sheet). 지도 칸을 키우고, 지도 단추·범례·출처는 접힌 시트(112px) 위로 */
+:global(html[data-device="phone"]) .op-map{height:calc(50dvh + 112px);min-height:calc(300px + 112px)} /* 접힌 시트(112) 아래로 가려지는 만큼 키워 보이는 지도는 예전(50dvh)과 같게 */
+:global(html[data-device="phone"]) .op-map .map-ui{bottom:112px}
+.op-sheet .sh-h{padding:0 0 var(--sp-1)}
+.op-sheet .op-ih{padding:0 var(--gutter);min-height:var(--sp-7)}
+.op-sheet .op-tabs{margin:0 var(--gutter)}
+:global(html[data-device="phone"]) .op-sheet .op-list{max-height:none;min-height:0;overflow:visible}
+
+/* ══ r3 home-ops(2026-11-13, PLAN-AUDIT §7 ops · FLEXDAY-KB-MAP §6) — 이 블록이 위 규칙을 덮는다 ══ */
+/* 화면 제목: 머리줄 「경보·출동」이 보이는 제목이라 h1 은 읽기 도구용으로만 둔다 */
+/* KPI 4칸. 처리할 일 칸(진행 중 산불)은 누르면 「진행 중」 탭(KB-B48) */
+.op-k-btn{border:0;color:inherit;font:inherit;text-align:left;cursor:pointer;width:100%;transition:background-color var(--dur-fast) var(--ease-out)}
+.op-sum>.op-k-btn:hover{background:var(--surface-2)}
+.op-k-btn:focus-visible{outline-offset:calc(0px - var(--sp-half))}
+.op-k-btn .op-k-k{display:inline-flex;align-items:center;gap:var(--sp-1)}
+.op-k-btn .op-k-k svg{color:var(--text-2)}
+/* 탭 건수 = 셸 중립 알약(.cnt). 판 전환 건수도 같은 알약 */
+.op-tabs .cnt,.op-pane .cnt{margin-left:var(--sp-1)}
+.op-pane .cnt[hidden]{display:none}
+/* 수신함 행: 투입 대수(옛 「현장 현황」) — 센서 수 옆 한 칸, 상태 낱말은 오른쪽 끝 */
+.op-it-meta{justify-content:flex-start;flex-wrap:wrap;column-gap:var(--sp-3)}
+.op-it-meta .st{margin-left:auto}
+.op-it-u{display:inline-flex;align-items:center;gap:var(--sp-1);color:var(--text-2)}
+/* 폰: 판 전환 없음 — 수신함은 지도 위 바닥 시트, 아래는 늘 상세 */
+:global(html[data-device="phone"]) .op .op-pane{display:none}
+:global(html[data-device="phone"]) .op .op-inbox{display:none}
+:global(html[data-device="phone"]) .op .op-detail{display:flex}
+/* 폰 시트 안 상태 탭: 보이는 높이를 --hit 로(::after 확장이 시트 overflow 에 잘려 WebKit 45 였다) */
+:global(html[data-device="phone"]) .op-sheet .op-tabs button{height:var(--hit)}
+.op-k-d{word-break:keep-all}
+
+/* ══ 시안 b(2026-11-13) — 머리기사·리드 규칙은 r8 에서 지웠다 ══ */
+.op-sum,:global(html:not([data-device="web"])) .op-sum,:global(html[data-device="phone"]) .op-sum,:global(html[data-device="foldable"]) .op-sum{display:block;background:var(--surface-1);gap:0}
+/* 수신함 행: 제목 진하게, 값만 굵게, 낱말 사이 간격 */
+.op-it-title{font-weight:var(--fw-bold);font-size:var(--fs-row);color:var(--row-ink)} /* r6: 목록 주 행 = 셸 .row-t 단(15px · text-1) */
+.op-it-meta{justify-content:flex-start;gap:0 var(--sp-4);font-size:var(--fs-2);color:var(--text-2)}
+.op-it-meta .st{margin-left:auto;font-size:var(--fs-2)}
+.op-it-w b{color:var(--text-1);font-weight:var(--fw-bold);font-family:var(--font-body)}
+.op-it-u{display:inline;color:var(--text-2)}
+.op-sec-h h3,.op-ih h2{font-weight:var(--fw-bold)}
+
+/* ══ r4 home-ops(2026-11-13) — 셸 r4 문법에 맞춤. 이 블록이 위 규칙을 덮는다 ══ */
+/* 문법 1: 제목 서체는 워드마크·머리기사·.ttl 에만 → 경보 제목은 본문 서체 700 */
+.op-dh-title{font-family:var(--font-body);letter-spacing:-.01em}
+/* 문법 2·8: 화면의 큰 숫자 하나 = 경과(「26분 경과」) */
+.op-dh-el b{font-family:var(--font-body);font-size:var(--fs-big,var(--fs-page));font-weight:var(--fw-bold);line-height:1;letter-spacing:-.02em}
+/* 문법 4·10: 머리 한 줄 + 숫자 한 줄(「라벨 값」 낱말을 간격으로, 문장·괄호 없음) */
+/* 수신함: 상태 탭 대신 묶음 머리(미처리·진행 중·종결) */
+.op-grp-h{display:flex;align-items:baseline;gap:var(--sp-2);padding:var(--sp-3) var(--sp-4) var(--sp-1);font-size:var(--fs-2);font-weight:var(--fw-bold);color:var(--text-2);border-bottom:var(--hair) solid var(--line-soft)}
+.op-grp-h .num{color:var(--text-1)}
+.op-grp+.op-grp .op-grp-h{padding-top:var(--sp-5)}
+.op-grp-none{margin:0;padding:var(--sp-3) var(--sp-4);font-size:var(--fs-3);color:var(--text-3);border-bottom:var(--hair) solid var(--line-soft)}
+.op-list{overflow:auto}
+/* 문법 9: 색 왼쪽 띠 금지 → 고른 행은 면 하나로만 */
+.op-it.sel,.op-it.un.sel{box-shadow:none}
+/* 태블릿·폴더블: 「수신함 | 상세」 판 전환 대신 수신함(위, 높이 제한) → 상세(아래)를 한 칸에 둘 다 */
+:global(html[data-device="tablet"]) .op .op-pane,:global(html[data-device="foldable"]) .op .op-pane{display:none}
+:global(html[data-device="tablet"]) .op[data-pane] .op-inbox,:global(html[data-device="foldable"]) .op[data-pane] .op-inbox,
+:global(html[data-device="tablet"]) .op[data-pane] .op-detail,:global(html[data-device="foldable"]) .op[data-pane] .op-detail{display:flex}
+:global(html[data-device="tablet"]) .op .op-ih,:global(html[data-device="foldable"]) .op .op-ih{display:none}
+:global(html[data-device="tablet"]) .op-list,:global(html[data-device="foldable"]) .op-list{max-height:30dvh;min-height:0}
+:global(html[data-device="tablet"]) .op-inbox{grid-column:2;grid-row:1}
+:global(html[data-device="tablet"]) .op-detail{grid-column:2;grid-row:2}
+@media (orientation:portrait){
+  /* 세로 태블릿: 지도 아래를 두 칸으로 — 수신함(왼쪽 좁은 칸) | 상세(오른쪽). 상세가 수신함 밑으로 밀려 내려가지 않게 */
+  :global(html[data-device="tablet"]) .op-grid{grid-template-columns:minmax(0,var(--list-w)) minmax(0,1fr)}
+  :global(html[data-device="tablet"]) .op-mapcell{grid-column:1/-1}
+  :global(html[data-device="tablet"]) .op-inbox{grid-column:1;grid-row:2;align-self:start;position:sticky;top:0}
+  :global(html[data-device="tablet"]) .op-detail{grid-column:2;grid-row:2}
+  :global(html[data-device="tablet"]) .op-list{max-height:none;overflow:visible}
+}
+:global(html[data-device="foldable"]) .op{grid-template-rows:auto auto minmax(0,1fr)}
+:global(html[data-device="foldable"]) .op-inbox{grid-column:2;grid-row:2;min-height:0}
+:global(html[data-device="foldable"]) .op-detail{grid-column:2;grid-row:3;min-height:0}
+/* 폰: 확인 전 경보의 확인 행이 바닥 행동 바로 옮겨 온다 */
+.op-dfoot .op-acts{margin:0}
+.op-dfoot .op-row.next{margin:0}
+/* 글자색 줄이기: 수신함 행의 단계는 점이 색을 말하고 낱말은 본문색(상세 머리·머리기사의 단계 낱말만 색 글자). 끝난 경보는 점도 흐리게 */
+.op-it .lv{color:var(--text-1)}
+.op-it .lv.l1::before{background:var(--alert-1)} .op-it .lv.l2::before{background:var(--alert-2)} .op-it .lv.l3::before{background:var(--alert-3)} .op-it .lv.l4::before{background:var(--alert-4)}
+.op-it.done .lv{color:var(--text-2)}
+/* 문법 9: 왼쪽 흰 띠(다음 행동 행·고른 자원·지금 단계) 금지 → 면 색만 */
+.op-row.next::before,.op-res.on::before,.op-fr.cur::before{content:none}
+
+/* ══ r5 home-ops(2026-11-14) — 셸 r5 글자 단. 이 블록이 위 규칙을 덮는다 ══
+   상세 경보 제목은 상세 제목 단(--fs-title) */
+.op-dh-title{font-family:var(--font-body);font-size:var(--fs-title);line-height:1.3}
+
+/* ══ r8 관제 콘솔(2026-11-14, DIRECTION-R8 §5·§5.1 ops) — 이 블록이 위 규칙을 덮는다 ══
+   머리 = 화면 이름 + 범위(줄 1) · 상태 개수 띠(줄 2, 칸 = 필터). kicker·머리기사·숫자 리드(.op-lede·.op-hed·.op-dek·.op-w)는 쓰는 곳 없음 */
+.op-sum,:global(html:not([data-device="web"])) .op-sum,:global(html[data-device="phone"]) .op-sum,:global(html[data-device="foldable"]) .op-sum{display:block;padding:0;background:transparent;box-shadow:none;border-radius:0}
+/* 머리는 화면 폭 끝까지(웹·태블릿과 같은 띠). 폰은 .op 바깥 여백을 되돌리고, 폴더블은 오른쪽 판 안에서 판 여백을 그대로 쓴다 */
+:global(html[data-device="phone"]) .op-sum{margin:calc(-1 * var(--sp-3)) calc(-1 * var(--gutter)) 0}
+:global(html[data-device="foldable"]) .op-sum .pghd{padding-left:0;padding-right:0}
+/* 수신함: 미처리 묶음 행은 한 단 올린 면(처리할 행) */
+.op-grp[data-grp="open"] .op-it:not(.sel){background:var(--surface-2)}
+.op-grp[data-grp="open"] .op-it:not(.sel):hover{background:var(--surface-3)}
+.op-ih h2,.op-sec-h h3{font-size:var(--fs-sec);font-weight:var(--fw-strong)}
+/* 상세 머리: 단계 낱말 + 상태 낱말 … 경보 시각(항목 ID 없음) */
+.op-dh-st{font-size:var(--fs-2);color:var(--text-2)}
+.op-dh-row{display:flex;align-items:center;gap:var(--sp-3)}
+/* 「아래 더 보기」 = 보조 단추 */
+.op-morehint .btn,.op-morehint button.btn{height:var(--ctl-h-sm);padding:0 var(--sp-3);background:var(--surface-2);color:var(--text-1);font-size:var(--fs-2)}
+.op-morehint .btn:hover{background:var(--surface-3)}
+/* 폰 첫 화면: 지도 = 창 − 머리줄 − 페이지 머리(잰 값 --op-above) − 바닥 행동 바(잰 값 --op-foot). r7 의 232px 상수를 대체 */
+:global(html[data-device="phone"]) .op-map{height:calc(100dvh - var(--top) - var(--op-above,var(--sp-8)) - var(--op-foot,var(--sp-8)) - var(--sp-1));min-height:300px}
+/* 폰: 지도 왼쪽 위 「다음 통과」 줄(셸 .m3-passln, 높이 --sp-7) 아래로 바람·신선도 묶음을 내린다(겹쳐 바람 다이얼이 가려졌다) */
+:global(html[data-device="phone"]) .op-mapcell .map-ui>.op-tr{top:calc(var(--sp-3) + var(--sp-7) + var(--sp-2))}
+/* 감지 근거 신뢰도 세그먼트(셸 .seg · 높이 --ctl-h: 태블릿 44 · 폰 48) */
+.op-ev .em-confseg{align-self:flex-end}
+.op-excl{white-space:nowrap}
+/* 신뢰도 세그먼트: 「낮음」 두 글자 단추가 폰·폴더블에서 47px 로 1px 모자랐다 → 누르는 폭 최소 --hit */
+.em-confseg button{min-width:var(--hit)}
+/* 한국 밖(GLOBAL §6.2): 머리 + 「관할 밖」 한 칸 */
+.op-out{display:flex;flex-direction:column;gap:var(--gap-panel);height:100%;min-height:0}
+.op-out-b{flex:1;justify-content:center;margin:0 var(--gutter) var(--gutter)}

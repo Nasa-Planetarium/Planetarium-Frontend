@@ -19,6 +19,7 @@ import type {
 } from "../../agency/port";
 import ledger from "./ledger.json";
 import { landParcels } from "./land-parcels";
+import { opsAlerts, opsFires, opsHome } from "./ops-scenario";
 
 const KST_OFFSET_MIN = 9 * 60;
 
@@ -52,14 +53,17 @@ export class MockAgencyAdapter implements AgencyPort {
       season: ledger.season,
     });
   }
+  /** 경보 — ops 필드(첫 이력·처음 미읽음·감지 근거 통과)는 ./ops-scenario.ts 가 덧붙인다 */
   listAlerts() {
-    return this.tick(this.alerts);
+    return this.tick(opsAlerts(this.alerts));
   }
+  /** 불 — ops 필드(반경 2 km 마을·관측 점 신뢰도·고정 열원)는 ./ops-scenario.ts 가 덧붙인다 */
   listFires() {
-    return this.tick(this.fires);
+    return this.tick(opsFires(this.fires, ledger.today));
   }
+  /** 자원 — 귀소 자리(home)는 ./ops-scenario.ts */
   listUnits() {
-    return this.tick(this.units);
+    return this.tick(this.units.map((u) => ({ ...u, home: opsHome(u.id, u.lat, u.lon) })));
   }
   dispatchUnit(unitId: string, fireId: string): Promise<DispatchResult> {
     const u = this.units.find((x) => x.id === unitId);
