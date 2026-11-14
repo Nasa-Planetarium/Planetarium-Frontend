@@ -1,13 +1,460 @@
 "use client";
 
-import { PageFrame } from "@/widgets/page-frame";
+import { Suspense, useCallback, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useLocale } from "next-intl";
+import { useQuery } from "@tanstack/react-query";
+import { Check, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { countryName, useCountry } from "@/entities/country";
+import { methodQuery } from "@/entities/release";
+import { ApiError } from "@/shared/api";
+import { useT } from "@/shared/i18n";
+import { usePath, useQueryParams } from "@/shared/lib/nav";
+import { prefs } from "@/shared/lib/prefs";
+import { useDevice } from "@/shared/lib/use-device";
+import { aoisQuery, calendarAllQuery, comparisonQuery, type AoiRec } from "../api/queries";
+import { AOI_OK, KOR_AOIS, coverage, defaultAoi, isStep, monthRec, regimes, selectable, ymK, type Step } from "../model/analysis";
+import { iso3OfAoi, monthWord, nameEn, VIEWS, ymIso, type CalView } from "../model/core";
+import { AoiPicker } from "./aoi-picker";
+import { Status, StIcon } from "./bits";
+import { Track, useNf } from "./charts";
+import { cx } from "./cx";
+import { S2 } from "./s2";
+import { S3 } from "./s3";
+import type { Ctx, MethodDoc } from "./types";
+import { VdMark } from "./vd-mark";
 
 /**
- * ② 비교 분석 3단계(S1 범위 → S2 캘린더·비교 → S3 근거·보고)
- * 원천: 목업 pages/analysis.js · analysis.css
- * 데이터: 실제 데이터: calendarQuery · comparisonQuery · judgeMonth
- * 골격 단계: 제목(머리)만 있다. 본문은 화면 담당이 PageFrame children 으로 채운다 — 소유 폴더는 OWNERS.md.
+ * ② 비교 분석 3단계(S1 범위 → S2 캘린더·비교 → S3 근거·보고) — 원천: 목업 pages/analysis.js · analysis.css(g6 확정본).
+ * 데이터: 계약 /api/v1 만(aois · calendar · comparison · cells · summary · methods/current). 값·판정은 release 그대로(A1), 경우 가르기는 judgeMonth(E4).
+ * 주소: ?step=1|2|3&aoi=<aoi_id>&ym=YYYY-MM&view=… (목업 #analysis?… 와 같은 키). 캘린더 「비교 분석」이 step=2 로 넘긴다.
+ * 목업과 다른 점(남은 차이): S1 경계 미리보기·전 세계 1° 재생 없음 · 홈/출동 넘김 칩 없음 · 인쇄 전용 6절 문서 없음(브라우저 인쇄) · 캘린더 다른 달 흐림 덮개 없음.
  */
 export function AnalysisPage() {
-  return <PageFrame page="analysis" />;
+  return (
+    <Suspense fallback={<div className="min-h-full" data-slot="page-pending" />}>
+      <AnalysisScreen />
+    </Suspense>
+  );
+}
+
+const isView = (v: string | null): v is CalView => !!v && (VIEWS as readonly string[]).includes(v);
+
+function AnalysisScreen() {
+  const t = useT();
+  const lang = useLocale();
+  const device = useDevice();
+  const router = useRouter();
+  const pathname = usePath();
+  const sp = useQueryParams();
+  const nf = useNf();
+  const { iso3, list: countries } = useCountry();
+  const KOR = iso3 === "KOR";
+  const T = useCallback((k: string, v?: Record<string, string | number>) => t(`analysis.${k}`, v), [t]);
+  const W = useCallback((k: string, v?: Record<string, string | number>) => t(`shell.${k}`, v), [t]);
+
+  const mq = useQuery(methodQuery());
+  const M = (mq.data ?? null) as MethodDoc | null;
+  const mv = M?.method_version ?? null;
+  const aq = useQuery(aoisQuery(mv));
+  const byId = useMemo(() => new Map((aq.data ?? []).map((a) => [a.aoi_id, a] as const)), [aq.data]);
+  const has = useCallback((id: string) => byId.has(id), [byId]);
+
+  /* 지역: 주소 aoi(모양·목록 확인) → 다른 나라 화면이면 그 나라 단위 → 기본(경북 북부 묶음, 없으면 경북) */
+  const urlAoi = sp.get("aoi");
+  const aoi = useMemo(() => {
+    if (!aq.data) return null;
+    if (urlAoi && AOI_OK(urlAoi) && has(urlAoi) && !(KOR && /^ADM0_/.test(urlAoi))) return urlAoi;
+    if (!KOR && has(`ADM0_${iso3}`)) return `ADM0_${iso3}`;
+    return defaultAoi(has);
+  }, [aq.data, urlAoi, has, KOR, iso3]);
+  const rec: AoiRec | null = aoi ? (byId.get(aoi) ?? null) : null;
+
+  const cq = useQuery({ ...calendarAllQuery(aoi ?? "KR", mv), enabled: !!mv && !!aoi });
+  const cal = cq.data && cq.data.aoi_id === aoi ? cq.data : null;
+  const inScope = !!rec && rec.has_data !== false && !!cal;
+
+  const view: CalView = isView(sp.get("view")) ? (sp.get("view") as CalView) : "value";
+  const ymQ = /^\d{4}-\d{2}$/.test(sp.get("ym") ?? "") ? (sp.get("ym") as string) : "2025-03";
+  /* 연도 고르기는 달을 바꾸기 전까지 화면 안 상태(주소 ym 이 바뀌면 그 해로 돌아간다) */
+  const [yrSt, setYrSt] = useState<{ k: string; y: number } | null>(null);
+  const yr = yrSt && yrSt.k === ymQ ? yrSt.y : +ymQ.slice(0, 4);
+  const setYr = (yy: number) => setYrSt({ k: ymQ, y: yy });
+  const qy = +ymQ.slice(0, 4);
+  const qm = +ymQ.slice(5, 7);
+  /* 고를 수 없는 달(진행 중 · 결측 · 지원 밖)은 「달 미선택」 */
+  const month = cal && selectable(cal, qy, qm) ? qm : null;
+  const blocked = !inScope || !month;
+  const wantStep = isStep(sp.get("step")) ?? 1;
+  const step: Step = blocked ? 1 : wantStep;
+  const ym = month ? ymIso(qy, month) : "";
+
+  const kq = useQuery(comparisonQuery(aoi ?? "KR", ym || "2000-01", mv, !!aoi && !blocked));
+  const c = !blocked && kq.data ? kq.data : null;
+
+  const writeQ = useCallback(
+    (patch: Record<string, string | null>, push = false, country?: string) => {
+      const q = new URLSearchParams(sp.toString());
+      Object.entries(patch).forEach(([k, v]) => (v == null ? q.delete(k) : q.set(k, v)));
+      if (country) {
+        if (country === "KOR") q.delete("c");
+        else q.set("c", country);
+        prefs.set("country", country);
+      }
+      const s = q.toString();
+      const href = `${pathname}${s ? `?${s}` : ""}`;
+      if (push) router.push(href, { scroll: false });
+      else router.replace(href, { scroll: false });
+    },
+    [sp, router, pathname],
+  );
+  const h1 = useRef<HTMLHeadingElement>(null);
+  const go = useCallback(
+    (s: Step) => {
+      writeQ({ step: String(s), aoi, ym: ym || null }, true);
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: 0 });
+        h1.current?.focus({ preventScroll: true });
+      });
+    },
+    [writeQ, aoi, ym],
+  );
+
+  const aoiName = useCallback(
+    (a: AoiRec | null) => {
+      if (!a) return countryName(countries.find((x) => x.iso3 === iso3), lang, iso3);
+      if (a.aoi_id === "WORLD") return T("g5.world");
+      const i3 = a.level === "country" ? iso3OfAoi(a.aoi_id) : null;
+      if (i3) return countryName(countries.find((x) => x.iso3 === i3), lang, a.name_ko ?? a.aoi_id);
+      return (lang === "ko" ? a.name_ko : nameEn(a)) || a.name_ko || nameEn(a) || a.aoi_id;
+    },
+    [countries, iso3, lang, T],
+  );
+
+  const rule = M?.verdict_rule ?? null;
+  const base = { from: rule?.baseline?.from ?? rule?.baseline_from ?? 2001, to: rule?.baseline?.to ?? rule?.baseline_to ?? 2025 };
+  const fail = kq.error ?? cq.error ?? aq.error ?? mq.error;
+  const errWord = fail ? W(fail instanceof ApiError && fail.code === "data_not_loaded" ? "err.data_not_loaded" : "err.network") : null;
+  const ready = !!aq.data && (!aoi || !!cal || !!cq.error) && (step === 1 || !!c || !!kq.error);
+
+  const ctx: Ctx = { t, T, W, lang, nf, device, aoi: aoi ?? "", rec, cal, c, M, view, y: qy, m: month ?? qm, base, aoiName, writeQ, go, errWord, has };
+
+  const counts: { key: string; label: string; value: string; unit?: string }[] = [];
+  if (step > 1 && c && c.value != null) {
+    counts.push({ key: "val", label: T(step === 2 && view !== "value" ? "g3.k_value_harm" : "g3.k_value"), value: nf(c.value) });
+    if (c.ratio_to_median != null) counts.push({ key: "ratio", label: T("ui.vs_median"), value: c.ratio_to_median.toFixed(1), unit: T("ui.s101") });
+    if (c.percentile != null) counts.push({ key: "pct", label: T("g3.k_pct"), value: nf(c.percentile), unit: `n ${c.n_baseline_years ?? "–"}` });
+  }
+  const stepWords = [T("g3.step1"), T("g3.step2"), T("g3.step3")];
+
+  return (
+    <div className="min-h-full min-w-0" data-page="analysis">
+      <div className={cx("an")} data-testid="analysis" data-step={step} data-ready={ready ? "1" : "0"} data-aoi={aoi ?? ""} data-ym={ym} data-view={view}>
+        <header className={cx("pghd an-head")}>
+          <div className={cx("ph-1")}>
+            <h1 tabIndex={-1} ref={h1}>
+              {T("ui.comparison")}
+            </h1>
+            <span className={cx("ph-scope")}>
+              {inScope ? aoiName(rec) : aoiName(null)}
+              {month && inScope ? `, ${ym}` : ""} · {T("g3.baseline_fixed", { a: base.from, b: base.to })}
+            </span>
+            <span className={cx("an-hst")}>
+              {!inScope && cal ? <Status st="out_of_range" /> : step > 1 && c ? c.verdict ? <VdMark v={c.verdict} p={c.percentile ?? null} /> : <Status st={c.status} /> : null}
+            </span>
+          </div>
+          <div className={cx("an-steps")}>
+            <ol className={cx("stages is-nav is-num")} aria-label={T("ui.analysis_steps")}>
+              {stepWords.map((w, i) => {
+                const n = (i + 1) as Step;
+                return (
+                  <li key={n} className={cx(n < step ? "is-done" : n === step ? "is-now" : null)}>
+                    <button type="button" data-step={n} aria-current={n === step ? "step" : undefined} disabled={n > 1 && blocked} onClick={() => go(n)}>
+                      <span className={cx("sg-ck")}>
+                        <span className={cx("sg-n", n < step && "is-ck")} aria-hidden="true">
+                          {n < step ? <Check className={cx("ic ic-inline")} /> : n}
+                        </span>
+                        {w}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+          {counts.length ? (
+            <div className={cx("cntbar")} role="group" aria-label={W("counts.aria")}>
+              {counts.map((k) => (
+                <button key={k.key} type="button" className={cx("cb")} data-cnt={k.key} aria-pressed="false" onClick={() => document.querySelector("[data-an-body]")?.scrollIntoView({ behavior: "smooth", block: "start" })}>
+                  <span className={cx("cb-k")}>{k.label}</span>
+                  <span className={cx("cb-vw")}>
+                    <b className={cx("cb-v")}>{k.value}</b>
+                    {k.unit ? <span className={cx("cb-u")}>{k.unit}</span> : null}
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </header>
+        <div className={cx("an-body")} data-an-body="">
+          {!ready && !errWord ? null : step === 1 ? <S1 x={ctx} KOR={KOR} yr={yr} setYr={setYr} inScope={inScope} iso3={iso3} /> : step === 2 ? <S2 x={ctx} /> : <S3 x={ctx} />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═════════ 1 범위 ═════════ */
+function S1({ x, KOR, yr, setYr, inScope, iso3 }: { x: Ctx; KOR: boolean; yr: number; setYr: (y: number) => void; inScope: boolean; iso3: string }) {
+  const { T, W, cal, rec, aoi, has, lang } = x;
+  const [pickOpen, setPickOpen] = useState(false);
+  const [anchor, setAnchor] = useState<{ left: number; bottom: number } | null>(null);
+  const { list: countries } = useCountry();
+  const aq = useQuery(aoisQuery(x.M?.method_version ?? null));
+  const cov = coverage(rec?.first_month, rec?.last_month, cal);
+  const first = +cov.first_month.slice(0, 4);
+  const lastY = +(cov.partial_month ?? cov.last_complete_month).slice(0, 4);
+  const y = Math.max(first, Math.min(lastY, yr));
+  const sel = x.y === y && selectable(cal, y, x.m) ? x.m : null;
+  const blocked = !inScope || !selectable(cal, x.y, x.m);
+
+  const setAoi = (id: string) => {
+    const i3 = iso3OfAoi(id);
+    x.writeQ({ aoi: id, step: null }, false, i3 && i3 !== iso3 ? i3 : undefined);
+  };
+  const pickMonth = (mm: number) => x.writeQ({ ym: ymIso(y, mm), step: null });
+
+  /* 지역 단추: 한국 = 경북 북부 묶음(있으면) · 경북 · 한국 + 지금 고른 다른 지역 · 다른 나라 = 그 나라 단위 */
+  const ids: string[] = KOR ? KOR_AOIS.filter(has) : [`ADM0_${iso3}`];
+  if (aoi && aoi !== "WORLD" && !ids.includes(aoi)) ids.push(aoi);
+  /* 전 세계(WORLD) — 목록에 행이 있을 때만(실서버 있음 · 목 스냅숏 없음) */
+  if (has("WORLD")) ids.push("WORLD");
+  const lvW = (a: AoiRec) => (a.level === "kr_sido" || a.level === "adm1" ? T("g5.lv_sido") : a.level === "kr_sgg" ? T("g5.lv_sgg") : "");
+
+  /* 출처 구간 = /methods/current value_sources(시작이 있는 것) — 없으면 캘린더 행의 value_source 를 이어서 */
+  const vsrc = (x.M?.value_sources ?? []).filter((g) => g.from);
+  const rg = vsrc.length
+    ? vsrc.map((g) => ({ vs: g.value_source, from: String(g.from).slice(0, 7), to: g.to ? String(g.to).slice(0, 7) : "", raw: g }))
+    : regimes(cal).map((g) => ({ ...g, raw: { value_source: g.vs, from: g.from, to: g.to } }));
+  const lastM = cov.partial_month ?? cov.last_complete_month;
+  const curVs = monthRec(cal, x.y, x.m)?.value_source ?? null;
+  const rows = Array.from({ length: 12 }, (_, i) => monthRec(cal, y, i + 1) ?? { year: y, month: i + 1, status: "out_of_range", data_source: null, value_source: null });
+  const allMiss = (cal?.months ?? []).filter((r) => r.status === "missing");
+
+  return (
+    <div className={cx("an-s1")}>
+      <div className={cx("an-s1l")}>
+        <section className={cx("an-q panel")} aria-label={T("ui.analysis_scope")}>
+          <div className={cx("an-f")}>
+            <div className={cx("an-fl")}>
+              <b>{T("ui.region")}</b>
+            </div>
+            <div className={cx("an-fc")}>
+              <div className={cx("seg an-aois")} role="group" aria-label={T("ui.region")}>
+                {ids.map((id) => {
+                  const a = x.has(id) ? (aq.data ?? []).find((q) => q.aoi_id === id) ?? null : null;
+                  if (!a)
+                    return (
+                      <button key={id} type="button" className={cx("an-aoi")} disabled aria-disabled="true" aria-pressed="false">
+                        {x.aoiName(null)} <Status st="out_of_range" />
+                      </button>
+                    );
+                  return (
+                    <button key={id} type="button" className={cx("an-aoi")} data-aoi={id} aria-pressed={aoi === id} onClick={() => aoi !== id && setAoi(id)}>
+                      {x.aoiName(a)}
+                      {a.derived ? <span className={cx("an-val")}> {T("g3.sum_sgg")}</span> : a.level === "country" && !KOR ? <span className={cx("an-val")}> {T("g3.country_level")}</span> : lvW(a) && !(KOR_AOIS as readonly string[]).includes(id) ? <span className={cx("an-val")}> {lvW(a)}</span> : null}
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  className={cx("an-aoi an-aoimore")}
+                  data-aoimore=""
+                  aria-haspopup="dialog"
+                  onClick={(e) => {
+                    const r = e.currentTarget.getBoundingClientRect();
+                    setAnchor({ left: r.left, bottom: r.bottom });
+                    setPickOpen(true);
+                  }}
+                >
+                  <Search className={cx("ic ic-inline")} aria-hidden="true" />
+                  <span>{T("g5.other_region")}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className={cx("an-f")}>
+            <div className={cx("an-fl")}>
+              <b>{T("ui.analysis_month")}</b>
+            </div>
+            <div className={cx("an-fc")}>
+              <div className={cx("an-mrow")}>
+                <div className={cx("an-ystep")}>
+                  <button type="button" className={cx("iconbtn")} aria-label={T("ui.previous_year")} disabled={y <= first} onClick={() => setYr(y - 1)}>
+                    <ChevronLeft aria-hidden="true" />
+                  </button>
+                  <select className={cx("select an-ysel")} aria-label={T("ui.analysis_year")} value={y} onChange={(e) => setYr(+e.target.value)}>
+                    {Array.from({ length: lastY - first + 1 }, (_, i) => lastY - i).map((yy) => (
+                      <option key={yy} value={yy}>
+                        {T("fmt.year", { y: yy })}
+                      </option>
+                    ))}
+                  </select>
+                  <button type="button" className={cx("iconbtn")} aria-label={T("ui.next_year")} disabled={y >= lastY} onClick={() => setYr(y + 1)}>
+                    <ChevronRight aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+              <div className={cx("an-months")} role="group" aria-label={T("ui.analysis_month")}>
+                {Array.from({ length: 12 }, (_, i) => {
+                  const mm = i + 1;
+                  const r = monthRec(cal, y, mm);
+                  const st = r?.status ?? "out_of_range";
+                  const ok = selectable(cal, y, mm);
+                  const md = r?.missing_dates?.length ? W("st.missing_days_n", { n: r.missing_dates.length }) : "";
+                  return (
+                    <button
+                      key={mm}
+                      type="button"
+                      className={cx("an-m")}
+                      data-m={mm}
+                      data-st={st}
+                      aria-pressed={ok && sel === mm}
+                      disabled={!ok}
+                      aria-disabled={!ok || undefined}
+                      title={[ymIso(y, mm), W(`st.${st}`), md].filter(Boolean).join(" · ")}
+                      onClick={() => pickMonth(mm)}
+                    >
+                      <StIcon st={st} />
+                      <b>{monthWord(lang, mm)}</b>
+                      {st !== "ok" && st !== "out_of_range" ? <small>{W(`st.${st}`)}</small> : null}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+          <div className={cx("an-check")} aria-live="polite">
+            <div className={cx("an-cta")}>
+              {x.errWord ? <span className={cx("an-errw")}>{x.errWord}</span> : null}
+              <button type="button" className={cx("btn primary an-go")} data-next="" disabled={blocked} onClick={() => x.go(2)}>
+                {T("ui.view_analysis")}
+              </button>
+            </div>
+          </div>
+        </section>
+        <section className={cx("panel an-status")}>
+          <div className={cx("panel-h")}>
+            <h3>
+              {T("g3.data_status")} <span className={cx("num")}>{y}</span>
+            </h3>
+          </div>
+          <div className={cx("panel-b")}>
+            <div className={cx("tbl-wrap an-stt")}>
+              <table className={cx("tbl")}>
+                <thead>
+                  <tr>
+                    <th>{T("g3.c_month")}</th>
+                    <th>{T("g3.c_status")}</th>
+                    <th>{T("g3.c_data")}</th>
+                    <th className={cx("r")}>{T("g3.c_missing_days")}</th>
+                    <th>{T("g3.c_source")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((r) => (
+                    <tr key={r.month} data-st={r.status ?? ""} className={cx(KOR && sel === r.month && "is-sel")}>
+                      <td className={cx("num")}>{ymIso(r.year, r.month)}</td>
+                      <td>
+                        <Status st={r.status} ok />
+                      </td>
+                      <td>{r.data_source ? W(`dsrc.${String(r.data_source).toLowerCase()}`) : "–"}</td>
+                      <td className={cx("r num")} title={r.missing_dates?.length ? r.missing_dates.join(", ") : undefined}>
+                        {r.status === "out_of_range" || !r.missing_dates ? "–" : r.missing_dates.length}
+                      </td>
+                      <td className={cx("an-srcw")}>{r.value_source ? W(`vsrc.${r.value_source}`) : "–"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {allMiss.length ? (
+              <details className={cx("an-ev an-mfold")}>
+                <summary>
+                  <b>
+                    {T("ui.missing")}
+                    <span className={cx("num")}>{allMiss.length}</span>
+                    {T("ui.months")}
+                  </b>
+                </summary>
+                <ul className={cx("an-miss")}>
+                  {allMiss.map((r) => (
+                    <li key={`${r.year}-${r.month}`}>
+                      <i className={cx("miss-sw")} />
+                      <span className={cx("num")}>{ymIso(r.year, r.month)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            ) : null}
+          </div>
+        </section>
+      </div>
+      <aside className={cx("an-side")}>
+        <section className={cx("panel an-span")}>
+          <div className={cx("panel-h")}>
+            <h3>{T("ui.supported_period")}</h3>
+          </div>
+          <div className={cx("panel-b")}>
+            <div className={cx("an-segdd")}>
+              <span className={cx("an-segh")}>
+                <span className={cx("num")}>
+                  {cov.first_month} – {cov.last_complete_month}
+                </span>{" "}
+                {T("ui.complete_months")}
+              </span>
+              {cal ? (
+                <Track
+                  from={cov.first_month}
+                  to={lastM}
+                  label={`${T("ui.supported_period2")}${cov.first_month} – ${lastM}`}
+                  spans={rg.map((g) => ({ vs: g.vs, from: g.from < cov.first_month ? cov.first_month : g.from, to: !g.to || g.to > lastM ? lastM : g.to, label: W(`vsrc.${g.vs}`) })).filter((g) => g.to >= g.from)}
+                  tail={cov.partial_month ? { from: cov.partial_month, label: `${W("st.partial")} · ${cov.as_of ?? ""}` } : null}
+                  mark={KOR && inScope ? { k: ymK(ymIso(x.y, x.m)), label: ymIso(x.y, x.m) } : null}
+                  ticks={[first, 2012, lastY]}
+                />
+              ) : null}
+              <ul className={cx("an-segl")}>
+                {rg.map((g) => (
+                  <li key={g.vs + g.from} className={cx(curVs === g.vs && "is-cur")}>
+                    <i className={cx("an-segdot", { modis_m2v_terra: "as", modis_m2v: "as", snpp_observed: "va" }[g.vs] ?? "af")} aria-hidden="true" />
+                    <span>
+                      <b>{W(`vsrc.${g.vs}`)}</b>{" "}
+                      <span className={cx("num")}>
+                        {g.raw.from} – {g.raw.to ?? ""}
+                      </span>
+                      {curVs === g.vs ? <em className={cx("an-segcur")}> {T("ui.analysis_month")}</em> : null}
+                    </span>
+                  </li>
+                ))}
+                {cov.partial_month ? (
+                  <li className={cx("tl")}>
+                    <i className={cx("an-segdot tl")} aria-hidden="true" />
+                    <span>
+                      <b>{W("st.partial")}</b>{" "}
+                      <span className={cx("num")}>
+                        {cov.partial_month}
+                        {cov.as_of ? ` · ~${cov.as_of}` : ""}
+                      </span>
+                    </span>
+                  </li>
+                ) : null}
+              </ul>
+            </div>
+          </div>
+        </section>
+      </aside>
+      <AoiPicker open={pickOpen} onOpenChange={setPickOpen} anchor={anchor} phone={x.device === "phone"} aois={aq.data ?? []} countries={countries} current={aoi} onPick={(id) => AOI_OK(id) && id !== "WORLD" && setAoi(id)} />
+    </div>
+  );
 }
