@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocale } from "next-intl";
 import { Bell, Check, X } from "lucide-react";
 import { useNowMs, useSituation } from "@/entities/situation";
@@ -93,6 +93,7 @@ export function OpsScreen({ role }: { role: Role }) {
   const tl = useTl();
   const F = useFmt();
   const agency = useAgency();
+  const qc = useQueryClient();
   const device = useDevice();
   const sp = useQueryParams();
   const phone = device === "phone";
@@ -118,6 +119,10 @@ export function OpsScreen({ role }: { role: Role }) {
   const ready = !!M && !!situation;
   const [ui, setUi] = useState<Ui>({ sel: null, cnt: null, level: null, pick: [], evac: false, more: false, layers: { heat: true, spread: true, units: true, routes: true } });
   const [confirmOpen, setConfirmOpen] = useState(false);
+  /* 1100–1360 접힌 레일에서 펼친 수신함 서랍(목업 .op-open) · 출동 직후 지도 맞춤(목업 showTrips) */
+  const [drawer, setDrawer] = useState(false);
+  const [tripsFit, setTripsFit] = useState<{ fire: string; n: number } | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (M) {
@@ -221,6 +226,7 @@ export function OpsScreen({ role }: { role: Role }) {
         setUi((u) => ({ ...u, pick: [] }));
         const n = dispatch(M, f, a, ids, clock, role, (u) => etaMin(u, f));
         ids.forEach((id) => void agency.dispatchUnit(id, f.id).catch(() => undefined));
+        if (n) setTripsFit((x) => ({ fire: f.id, n: (x?.n ?? 0) + 1 }));
         if (n) opToast({ text: t("ops.toast.dispatch", { n }), sub: t("ops.toast.dispatch_sub"), kind: "ok", ms: 3500 });
       },
       arrive: () => {
@@ -235,7 +241,13 @@ export function OpsScreen({ role }: { role: Role }) {
     if (!M || !selFire) return;
     const f = selFire;
     setConfirmOpen(false);
-    updateFire(M, f.id, { status: "contained", contained_at: `${situation ? new Date(situation.now_ms + KST_MIN * 60000).toISOString().slice(0, 10) : "2026-11-11"} ${clock}` }, clock, { text: { key: "ops.log.contained" }, by: role });
+    const at = `${situation ? new Date(situation.now_ms + KST_MIN * 60000).toISOString().slice(0, 10) : "2026-11-11"} ${clock}`;
+    updateFire(M, f.id, { status: "contained", contained_at: at }, clock, { text: { key: "ops.log.contained" }, by: role });
+    /* 기관 원장에도 진화 완료 → 피해 면적 산정 대기열·토지 관리 경보(목업 mock/agency.js). 다른 화면(land·home)이 다시 받게 무효화 */
+    void agency
+      .containFire(f.id, at)
+      .then(() => Promise.all([qc.invalidateQueries({ queryKey: ["agency", "fires"] }), qc.invalidateQueries({ queryKey: ["agency", "alerts"] })]))
+      .catch(() => undefined);
     recall(M, f);
     M.units.filter((u) => u.fire_id === f.id).forEach((u) => void agency.recallUnit(u.id).catch(() => undefined));
     toast({ text: t("ops.contain.verb"), sub: t("ops.toast.contained_sub"), kind: "ok", ms: 4000 });
@@ -380,7 +392,24 @@ export function OpsScreen({ role }: { role: Role }) {
     );
   };
   const list = (
-    <div className={cx("op-list")} role="listbox" aria-label={t("ops.boot_once.alert_list")}>
+    <div
+      ref={listRef}
+      className={cx("op-list")}
+      role="listbox"
+      aria-label={t("ops.boot_once.alert_list")}
+      onKeyDown={(e) => {
+        if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+        const box = e.currentTarget;
+        const btns = Array.from(box.querySelectorAll<HTMLButtonElement>("[data-id]"));
+        const i = btns.indexOf(document.activeElement as HTMLButtonElement);
+        const n = btns[Math.max(0, Math.min(btns.length - 1, i + (e.key === "ArrowDown" ? 1 : -1)))];
+        if (!n?.dataset.id) return;
+        e.preventDefault();
+        const id = n.dataset.id;
+        select(id);
+        requestAnimationFrame(() => box.querySelector<HTMLElement>(`[data-id="${id}"]`)?.focus());
+      }}
+    >
       {TABS.map((tb) => {
         const g = inbox.filter((a) => tb.has(a.status));
         if (only && tb.id !== only) return null;
@@ -400,7 +429,7 @@ export function OpsScreen({ role }: { role: Role }) {
   const ih = (
     <div className={cx("op-ih")}>
       <h2>{t("ops.boot_once.alert_inbox")}</h2>
-      <button type="button" className={cx("op-ih-x")} aria-label={t("ops.boot_once.collapse_inbox")}>
+      <button type="button" className={cx("op-ih-x")} aria-label={t("ops.boot_once.collapse_inbox")} onClick={() => setDrawer(false)}>
         <X aria-hidden="true" />
       </button>
     </div>
@@ -1004,8 +1033,50 @@ export function OpsScreen({ role }: { role: Role }) {
         </header>
       </section>
       <div className={cx("op-grid")}>
-        <section className={cx("panel op-inbox")} aria-label={t("ops.boot_once.alert_inbox")}>
-          <div className={cx("op-rail")} aria-label={t("ops.boot_once.collapsed_alert_inbox")} />
+        <section className={cx("panel op-inbox", drawer && "op-open")} aria-label={t("ops.boot_once.alert_inbox")}>
+          <div className={cx("op-rail")} aria-label={t("ops.boot_once.collapsed_alert_inbox")} data-testid="ops-rail">
+            <button type="button" className={cx("op-rail-open")} data-open="" aria-label={t("ops.render_rail.expand_alert_inbox")} title={t("ops.render_rail.expand_alert_inbox")} onClick={() => setDrawer(true)}>
+              <Bell aria-hidden="true" />
+              {unread.length ? <span className={cx("op-tab-n un num")}>{unread.length}</span> : null}
+            </button>
+            {TABS.map((tb) => (
+              <button
+                key={tb.id}
+                type="button"
+                className={cx("op-rail-tab")}
+                data-open={tb.id}
+                aria-pressed={(sel ? tabOf(sel) : "open") === tb.id}
+                title={t(tb.label)}
+                onClick={() => {
+                  const first = inbox.find((x) => tabOf(x) === tb.id);
+                  if (first) select(first.id, true);
+                  setDrawer(true);
+                }}
+              >
+                <b className={cx("num")}>{inbox.filter((x) => tb.has(x.status)).length}</b>
+                <small>{t(tb.label).replace(" ", "")}</small>
+              </button>
+            ))}
+            <span className={cx("op-rail-sep")} />
+            {inbox
+              .filter((x) => !isClosed(x.status))
+              .map((x) => (
+                <button
+                  key={x.id}
+                  type="button"
+                  className={cx("op-rail-a", `l${x.level}`, selId === x.id && "sel", unread.includes(x.id) && "un")}
+                  data-id={x.id}
+                  title={`${atitle(x)} · ${LV(x.level)}`}
+                  onClick={() => {
+                    select(x.id);
+                    setDrawer(false);
+                  }}
+                >
+                  <span className={cx("num")}>{atL(x.at)}</span>
+                  <small>{LV(x.level)}</small>
+                </button>
+              ))}
+          </div>
           {phone ? null : ih}
           <div className={cx("op-tabs")} role="tablist" aria-label={t("ops.boot_once.alert_status")} hidden />
           {phone ? null : list}
@@ -1016,6 +1087,8 @@ export function OpsScreen({ role }: { role: Role }) {
             selFireId={sel?.fire_id ?? null}
             layers={ui.layers}
             fitAll={ui.cnt === "busy" || ui.cnt === "ready"}
+            pick={ui.pick}
+            tripsFit={tripsFit}
             weather={situation.weather}
             onLayer={(k, v) => setUi((u) => ({ ...u, layers: { ...u.layers, [k]: v } }))}
             onFire={(id) => {

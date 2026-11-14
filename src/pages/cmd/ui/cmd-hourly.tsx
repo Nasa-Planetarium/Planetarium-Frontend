@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as RKE, type PointerEvent as RPE, type ReactNode } from "react";
+import { ChevronDown } from "lucide-react";
+import { tzAbbr } from "@/shared/lib";
 import { binsOf, busiest, dParts, hourlyStats, meanOf, medTotal, peakOf, UNITS, type Board, type Day, type HourStat, type Peak, type Query } from "../model/cmd";
 import type { Ctx } from "./cmd-page";
 import { Hatch } from "./charts";
@@ -15,7 +17,7 @@ const UNIT_NAME: Record<string, string> = { day: "cmd.ui.days", week: "cmd.ui.we
  * 표로 보기 · 기간 다이얼(요일 · 빠른 기간 · 막대 브러시 + 손잡이 · 눈금).
  * 일 자료는 AgencyPort 묶음(board.hourly.days — 2001-01-01 부터 결측 날 포함).
  */
-export function CmdHourly({ board, T_, src, setSrc, occurOff }: { board: Board; q: Query; T_: Ctx["T_"]; kor: boolean; src: "occur" | "sat"; setSrc: (s: "occur" | "sat") => void; occurOff?: boolean }) {
+export function CmdHourly({ board, T_, src, setSrc, occurOff, kor }: { board: Board; q: Query; T_: Ctx["T_"]; kor: boolean; src: "occur" | "sat"; setSrc: (s: "occur" | "sat") => void; occurOff?: boolean }) {
   const F = useFmt();
   const days = board.hourly.days;
   const N = days.length;
@@ -178,7 +180,7 @@ export function CmdHourly({ board, T_, src, setSrc, occurOff }: { board: Board; 
             )
           ) : null}
         </div>
-        <HrCard st={st} mean={mean} sel={sel} low={low} showDays={showDays} setShowDays={setShowDays} prev={prev} T_={T_} n1={n1} pk={pk} nMiss={nMiss} nDow={nDow} src={src} />
+        <HrCard st={st} mean={mean} sel={sel} low={low} showDays={showDays} setShowDays={setShowDays} prev={prev} T_={T_} n1={n1} pk={pk} nMiss={nMiss} nDow={nDow} src={src} kor={kor} />
         <Dial days={days} a={a} b={b} setAb={setAb} zoom={zoom} inDow={inDow} dow={dow} setDow={setDow} presets={presets} preOn={preOn} pick={pick} rangeTxt={rangeTxt(true)} T_={T_} WK={WK} />
       </div>
     </section>
@@ -225,8 +227,11 @@ function HrCard(p: {
   nMiss: number;
   nDow: number;
   src: "occur" | "sat";
+  kor: boolean;
 }) {
   const { st, mean, sel, low, T_, n1 } = p;
+  /* 24행 표 머리 정렬(목업 EM.ui.sortTable · KB R43): 누른 열 내림 → 다시 누르면 오름. 처음은 시각 순 */
+  const [sort, setSort] = useState<{ col: number; dir: "ascending" | "descending" } | null>(null);
   const F = useFmt();
   const [ref, W0] = useWidth<HTMLDivElement>();
   const [tip, setTip] = useState<{ h: number; x: number; y: number } | null>(null);
@@ -390,7 +395,7 @@ function HrCard(p: {
       </div>
       <p className={cx("cm-hr-src")}>
         <span className={cx("cm-k")}>{T_("cmd.ui.basis")}</span>
-        <span>{p.src === "sat" ? T_("cmd.hr.sat_note") : T_("cmd.ui.estimated_ignition_time_dail")}</span>
+        <span>{p.src === "sat" ? T_("cmd.hr.sat_note", { tz: p.kor ? tzAbbr("Asia/Seoul") : T_("cmd.hr.solar") }) : T_("cmd.ui.estimated_ignition_time_dail")}</span>
       </p>
       <details className={cx("cm-hr-tbl")}>
         <summary>{T_("cmd.ui.show_as_table_24_hours")}</summary>
@@ -398,19 +403,34 @@ function HrCard(p: {
           <table className={cx("tbl")}>
             <thead>
               <tr>
-                <th>{T_("cmd.ui.hour")}</th>
-                <th className={cx("r")}>{T_("cmd.ui.min2")}</th>
-                <th className={cx("r")}>p25</th>
-                <th className={cx("r")}>{T_("cmd.ui.median")}</th>
-                <th className={cx("r")}>p75</th>
-                <th className={cx("r")}>{T_("cmd.ui.max2")}</th>
-                <th className={cx("r")}>{T_("cmd.ui.mean")}</th>
-                <th className={cx("r")}>{T_("cmd.ui.days2")}</th>
-                {ps ? <th className={cx("r")}>{T_("cmd.ui.prev_year_median")}</th> : null}
+                {[T_("cmd.ui.hour"), T_("cmd.ui.min2"), "p25", T_("cmd.ui.median"), "p75", T_("cmd.ui.max2"), T_("cmd.ui.mean"), T_("cmd.ui.days2"), ...(ps ? [T_("cmd.ui.prev_year_median")] : [])].map((label, i) => (
+                  <th key={i} className={cx(i > 0 && "r")} aria-sort={sort?.col === i ? sort.dir : "none"}>
+                    <button type="button" className={cx("th-sort")} onClick={() => setSort((o) => ({ col: i, dir: o?.col === i && o.dir === "descending" ? "ascending" : "descending" }))}>
+                      {label}
+                      <ChevronDown aria-hidden="true" />
+                    </button>
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {st.map((x, h) => (
+              {(() => {
+                const key = (x: HourStat, h: number): number | null =>
+                  [h, x.min, x.p25, x.median, x.p75, x.max, mean[h] ?? null, x.n, ps?.[h]?.median ?? null][sort?.col ?? 0] ?? null;
+                const order = st.map((x, h) => ({ x, h }));
+                if (sort) {
+                  const m = sort.dir === "ascending" ? 1 : -1;
+                  order.sort((a, b) => {
+                    const u = key(a.x, a.h);
+                    const v = key(b.x, b.h);
+                    if (u == null && v == null) return 0;
+                    if (u == null) return 1;
+                    if (v == null) return -1;
+                    return (u - v) * m || a.h - b.h;
+                  });
+                }
+                return order;
+              })().map(({ x, h }) => (
                 <tr key={h}>
                   <td>
                     <span className={cx("num")}>{String(h).padStart(2, "0")}</span>

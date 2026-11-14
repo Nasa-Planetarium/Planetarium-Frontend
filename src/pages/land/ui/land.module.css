@@ -309,10 +309,22 @@
 .dp{display:flex;flex-direction:column;gap:var(--gap-panel);height:100%;min-height:0}
 .dp-g{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:var(--gap-panel);margin:0 var(--gutter) var(--gutter)}
 .dp-map{min-width:0;min-height:300px;height:100%}
+/* 공통 지도 칸이 감지 묶음 지도 칸을 꽉 채운다 */
+.dp-map>.map{height:100%}
 .dp-list{display:flex;flex-direction:column;min-height:0;overflow:hidden}
 .dt-none{margin:0;padding:var(--sp-5) var(--sp-4);color:var(--text-2);font-size:var(--fs-2)}
 :global(html:not([data-device="web"])) .dp-g{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(300px,45vh) auto}
 :global(html:not([data-device="web"])) .dp{height:auto}
+.dp-list .dt-wrap{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden}
+.dt-tbl thead th{position:sticky;top:0;z-index:1;background:var(--surface-1);white-space:normal;word-break:keep-all}
+.dt-tbl td{white-space:nowrap}
+.dt-tbl td:first-child{white-space:normal}
+.dt-pl{display:inline-flex;align-items:baseline;gap:var(--sp-2)}
+.dt-dot{flex:none;width:8px;height:8px;border-radius:50%;background:var(--c)}
+.dt-ll{display:block;padding-left:var(--sp-4);font-size:var(--fs-3);color:var(--text-3)}
+:global(html:not([data-device="web"])) .dp-list .dt-wrap{overflow:visible}
+:global(html[data-device="phone"]) .dt-o,.dt-compact .dt-o{display:none}
+:global(html[data-device="phone"]) .dt-tbl td,:global(html[data-device="phone"]) .dt-tbl th{padding-left:var(--sp-1);padding-right:var(--sp-1);font-size:var(--fs-3)}
 
 /* 감지 시각 옆 위성 통과 틱(목업 index.html .ptick · land.css .ld-pass) */
 .ld-pass{color:var(--text-2);white-space:nowrap}

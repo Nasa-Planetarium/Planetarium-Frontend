@@ -1,6 +1,7 @@
 {
  "_note": "Keys the mockup dictionary does not have yet. Mockup values win when the same key appears (src/shared/i18n/messages.ts).",
  "shell": {
+  "det": { "partial": "Partial points ({n}/{m} tiles) — server rate limit" },
   "nav": {
    "calendar": { "label": "Calendar", "short": "Calendar" },
    "method": { "label": "Method & validation", "short": "Method" }

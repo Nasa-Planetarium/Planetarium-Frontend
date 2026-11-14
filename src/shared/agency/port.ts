@@ -124,6 +124,15 @@ export interface AgencyPort {
   dispatchUnit(unitId: string, fireId: string): Promise<DispatchResult>;
   /** 귀소 */
   recallUnit(unitId: string): Promise<Unit>;
+  /**
+   * 진화 완료(ops): 불 상태 contained + 진화 시각. 소실 면적이 없으면 추정값을 채우고 피해 면적 산정 대기열에 넣는다 —
+   * 토지 관리(land) 대상 「진화 완료 · 피해 면적 산정 대기」 경보가 새로 생긴다(목업 mock/agency.js updateFire).
+   */
+  containFire(fireId: string, containedAt: string): Promise<Fire>;
+  /**
+   * 현장 확인 요청(land): 이 불의 토지 관리 대상 새 경보를 확인(ack)으로 돌리고 확인 기록 「현장 확인 요청 {n}필지」를 남긴다(목업 land.js requestCheck).
+   */
+  requestFieldCheck(fireId: string, parcels: number, at: string): Promise<Alert[]>;
   /** 피해 면적 필지(land) */
   listParcels(fireId: string): Promise<Parcel[]>;
   /** 지휘 통계(cmd) 요약. 질의를 넘기면 화면 묶음(board)을 함께 싣는다 */

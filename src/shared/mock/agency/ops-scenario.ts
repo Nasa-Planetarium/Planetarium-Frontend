@@ -94,6 +94,34 @@ export function firePoints(f: Pick<Fire, "id" | "viirs" | "modis">): { viirs: Co
   return { viirs, modis };
 }
 
+/** 지금 불의 관측 점 자리(목업 core.js EM.hotspots 「현재 불」 — rng "hsf:" 순서 그대로: 방위 · 거리 · FRP · 신뢰도). 지도 열 지도·점 층 몫 */
+export interface FirePointXY {
+  lat: number;
+  lon: number;
+  sensor: "VIIRS" | "MODIS";
+  frp: number;
+  conf: string;
+}
+export function firePointsXY(f: Pick<Fire, "id" | "lat" | "lon" | "viirs" | "modis" | "frp_max">): FirePointXY[] {
+  const Rf = rng(`hsf:${f.id}`);
+  const spreadKm = 0.18 + f.viirs * 0.03;
+  const kx = 111 * Math.cos((f.lat * Math.PI) / 180);
+  const out: FirePointXY[] = [];
+  for (let i = 0; i < f.viirs; i++) {
+    const a = Rf() * 6.283;
+    const rr = Math.abs(gauss(Rf)) * spreadKm * 0.6;
+    const frp = Math.max(1, f.frp_max * Math.pow(Rf(), 1.8));
+    out.push({ lat: f.lat + (Math.sin(a) * rr) / 111, lon: f.lon + (Math.cos(a) * rr) / kx, sensor: "VIIRS", frp, conf: Rf() < 0.8 ? "nominal" : "high" });
+  }
+  for (let i = 0; i < f.modis; i++) {
+    const a = Rf() * 6.283;
+    const rr = Math.abs(gauss(Rf)) * spreadKm * 0.7;
+    const frp = Math.max(2, f.frp_max * Math.pow(Rf(), 1.5));
+    out.push({ lat: f.lat + (Math.sin(a) * rr) / 111, lon: f.lon + (Math.cos(a) * rr) / kx, sensor: "MODIS", frp, conf: String(60 + Math.floor(Rf() * 40)) });
+  }
+  return out;
+}
+
 /* ── 고정·해상 열원(목업 FIXED_HEAT, type 2·3) ── */
 const FIXED_HEAT = [
   { id: "andong-ind", region: "andong", p: 0.1, type: 2 },
@@ -169,7 +197,7 @@ const UNREAD0_LAND = ["A-0405"];
 const HOME_OVERRIDE: Record<string, { lat: number; lon: number }> = { "U-04": { lat: 36.404, lon: 128.792 } };
 
 export interface OpsAlertMeta {
-  log: { at: string; by: "satellite"; text: "title" }[];
+  log: ({ at: string; by: "satellite"; text: "title" } | { at: string; by: string; key: string; params?: Record<string, string | number> })[];
   unread: string[];
   passes: PassRow[];
 }
@@ -177,14 +205,16 @@ export interface OpsFireMeta {
   villages: Village[];
   points: { viirs: ConfClass[]; modis: ConfClass[] };
   fixed: FixedPoint[];
+  /** 관측 점 자리(지도) */
+  xy: FirePointXY[];
 }
 
 /** 경보 행 + ops 필드 */
-export function opsAlerts(alerts: Alert[]): Alert[] {
+export function opsAlerts(alerts: Alert[], notes: Record<string, { at: string; by: string; key: string; params?: Record<string, string | number> }[]> = {}): Alert[] {
   return alerts.map((a) => ({
     ...a,
     ops: {
-      log: [{ at: a.at, by: "satellite", text: "title" }],
+      log: [{ at: a.at, by: "satellite", text: "title" }, ...(notes[a.id] ?? [])],
       unread: [...(UNREAD0.includes(a.id) ? a.targets.filter((r) => r === "responder" || r === "firefighter") : []), ...(UNREAD0_LAND.includes(a.id) && a.targets.includes("land") ? ["land"] : [])],
       passes: PASSES[a.id] ?? [],
     } satisfies OpsAlertMeta,
@@ -198,7 +228,7 @@ export function opsFires(fires: Fire[], today: string): Fire[] {
     const regions = f.by_region && typeof f.by_region === "object" ? Object.keys(f.by_region) : [f.region];
     return {
       ...f,
-      ops: { villages: villagesOf(f), points: firePoints(f), fixed: fixedPoints(regions, today) } satisfies OpsFireMeta,
+      ops: { villages: villagesOf(f), points: firePoints(f), fixed: fixedPoints(regions, today), xy: firePointsXY(f) } satisfies OpsFireMeta,
     };
   });
 }

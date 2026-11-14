@@ -50,6 +50,8 @@ export interface OpsFire extends Fire {
   villages: Village[];
   points: { viirs: ConfClass[]; modis: ConfClass[] };
   fixed: { type: 2 | 3; conf: ConfClass; date: string }[];
+  /** 관측 점 자리(지도 열 지도·점) — 목업 EM.hotspots 현재 불 점 */
+  xy: { lat: number; lon: number; sensor: string; frp: number; conf: string }[];
 }
 export interface OpsUnit extends Unit {
   crew: number;
@@ -65,7 +67,10 @@ export function readAlert(a: Alert): OpsAlert {
   const o = obj(a.ops);
   return {
     ...a,
-    log: arr<{ at: string }>(o.log).map((l) => ({ at: l.at, text: { title: a.title }, by: "satellite" as const })),
+    /* 원장 첫 줄(위성 감지 = 경보 제목) + 다른 역할이 남긴 확인 기록(예: 토지 관리 「현장 확인 요청 {n}필지」) */
+    log: arr<{ at: string; key?: string; by?: string; params?: Record<string, string | number> }>(o.log).map((l) =>
+      l.key ? ({ at: l.at, text: { key: l.key, params: l.params }, by: (l.by ?? "system") as LogRow["by"] } as LogRow) : { at: l.at, text: { title: a.title }, by: "satellite" as const },
+    ),
     passes: arr<PassRow>(o.passes),
     unread0: arr<string>(o.unread),
   };
@@ -78,6 +83,7 @@ export function readFire(f: Fire): OpsFire {
     villages: arr<Village>(o.villages),
     points: { viirs: arr<ConfClass>(pts.viirs), modis: arr<ConfClass>(pts.modis) },
     fixed: arr(o.fixed),
+    xy: arr(o.xy),
   } as OpsFire;
 }
 export function readUnit(u: Unit): OpsUnit {
@@ -228,3 +234,18 @@ export function firstPick(inbox: OpsAlert[], unread: string[]): string | null {
 }
 
 export type { AlertLevel, UnitStatus };
+
+/** 경북 북부 시군 slug → release SGG 코드(목업 api.js SGG_OF · home 모델과 같은 표) — 출동 상세 「지역 비교」 */
+export const SGG_OF: Record<string, string> = {
+  andong: "47170",
+  bonghwa: "47920",
+  cheongsong: "47750",
+  gunwi: "27720",
+  sangju: "47250",
+  uiseong: "47730",
+  uljin: "47930",
+  yecheon: "47900",
+  yeongdeok: "47770",
+  yeongju: "47210",
+  yeongyang: "47760",
+};

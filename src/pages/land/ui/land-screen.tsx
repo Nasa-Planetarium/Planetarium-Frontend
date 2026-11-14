@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocale } from "next-intl";
 import { ArrowDown, Check, ChevronLeft, Download, Layers, Send, Table } from "lucide-react";
 import { useSituation } from "@/entities/situation";
@@ -74,6 +74,7 @@ export function LandScreen() {
   const tl = useTl();
   const F = useFmt();
   const agency = useAgency();
+  const qc = useQueryClient();
   const device = useDevice();
   const ui = useLandUi();
   const { data: situation } = useSituation();
@@ -159,6 +160,12 @@ export function LandScreen() {
       if (s.pane === "parcels") s = { ...s, pane: "detail" };
       return s;
     });
+    /* 산정 대기에서 넘기면 이 불의 토지 관리 새 경보를 확인으로 돌리고 「현장 확인 요청 {n}필지」 기록(목업 land.js requestCheck → EM.updateAlert) */
+    if (queued)
+      void agency
+        .requestFieldCheck(f.id, picked.length, nowTs.slice(11, 16))
+        .then(() => qc.invalidateQueries({ queryKey: ["agency", "alerts"] }))
+        .catch(() => undefined);
     toast({ text: <b>{t("land.req.sent")}</b>, sub: t("land.req.sent_sub", { name: fname(f), n: F.num(picked.length), ha: F.ha(r1(area)) }), kind: "ok" });
   };
   const advance = (f: LandFire) => {

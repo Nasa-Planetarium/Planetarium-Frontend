@@ -38,6 +38,12 @@ export class HttpAgencyAdapter implements AgencyPort {
   recallUnit(unitId: string) {
     return this.req<Unit>(`/units/${encodeURIComponent(unitId)}/recall`, { method: "POST" });
   }
+  containFire(fireId: string, containedAt: string) {
+    return this.req<Fire>(`/fires/${encodeURIComponent(fireId)}/contain`, { method: "POST", body: JSON.stringify({ contained_at: containedAt }) });
+  }
+  requestFieldCheck(fireId: string, parcels: number, at: string) {
+    return this.req<Alert[]>(`/fires/${encodeURIComponent(fireId)}/field-check`, { method: "POST", body: JSON.stringify({ parcels, at }) });
+  }
   listParcels(fireId: string) {
     return this.req<Parcel[]>(`/fires/${encodeURIComponent(fireId)}/parcels`);
   }

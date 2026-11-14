@@ -163,6 +163,14 @@
 .dp{display:flex;flex-direction:column;gap:var(--gap-panel);height:100%;min-height:0}
 .dp-g{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:var(--gap-panel);margin:0 var(--gutter) var(--gutter)}
 .dp-map{min-width:0;min-height:300px;height:100%}
+/* 감지 묶음 표(목업 index.html 공통 .tbl · .is-row) — 한국 밖 det 화면 */
+.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant-numeric:tabular-nums}
+.tbl th{text-align:left;font-weight:var(--fw-strong);font-size:var(--fs-3);color:var(--text-2);padding:var(--sp-2) var(--sp-3);border-bottom:1px solid var(--line-strong);white-space:nowrap}
+.tbl td{height:var(--row-h);padding:var(--sp-2) var(--sp-3);font-size:var(--fs-body);border-bottom:1px solid var(--line-soft);vertical-align:middle}
+.tbl td.r,.tbl th.r{text-align:right}
+.tbl-wrap{overflow-x:auto}
+/* 공통 지도 칸이 감지 묶음 지도 칸을 꽉 채운다 */
+.dp-map>.map{height:100%}
 .dp-list{display:flex;flex-direction:column;min-height:0;overflow:hidden}
 .dp-list .dt-wrap{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden}
 .cb-s{display:none}
