@@ -8,7 +8,7 @@ import { calendarQuery } from "@/entities/month-value";
 import { methodQuery } from "@/entities/release";
 import { useSession } from "@/entities/session";
 import { useAoiScope, type AoiScope, type Bbox } from "@/features/pick-aoi";
-import { useAgency, type Alert, type Fire, type Unit } from "@/shared/agency";
+import { useAgency, useInbox, withRaised, type Alert, type Fire, type Unit } from "@/shared/agency";
 import { api, unwrap, qk } from "@/shared/api";
 import { useT, useTl } from "@/shared/i18n";
 import { prefs } from "@/shared/lib/prefs";
@@ -186,7 +186,9 @@ function HomeScreen() {
 
   /* 시나리오 원장(경북)만: 다른 나라는 비운다(목업 FIRES·feedAlerts) */
   const fires: Fire[] = kor ? ag.fires : [];
-  const alerts: Alert[] = kor ? ag.alerts.filter((a) => a.targets.some((x) => x === "responder" || x === "firefighter")) : [];
+  /* 감지 목록 = 원장 경보 + 셸 수신함에 새로 올라온 경보(최신 먼저 · 목업 EM.alerts 에 raiseAlert 가 앞에 붙는 것과 같다) */
+  const box = useInbox();
+  const alerts: Alert[] = kor ? withRaised(ag.alerts, box).filter((a) => a.targets.some((x) => x === "responder" || x === "firefighter")) : [];
   const units: Unit[] = kor ? ag.units : [];
 
   const ctx: Ctx = {

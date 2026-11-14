@@ -32,6 +32,7 @@ export function PassLine({ iso3, off }: { iso3: string; off?: boolean }) {
   const nowMin = nowMs != null ? Math.floor(nowMs / 60000) : null;
   const atLat = info ? info.c[1] : KOR_C[0];
   const atLon = info ? info.c[0] : KOR_C[1];
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- 아래 clockTz(info) 때문에 컴파일러가 좌표를 「나중에 바뀔 수 있음」으로 본다(값은 숫자 둘, 1분마다 다시 센다)
   const nx = useMemo(() => (nowMin == null ? null : nextPass(nowMin * 60000, [atLat, atLon])), [nowMin, atLat, atLon]);
   if (off || !phone || page !== "ops" || !nx || nowMs == null) return null;
   const tz = clockTz(info, { utc: clockUTC === "1", regionChosen: false, nowMs });

@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Check, Info, Search, Truck, X } from "lucide-react";
 import { focusBoundaryQuery, geomMainBounds, linesQuery, MapCanvas, type Bbox, type LayerKey, type MapCanvasHandle, type MapHotspot } from "@/widgets/map-canvas";
 import { iso3OfAoi } from "@/features/pick-aoi";
-import type { Alert, Fire } from "@/shared/agency";
+import { inbox, type Alert, type Fire } from "@/shared/agency";
 import { ApiError } from "@/shared/api";
 import { pageHref, type Locale } from "@/shared/config";
 import { useRouter } from "next/navigation";
@@ -169,18 +169,22 @@ export function HomeMap(c: Ctx) {
     setQ("");
   };
 
-  /* 새 경보 지도 알림 띠(목업 showFlash): 처음 받은 뒤 새로 들어온 대응 경보 하나 · 역할로 들어온 사람에게만 · 10초 뒤 닫힘 */
+  /* 새 경보 지도 알림 띠(목업 showFlash · ctx.on("alert:new")): 셸 수신함(inbox.onNew)에 새로 올라온 대응·소방 경보 · 역할로 들어온 사람에게만 · 10초 뒤 닫힘.
+     홈이 직접 보이는 동안 셸 토스트는 끈다(목업 quietAlertToast = inbox.setQuiet) */
   const router = useRouter();
   const [flash, setFlash] = useState<Alert | null>(null);
-  const ids = c.alerts.map((a) => a.id).join(",");
-  const [seen, setSeen] = useState<string | null>(null);
-  if (seen == null && c.alerts.length) setSeen(ids);
-  else if (seen != null && seen !== ids) {
-    const old = new Set(seen.split(","));
-    const fresh = c.alerts.find((a) => !old.has(a.id) && a.status === "new");
-    setSeen(ids);
-    if (fresh && c.role && c.kor) setFlash(fresh);
-  }
+  const { role, kor } = c;
+  useEffect(() => {
+    inbox.setQuiet(true);
+    const off = inbox.onNew((a) => {
+      if (!a.targets.some((x) => x === "responder" || x === "firefighter")) return;
+      if (role && kor) setFlash(a);
+    });
+    return () => {
+      off();
+      inbox.setQuiet(false);
+    };
+  }, [role, kor]);
   useEffect(() => {
     if (!flash) return;
     const id = setTimeout(() => setFlash(null), 10000);
