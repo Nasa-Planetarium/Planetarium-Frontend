@@ -28,6 +28,15 @@ export function useTl() {
   );
 }
 
+/** 개발 판에서만: 빠진 키를 키마다 한 번 알린다(목업 EM.t DEV 경고 「[i18n] 빠진 키」). 배포 판은 조용히 키를 그대로 낸다 */
+const DEV = process.env.NODE_ENV !== "production";
+const warned = new Set<string>();
+function warnMissing(key: string) {
+  if (!DEV || warned.has(key)) return;
+  warned.add(key);
+  console.warn("[i18n] 빠진 키", key);
+}
+
 export function useT(): TFn {
   const t = useTranslations();
   return useCallback<TFn>(
@@ -35,6 +44,7 @@ export function useT(): TFn {
       const leaf = `${key}._`;
       if (t.has(leaf)) return t(leaf, params);
       if (t.has(key)) return t(key, params);
+      warnMissing(key);
       return key;
     },
     [t],

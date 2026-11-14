@@ -3,6 +3,8 @@ import {
   Bell,
   BookOpen,
   CalendarDays,
+  Copy,
+  Download,
   ChartColumn,
   Check,
   ChevronDown,
@@ -49,6 +51,8 @@ const MAP = {
   info: Info,
   alert: TriangleAlert,
   lock: Lock,
+  download: Download,
+  copy: Copy,
 } satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof MAP;

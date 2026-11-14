@@ -6,7 +6,7 @@
    "method": { "label": "방법·검증", "short": "방법" }
   },
   "page": { "calendar": "캘린더", "method": "방법·검증" },
-  "locked": { "any": "{page} 화면은 예시 로그인 뒤에 열립니다" }
+  "locked": { "any": "{page} 화면은 예시 로그인 뒤에 열립니다", "title_any": "{page} 화면은 예시 로그인 뒤에 열림", "login_any": "역할 골라 로그인" }
  },
  "cmd": {"aoi": {"name_lv": "{aoi} {n}개 {rw}"}, "real": {"hr_wide": "{a}는 범위가 넓어 감지 점을 한 번에 받을 수 없습니다(실서버 100 제곱도 이하). 위 「지역」에서 1급 지역을 고르면 시간대 분포가 나옵니다.", "pts_wide": "범위가 넓어 감지 점을 그리지 않습니다 — 지역을 좁혀 주세요", "loading": "감지 점 받는 중…", "no_occur": "실제 자료에는 발생 시각이 없어 위성 관측 시각만 씁니다", "val": "채택 모델 한국 월 합계 MAE {mae} · 편향 {bias}", "det_n": "{y}년 {a} 감지 점 {n}개(실제 자료)"}},
  "maplab": { "zoom_for_points": "확대하면 감지 점이 보입니다(100 제곱도 이하)", "title": "지도 부품 시험대", "range": "범위", "start": "시작", "end": "끝", "density": "밀도 보기", "png": "지도 PNG", "relief": "지형 음영", "points": "감지 점 {n}개", "regions": "경계 면 {n}개", "preset": { "SIDO_47": "경상북도(시군구)", "KOR": "대한민국(시도)", "SIDO_51": "강원(시군구)", "ESP": "스페인", "USA": "미국" } }

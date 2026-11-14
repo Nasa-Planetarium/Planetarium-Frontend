@@ -5,6 +5,7 @@ import { createRoot } from "react-dom/client";
 import type { Band, GridRow } from "../model/calendar";
 import { CalSvg } from "./cal-svg";
 import { tok } from "./bits";
+import { notifyImageSaved, saveFile } from "@/shared/ui/download";
 
 /**
  * 캘린더 이미지 PNG(목업 exportPNG · F10 ⑦): 연×월 격자(칸 30px, 기기와 무관하게 같은 판) + 제목 + 범례(램프·상태·값 출처 구간) + 진행 중 달 + 출처 줄.
@@ -147,14 +148,8 @@ export async function exportCalendarPng(o: PngInput) {
     });
     const blob = await new Promise<Blob | null>((res) => c.toBlob(res, "image/png"));
     if (!blob) throw new Error("no blob");
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = o.fileName;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 4000);
+    saveFile(o.fileName, blob);
+    notifyImageSaved(o.fileName, c.width, c.height);
     return { width: c.width, height: c.height, bytes: blob.size };
   } finally {
     tmp.remove();

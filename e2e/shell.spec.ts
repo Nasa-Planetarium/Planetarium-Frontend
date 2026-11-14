@@ -45,10 +45,11 @@ test("상황판을 로그인 전 직접 열면 잠긴 화면 → 그 자리에�
   await page.goto("/ko/home/");
   const locked = page.locator('[data-slot="locked"]');
   await expect(locked).toBeVisible();
-  await expect(locked.locator("h2")).toHaveText("상황판 화면은 예시 로그인 뒤에 열립니다");
+  await expect(locked.locator("h2")).toHaveText("상황판 화면은 예시 로그인 뒤에 열림");
+  await expect(locked.locator("[data-back]")).toHaveText("캘린더");
   await expect(page.locator('[data-testid="home"]')).toHaveCount(0);
   await expect(page.locator('#topbar nav a[data-tab="home"]')).toHaveCount(0);
-  await locked.getByRole("button", { name: "로그인" }).click();
+  await locked.getByRole("button", { name: "역할 골라 로그인" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "로그인" }).click();
   await expect(page).toHaveURL(/\/ko\/home\/$/);
   await expect(page.locator('[data-testid="home"]')).toBeVisible({ timeout: 30000 });

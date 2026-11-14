@@ -11,6 +11,8 @@ import { aoiBounds, aoiGeometry, checkPoint, clusterUnits, curve, fireMarkOf, he
 import { buildStyle, demLayer, LAYER_IDS, type Tok } from "../lib/style";
 import { DEFAULT_LAYERS, type Bbox, type DrawMode, type DrawnAoi, type GeoCollection, type Geom, type LatLon, type LayerKey, type Layers, type MapBurn, type MapFire, type MapHotspot, type MapRegion, type MapRoute, type MapUnit, type TickOpts, type ToolKey } from "../model/types";
 import s from "./map-canvas.module.css";
+import { PassLine } from "./pass-line";
+import { moveBounds } from "../lib/bounds";
 
 /**
  * 공통 지도 — 목업 map3d.js(EMMap3D)를 React 부품 하나로 옮겼다(대조표 §2 · 작업 단위 W1).
@@ -80,6 +82,16 @@ export interface MapCanvasProps {
 type Mk = { m: Marker; d: HTMLDivElement; id: string; kind: "f" | "u"; lbl?: string; al?: string; cl?: string[] | null };
 type LabelMk = { m: Marker; d: HTMLDivElement; id: string; river?: boolean; pts: [number, number][]; w?: number; h?: number; key?: string };
 type Tip = { x: number; y: number; title: string; sub: string[] } | null;
+
+const lngLatOf = (c: unknown): [number, number] | null => {
+  if (Array.isArray(c) && c.length >= 2) return [Number(c[0]), Number(c[1])];
+  if (c && typeof c === "object") {
+    const o = c as { lng?: number; lon?: number; lat?: number };
+    const x = o.lng ?? o.lon;
+    if (x != null && o.lat != null) return [x, o.lat];
+  }
+  return null;
+};
 
 const fc = (features: unknown[]) => ({ type: "FeatureCollection" as const, features });
 const reduced = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -162,6 +174,7 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
         zoom: v ? undefined : 6,
         minZoom: 1,
         maxZoom: 14.5,
+        maxBounds: moveBounds(v) ?? undefined,
         maxPitch: 0,
         attributionControl: false,
         dragRotate: false,
@@ -172,6 +185,21 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
       });
       made = m;
       mapRef.current = m;
+      /* 다른 나라 카메라 방어(목업 map3d): 화면 코드가 나라 범위(이동 경계) 밖 중심으로 카메라를 옮기려 하면(jumpTo·easeTo·flyTo)
+         전체 보기로 바꾼다. 범위 안 좌표는 그대로 통과 */
+      (["jumpTo", "easeTo", "flyTo"] as const).forEach((fn) => {
+        const orig = (m[fn] as (...a: unknown[]) => MlMap).bind(m);
+        (m as unknown as Record<string, unknown>)[fn] = (opt: Record<string, unknown> | undefined, ...rest: unknown[]) => {
+          const pv = pRef.current.view;
+          const b = pRef.current.iso3 !== "KOR" ? moveBounds(pv) : null;
+          const c = opt ? lngLatOf(opt.center) : null;
+          if (pv && b && c && (c[0] < b[0][0] || c[0] > b[1][0] || c[1] < b[0][1] || c[1] > b[1][1])) {
+            const cam = m.cameraForBounds([[pv[0], pv[1]], [pv[2], pv[3]]], { padding: 8 });
+            if (cam) opt = { ...opt, center: cam.center, zoom: cam.zoom };
+          }
+          return orig(opt, ...rest);
+        };
+      });
       m.touchZoomRotate.disableRotation();
       m.on("error", (e) => {
         if (!(m as unknown as { _errLogged?: boolean })._errLogged) {
@@ -328,6 +356,10 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
     m.fitBounds([[v[0], v[1]], [v[2], v[3]]], { padding: 24, animate: !reduced(), duration: 500 });
   }, []);
   const viewKey = p.view ? p.view.join(",") : "";
+  useEffect(() => {
+    // 이동 경계는 전체 보기 범위를 따라간다(나라·지역이 바뀌면 새 경계 — 맞추기 전에)
+    if (map) map.setMaxBounds(moveBounds(pRef.current.view) ?? null);
+  }, [map, viewKey]);
   useEffect(() => {
     if (map && viewKey) fit();
   }, [map, viewKey, fit]);
@@ -1060,6 +1092,7 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
         </svg>
       ) : null}
       <div ref={uiEl} className={s.ui}>
+        <PassLine iso3={p.iso3} />
         <div className={s.zoom}>
           <button type="button" data-z="1" aria-label={t("shell.map.zoom_in")} onClick={() => mapRef.current?.easeTo({ zoom: mapRef.current.getZoom() + 0.7, duration: 300 })}>
             <Plus className={s.ic} aria-hidden="true" strokeWidth={1.9} />

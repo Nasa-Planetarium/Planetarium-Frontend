@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { inbox } from "@/shared/agency";
 import type { ConfClass, LogRow, OpsAlert, OpsFire, OpsUnit, Role } from "./ops";
 import { isClosed, slotFor, stepIdx } from "./ops";
 
@@ -77,7 +78,16 @@ export function merge(base: Merged, w: World): Merged {
     units,
   };
 }
-export const unreadOf = (w: World, role: Role, alerts: OpsAlert[]) => w.unread[role] ?? alerts.filter((a) => a.unread0.includes(role)).map((a) => a.id);
+/** 미읽음은 셸 수신함(shared/agency inbox — 머리줄 종·토스트와 같은 값)에서 읽는다. w.unread 는 옛 자리(비워 둠) */
+export const unreadOf = (w: World, role: Role, alerts: OpsAlert[]) => {
+  void w;
+  const s = inbox.get();
+  const r = s.read[role] ?? [];
+  const ids = [...alerts.filter((a) => a.unread0.includes(role)).map((a) => a.id), ...(s.added[role] ?? [])];
+  return [...new Set(ids)].filter((id) => !r.includes(id) && alerts.some((a) => a.id === id));
+};
+// 종·토스트가 읽음을 바꾸면 ops 화면도 다시 그린다
+inbox.subscribe(() => setWorld((s) => s));
 
 /* ── 원장 갱신(목업 EM.updateAlert · updateFire · updateUnit) ── */
 type Log = Omit<LogRow, "at">;
@@ -92,6 +102,7 @@ export function updateAlert(M: Merged, id: string, patch: Partial<OpsAlert>, at:
 }
 /** 불 상태가 바뀌면 같은 불의 열린 경보 상태를 따라 맞추고 이력을 남긴다 */
 export function updateFire(M: Merged, id: string, patch: Partial<OpsFire>, at: string, log?: Log) {
+  const prev = M.fires.find((f) => f.id === id);
   setWorld((s) => {
     let n: World = { ...s, fires: { ...s.fires, [id]: { ...s.fires[id], ...patch } } };
     if (patch.status) {
@@ -105,16 +116,20 @@ export function updateFire(M: Merged, id: string, patch: Partial<OpsFire>, at: s
     }
     return n;
   });
+  // 진화 완료 → 피해 면적 담당에게 「진화 완료 · 피해 면적 산정 대기」 경보(목업 EM.updateFire → EM.raiseAlert, 대상 land). 같은 id 는 수신함이 한 번만 받는다
+  if (patch.status === "contained" && prev && prev.status !== "contained") {
+    inbox.raise({ id: `A-L${id.slice(-5)}`, fire_id: id, level: (Math.max(1, Number(prev.level) || 1) as 1 | 2 | 3 | 4), title: "", title_key: "data.alert.contained.title", at, status: "new", targets: ["land"] });
+  }
 }
 export function markRead(M: Merged, w: World, role: Role, id: string) {
   const cur = unreadOf(w, role, M.alerts);
   if (!cur.includes(id)) return;
-  setWorld((s) => ({ ...s, unread: { ...s.unread, [role]: cur.filter((x) => x !== id) } }));
+  inbox.markRead(role, id);
 }
 export function addUnread(M: Merged, w: World, role: Role, id: string) {
   const cur = unreadOf(w, role, M.alerts);
   if (cur.includes(id)) return;
-  setWorld((s) => ({ ...s, unread: { ...s.unread, [role]: [...cur, id] } }));
+  inbox.addUnread(role, id);
 }
 
 /* ── 출동 시계(목업 OPS) ── */

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { usePath, useQueryParams } from "@/shared/lib/nav";
 import { useLocale } from "next-intl";
@@ -12,11 +12,11 @@ import { methodQuery } from "@/entities/release";
 import { calendarQuery } from "@/entities/month-value";
 import { nextPass } from "@/entities/satellite-pass";
 import { AccountDialog } from "@/features/account-menu";
-import { AlertBell } from "@/features/alert-drawer";
+import { AlertBell, AlertToaster } from "@/features/alert-drawer";
 import { LoginDialog } from "@/features/auth-login";
 import { CountryPicker } from "@/features/select-country";
 import { LangButton, useSwitchLocale } from "@/features/switch-locale";
-import { PAGES, PAGE_IDS, pageHref, tabsFor, type Locale, type PageId } from "@/shared/config";
+import { PAGES, PAGE_IDS, ROLE_DEF, pageHref, tabsFor, type Locale, type PageId } from "@/shared/config";
 import { useT, useTl } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { localHM, tzAbbr } from "@/shared/lib/time";
@@ -126,6 +126,22 @@ export function TopBar() {
     if (v) keep.set(k, v);
   }
   const tabs = tabsFor(role);
+
+  // 새 역할 탭 반짝(목업 EM._freshNav · .ttab.fresh): 로그인·역할 바꾸기로 역할 탭이 새로 생기거나 바뀌면 그 탭 배경이 두 번 깜박인다.
+  // 처음 그릴 때(저장된 세션을 읽어 온 것)는 반짝이지 않는다
+  const navPage = role ? ROLE_DEF[role].nav : null;
+  const prevNav = useRef<PageId | null | undefined>(undefined);
+  const [freshTab, setFreshTab] = useState<PageId | null>(null);
+  const loaded = session !== undefined;
+  useEffect(() => {
+    if (!loaded) return;
+    const prev = prevNav.current;
+    prevNav.current = navPage;
+    if (prev === undefined || !navPage || prev === navPage) return;
+    setFreshTab(navPage);
+    const tm = setTimeout(() => setFreshTab(null), 2300);
+    return () => clearTimeout(tm);
+  }, [loaded, navPage]);
   const name = countryName(info, locale, iso3);
   const code = locale === "en";
   const short = code ? iso3 : tl("cshort", iso3, null, name);
@@ -141,7 +157,9 @@ export function TopBar() {
         aria-current={on ? "page" : undefined}
         aria-label={label}
         data-tab={id}
+        data-fresh={freshTab === id ? "" : undefined}
         className={cn(
+          freshTab === id && "animate-[navIn_1.1s_var(--ease-out)_2]",
           "relative inline-flex min-w-(--hit) items-center justify-center gap-2 whitespace-nowrap px-3 text-body font-medium text-t2 no-underline transition-[color,background-color] duration-(--dur-fast) ease-em hover:bg-s3 hover:text-t1 focus-visible:-outline-offset-2 [&_svg]:ic-nav",
           "aria-[current=page]:font-strong aria-[current=page]:text-t1 aria-[current=page]:sel-b",
           "phone:w-(--hit) phone:px-0 phone:aria-[current=page]:w-auto phone:aria-[current=page]:gap-1 phone:aria-[current=page]:px-2",
@@ -326,7 +344,8 @@ export function TopBar() {
         {/* ③ 나 */}
         <div className="flex flex-none items-center gap-1 phone:gap-0">
           {web ? <LangButton /> : null}
-          {role ? <AlertBell role={role} unread={new Set()} /> : null}
+          {role ? <AlertBell role={role} iso3={iso3} /> : null}
+          <AlertToaster role={role} />
           {role ? (
             <button
               type="button"
@@ -376,6 +395,8 @@ export function TopBar() {
         tz={tz}
         onLogin={() => setLoginOpen(true)}
         onSwitchLang={go}
+        pass={nx}
+        anom={doneM ? { ratio: doneM.ratio_to_median ?? null, verdict: doneM.verdict ?? null, ym: anomYm } : null}
       />
     </header>
   );

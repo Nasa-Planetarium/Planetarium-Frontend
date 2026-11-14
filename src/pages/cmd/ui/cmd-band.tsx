@@ -7,6 +7,7 @@ import type { Ctx } from "./cmd-page";
 import { Bars, C, Hatch, Tx } from "./charts";
 import { regionLabel, SENSOR_LONG, sensorName, UNIT_KEY } from "./cmd-top";
 import { cx } from "./cx";
+import { downloadCanvas } from "@/shared/ui/download";
 import { downloadText, toCSV, useFmt, useTok, useWidth } from "./use-ui";
 
 const SEASONS: Season[] = ["all", "spring", "summer", "autumn", "winter"];
@@ -125,10 +126,7 @@ function CalPanel(c: Ctx & { board: Board }) {
       g.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--surface-1");
       g.fillRect(0, 0, cv.width, cv.height);
       g.drawImage(img, 0, 0, cv.width, cv.height);
-      const el = document.createElement("a");
-      el.href = cv.toDataURL("image/png");
-      el.download = `emberline_calendar_${q.sensor}.png`;
-      el.click();
+      downloadCanvas(`emberline_calendar_${q.sensor}.png`, cv);
     };
     img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(s);
   };

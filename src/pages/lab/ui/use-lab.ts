@@ -60,14 +60,8 @@ export function useWidth<T extends HTMLElement>(): [(el: T | null) => void, numb
   return [setEl, w];
 }
 
-export function downloadText(name: string, text: string) {
-  const blob = new Blob(["﻿" + text], { type: "text/csv;charset=utf-8" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = name;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-}
+/** 파일 내려받기 — 셸 공용(저장 토스트 「n행」 + 복사) */
+export { downloadText } from "@/shared/ui/download";
 export function toCSV<T>(rows: T[], cols: { label: string; get: (r: T) => string | number | null | undefined }[]) {
   const q = (v: unknown) => {
     const s = v == null ? "" : String(v);

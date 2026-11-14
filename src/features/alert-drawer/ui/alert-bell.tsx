@@ -5,34 +5,45 @@ import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { Popover as P } from "radix-ui";
-import { useAgency, type Alert } from "@/shared/agency";
+import { inbox, useAgency, useInbox, withRaised, type Alert, type Fire } from "@/shared/agency";
 import { ROLE_DEF, pageHref, type Locale, type RoleId } from "@/shared/config";
-import { useT } from "@/shared/i18n";
+import { useT, useTl } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Icon, iconButtonClass } from "@/shared/ui";
+import { alertCountry, alertTitle } from "../model/alert-text";
 
 const LEVEL_INK = { 1: "text-alert-1", 2: "text-alert-2", 3: "text-alert-3", 4: "text-alert-4" } as const;
 
 /**
  * 알림 종 + 서랍 — 목업 renderTop 의 #bell · toggleDrawer.
- * 경보는 기관 연동 포트에서 받는다(지금은 목 원장). 미확인 수는 목업처럼 처음 0 — 시나리오가 경보를 올릴 때 늘어난다(ops 화면 몫).
+ * 경보는 기관 연동 포트(목 원장) + 화면에서 새로 올라온 경보(shared/agency inbox — 목업 EM.raiseAlert).
+ * 미확인 = 수신함 상태(경보·출동 목록과 같은 값). 목업처럼 처음부터 길안면 두 경보(긴급대응·소방) · 진화 완료 경보(피해 면적)가 미확인이다.
+ * 알림 범위(목업 inboxHere): 원장 경보는 경북(KOR) 것이라 다른 나라에서는 세지도 늘어놓지도 않는다(종 배지 숨김).
  * 서랍 행을 누르면 그 역할 첫 화면으로 가서 경보에 초점(목업 toggleDrawer: 읽음 처리 → EM.go(역할 첫 화면) + focus) — 주소 ?alert=<id>.
  * 「모두 읽음」(목업 data-all) = 이 역할의 미확인 전부를 읽음으로 하고 서랍을 닫는다.
  */
-export function AlertBell({ role, unread, onOpenAlert }: { role: RoleId; unread: ReadonlySet<string>; onOpenAlert?: (a: Alert) => void }) {
+export function AlertBell({ role, iso3 = "KOR", onOpenAlert }: { role: RoleId; iso3?: string; onOpenAlert?: (a: Alert) => void }) {
   const t = useT();
+  const tl = useTl();
   const agency = useAgency();
   const router = useRouter();
   const locale = useLocale() as Locale;
   const [open, setOpen] = useState(false);
-  const [read, setRead] = useState<ReadonlySet<string>>(() => new Set());
-  const { data: alerts = [] } = useQuery({ queryKey: ["agency", "alerts"], queryFn: () => agency.listAlerts() });
-  const mine = alerts.filter((a) => a.targets.includes(role));
-  const isUnread = (id: string) => unread.has(id) && !read.has(id);
+  const box = useInbox();
+  const { data: base = [] } = useQuery({ queryKey: ["agency", "alerts"], queryFn: () => agency.listAlerts() });
+  const { data: fires = [] } = useQuery<Fire[]>({ queryKey: ["agency", "fires"], queryFn: () => agency.listFires(), staleTime: Infinity });
+  const alerts = withRaised(base, box);
+  const mine = alerts.filter((a) => a.targets.includes(role) && alertCountry(a) === iso3);
+  const un = new Set(inbox.unreadOf(role, alerts));
+  const isUnread = (id: string) => un.has(id);
   const n = mine.filter((a) => isUnread(a.id)).length;
   const sev = mine.some((a) => a.level === 4 && isUnread(a.id));
+  const fname = (id: string) => {
+    const f = fires.find((x) => x.id === id);
+    return f ? tl("fire", f.id, "name", f.name) : "";
+  };
   const openAlert = (a: Alert) => {
-    setRead((s) => new Set([...s, a.id]));
+    inbox.markRead(role, a.id);
     setOpen(false);
     if (onOpenAlert) onOpenAlert(a);
     else router.push(pageHref(locale, ROLE_DEF[role].home, `alert=${encodeURIComponent(a.id)}`));
@@ -63,7 +74,7 @@ export function AlertBell({ role, unread, onOpenAlert }: { role: RoleId; unread:
               type="button"
               data-all
               onClick={() => {
-                setRead((s) => new Set([...s, ...mine.map((a) => a.id)]));
+                inbox.markAllRead(role, mine.map((a) => a.id));
                 setOpen(false);
               }}
               className="inline-flex h-(--sp-7) flex-none items-center rounded-sm border-0 bg-transparent px-2 text-fs3 font-medium text-t1 transition-[background-color] duration-(--dur-fast) ease-em hover:bg-s3"
@@ -87,8 +98,10 @@ export function AlertBell({ role, unread, onOpenAlert }: { role: RoleId; unread:
                 {t(`shell.level.${a.level}`)}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block font-medium">{t(`data.alert.${a.id}.title`) === `data.alert.${a.id}.title` ? a.title : t(`data.alert.${a.id}.title`)}</span>
-                <span className="block text-fs2 text-t2">{a.at}</span>
+                <span className="block font-medium">{alertTitle(t, a)}</span>
+                <span className="block text-fs2 text-t2">
+                  {fname(a.fire_id)} · {a.at}
+                </span>
               </span>
               <span className="text-fs2 text-t2">{t(`shell.status.${a.status}`)}</span>
             </button>

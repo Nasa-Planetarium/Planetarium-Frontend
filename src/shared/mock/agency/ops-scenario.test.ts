@@ -41,7 +41,8 @@ describe("ops 목 생성기", () => {
   it("어댑터 덧붙임: 경보마다 통과 둘 · 처음 미읽음은 길안면 두 경보 · 과거 재구성 불은 그대로", () => {
     const as = opsAlerts(alerts);
     as.forEach((a) => expect((a.ops as { passes: unknown[] }).passes).toHaveLength(2));
-    expect(as.filter((a) => (a.ops as { unread: string[] }).unread.length).map((a) => a.id)).toEqual(["A-0413", "A-0412"]);
+    expect(as.filter((a) => (a.ops as { unread: string[] }).unread.some((r) => r !== "land")).map((a) => a.id)).toEqual(["A-0413", "A-0412"]);
+    expect(as.filter((a) => (a.ops as { unread: string[] }).unread.includes("land")).map((a) => a.id)).toEqual(["A-0405"]);
     const fs = opsFires(fires, ledger.today);
     expect(fs.filter((f) => f.historical).every((f) => !("ops" in f))).toBe(true);
     expect(fs.filter((f) => !f.historical).every((f) => "ops" in f)).toBe(true);

@@ -16,7 +16,7 @@ import { Dialog } from "@/shared/ui/dialog";
 /**
  * 계정 메뉴 — 목업 openWho 그대로: 역할 · 나라 · 위험지수(한국) · 기상(한국) · 시각(현지 · UTC) · 언어 · 시각 표시 · 역할 바꾸기 · 로그아웃.
  * 비로그인(웹 밖 기기)에서는 같은 창이 「설정」: 언어 · 시각 + [로그인].
- * 다음 위성 통과 칸은 목업 EM.passes(궤도 계산) 이식 전이라 비워 둔다(entities/satellite-pass — 다음 단계).
+ * 다음 위성 통과·다른 나라 「최근 달」 배수는 머리줄이 센 값을 그대로 받는다(머리줄 칸과 같은 값 — 목업 g5 수리).
  */
 export function AccountDialog({
   open,
@@ -26,6 +26,8 @@ export function AccountDialog({
   tz,
   onLogin,
   onSwitchLang,
+  pass,
+  anom,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -35,6 +37,10 @@ export function AccountDialog({
   onLogin: () => void;
   /** 언어 바꾸기(같은 경로·쿼리의 다른 접두사) — 위젯이 features/switch-locale 로 넘겨 준다(같은 층 가로 import 금지) */
   onSwitchLang: (l: Locale) => void;
+  /** 다음 위성 통과(머리줄과 같은 값) */
+  pass?: { sat: string; ms: number } | null;
+  /** 다른 나라: 최근 완결 달 배수·판정·달(머리줄 칸과 같은 release 값) */
+  anom?: { ratio: number | null; verdict: string | null; ym: string } | null;
 }) {
   const t = useT();
   const tl = useTl();
@@ -121,6 +127,15 @@ export function AccountDialog({
                 </>,
               )
             : null}
+          {!KOR
+            ? fact(
+                t("shell.top.anom"),
+                <>
+                  <span className="mono">{anom?.ratio != null ? `${anom.ratio.toFixed(1)}×` : "–"}</span> {anom?.verdict ? `${t(`shell.verdict.${anom.verdict}`)} · ${anom.ym}` : ""}
+                </>,
+              )
+            : null}
+          {pass ? fact(t("shell.top.next"), <span className="mono" data-who-pass="">{`${pass.sat} ${localHM(pass.ms, tz)}`}</span>) : null}
           {KOR && sit
             ? fact(t("shell.who.wx"), t("shell.who.wx_v", { st: tl("weather", "station", null, sit.weather.station), t: sit.weather.temp_c, rh: sit.weather.effective_rh, wind: tl("weather", "wind", null, sit.weather.wind) }))
             : null}

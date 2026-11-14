@@ -163,6 +163,8 @@ const PASSES: Record<string, PassRow[]> = {
 
 /** 처음 미읽음(목업 mock/agency.js): 길안면 불의 두 경보 — 긴급대응·소방 둘 다 */
 const UNREAD0 = ["A-0413", "A-0412"];
+/** 피해 면적 담당 처음 미읽음(목업 EM.state.unread.land.add("A-0405")) */
+const UNREAD0_LAND = ["A-0405"];
 /** 출동 귀소 자리(목업 OPS.home): 원장 좌표, 인접 지역대 D 는 청사(지금은 현장에 나가 있다) */
 const HOME_OVERRIDE: Record<string, { lat: number; lon: number }> = { "U-04": { lat: 36.404, lon: 128.792 } };
 
@@ -183,7 +185,7 @@ export function opsAlerts(alerts: Alert[]): Alert[] {
     ...a,
     ops: {
       log: [{ at: a.at, by: "satellite", text: "title" }],
-      unread: UNREAD0.includes(a.id) ? a.targets.filter((r) => r === "responder" || r === "firefighter") : [],
+      unread: [...(UNREAD0.includes(a.id) ? a.targets.filter((r) => r === "responder" || r === "firefighter") : []), ...(UNREAD0_LAND.includes(a.id) && a.targets.includes("land") ? ["land"] : [])],
       passes: PASSES[a.id] ?? [],
     } satisfies OpsAlertMeta,
   }));

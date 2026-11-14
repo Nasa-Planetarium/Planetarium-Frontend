@@ -18,7 +18,7 @@ export interface ToastInput {
   level?: 1 | 2 | 3 | 4;
   icon?: IconName;
   ms?: number;
-  action?: { label: string; onClick: () => void };
+  action?: { label: ReactNode; onClick: () => void };
 }
 
 const LEVEL_BORDER = {

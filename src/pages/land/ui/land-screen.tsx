@@ -10,6 +10,7 @@ import { useAgency } from "@/shared/agency";
 import { useT, useTl, type TFn } from "@/shared/i18n";
 import { useDevice } from "@/shared/lib/use-device";
 import { toast } from "@/shared/ui/toast";
+import { downloadText } from "@/shared/ui/download";
 import {
   allOf,
   firstPick,
@@ -512,12 +513,7 @@ function Parcels(p: {
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
     const lines = [head, ...p.rows.map((r) => [p.f.id, p.addrOf(r), t(`land.jimok.${r.jimok}`), t(`land.owner.${r.owner}`), r.area, t(DMG[r.dmg]), r.prio, p.req.includes(r.id) ? "Y" : "", "Y", t("land.export_parcels.satellite_burn_extent_x")])];
-    const blob = new Blob(["﻿" + lines.map((l) => l.map(q).join(",")).join("\n")], { type: "text/csv;charset=utf-8" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `parcels_${p.f.id}.csv`;
-    a.click();
-    URL.revokeObjectURL(a.href);
+    downloadText(`parcels_${p.f.id}.csv`, lines.map((l) => l.map(q).join(",")).join("\n"));
   };
   const th = (col: SortCol, children: ReactNode, cls?: string) =>
     sortable ? (

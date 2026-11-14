@@ -93,14 +93,8 @@ export function useSize<T extends HTMLElement>(): [(el: T | null) => void, numbe
   return [setEl, wh[0], wh[1]];
 }
 
-/** 파일 내려받기 */
-export function download(name: string, data: Blob) {
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(data);
-  a.download = name;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-}
+/** 파일 내려받기 — 셸 공용(저장 토스트: CSV 「n행」 + 복사 · PNG 「W × H PNG」) */
+export { downloadBlob as download } from "@/shared/ui/download";
 export function toCSV<T>(rows: T[], cols: { label: string; get: (r: T) => string | number | null | undefined }[]) {
   const q = (v: unknown) => {
     const s = v == null ? "" : String(v);

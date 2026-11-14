@@ -108,3 +108,6 @@
 
 /* 점 자료 상태 한 줄(목업 .m3-state) */
 .state{position:absolute;left:var(--sp-3);bottom:var(--sp-7);z-index:3;display:inline-flex;align-items:center;height:var(--sp-7);padding:0 var(--sp-3);border-radius:var(--r-xs);background:var(--surface-2);border:1px solid var(--line-soft);font-size:var(--fs-2);color:var(--text-2);white-space:nowrap;pointer-events:none}
+/* 폰 「다음 통과」 줄(목업 .m3-passln) — 경보·출동 지도 왼쪽 위 */
+.passln{position:absolute;left:var(--sp-3);top:var(--sp-3);z-index:3;display:inline-flex;align-items:center;gap:var(--sp-2);height:var(--sp-7);padding:0 var(--sp-3);border-radius:var(--r-xs);background:var(--surface-2);font-size:var(--fs-2);color:var(--text-2);white-space:nowrap;pointer-events:none!important}
+.passln b{font-family:var(--font-data);font-weight:var(--fw-medium);color:var(--text-1);font-variant-numeric:tabular-nums}

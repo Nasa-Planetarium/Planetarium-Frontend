@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocale } from "next-intl";
+import { downloadBlob } from "@/shared/ui/download";
 import { fmtAxis, fmtVal, niceMax, stepOf } from "../model/core";
 import { VS_TRACK, ymK, type Pt, type Regime } from "../model/analysis";
 import { C, Tx } from "./cal-svg";
@@ -218,11 +219,8 @@ export async function svgToPng(svg: SVGSVGElement, name: string) {
     URL.revokeObjectURL(url);
   }
 }
+/** 저장 — 셸 공용(저장 토스트: CSV 「n행」 + 복사 · PNG 「W × H PNG」) */
 export function saveBlob(blob: Blob, name: string) {
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = name;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  downloadBlob(name, blob);
 }
 export const saveText = (name: string, text: string, type = "text/csv") => saveBlob(new Blob(["﻿", text], { type: `${type};charset=utf-8` }), name);
