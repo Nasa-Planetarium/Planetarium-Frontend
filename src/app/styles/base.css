@@ -23,6 +23,10 @@
   button:not(:disabled), [role="button"]:not([aria-disabled="true"]) { cursor: pointer; }
 }
 
+/* 폰 머리줄 두 줄(목업 index.html g5 · CALENDAR-PIVOT §3.3): 줄 2 = 탭 띠. 높이 = 누름 칸 + 윗선(47 → 48).
+   tokens.css(생성물)는 --strip-h:0 이고 층 밖 규칙이라, 같은 선택자를 그 뒤·층 밖에 둬서 덮는다. --top 이 두 줄 높이를 따라간다 */
+html[data-device="phone"] { --strip-h: calc(var(--hit) + var(--hair)); }
+
 /* 움직임 줄이기: 전역. 살아 있는 상태 표시(맥동)도 멈춘다 */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }

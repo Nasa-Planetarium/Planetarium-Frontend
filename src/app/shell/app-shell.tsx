@@ -12,7 +12,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <>
       <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)]" id="app">
-        <Suspense fallback={<div className="h-(--bar-h) border-b border-line-soft bg-s2" aria-hidden="true" />}>
+        <Suspense fallback={<div className="h-(--top) border-b border-line-soft bg-s2" aria-hidden="true" />}>
           <TopBar />
         </Suspense>
         <main id="view" tabIndex={-1} className="relative min-h-0 min-w-0 overflow-auto">

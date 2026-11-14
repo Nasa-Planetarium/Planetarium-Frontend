@@ -37,7 +37,7 @@ pages/README.md         빈 폴더(지우지 말 것) — Next 가 src/app·src/
 src/
   app/                  FSD 앱 층: boot/(공급자·어댑터 조립·데이터 시작) · shell/(머리줄 + 본문 배치) · styles/(토큰·테마·바탕)
   pages/<화면>/          FSD 화면 층 — 화면 하나 = 슬라이스 하나(지금은 PageFrame 만)
-  widgets/              top-bar(머리줄) · page-frame(제목 + 잠긴 화면)
+  widgets/              top-bar(머리줄 — 로그인 전 공개 탭 3 ¦ 로그인 뒤 상황판 + 역할 탭, 폰은 두 줄) · page-frame(제목 + 잠긴 화면 + 문지기 PageGate)
   features/             select-country · switch-locale · auth-login · account-menu · alert-drawer
   entities/             country · session · situation(시나리오 상황) · release(판) · month-value(캘린더·비교 쿼리)
   shared/
@@ -113,6 +113,5 @@ contract/openapi.yaml   계약 사본 → pnpm gen:api 로 타입 생성
 ## 아직 안 한 것(골격 범위 밖, 다음 단계)
 
 - 머리줄 「다음 위성 통과」 칸: 목업 `EM.passes`(궤도 계산) 이식 전이라 칸을 그리지 않는다. 다른 나라 「이번 달 배수」 값은 「–」.
-- 폰 머리줄: 공개 탭 4개가 한 줄에 들어가지 않아 넘침 단계 8(지금 탭 이름·위험 낱말 빠짐)까지 내려간다 — 목업 CALENDAR-PIVOT §3.3 의 「폰 두 줄(줄2 = 탭)」 결정이 목업에 들어오면 따른다.
 - 목업 해시 링크(`#analysis?…`) 호환 변환, 지도(MapLibre) 래퍼, 차트, 알림 미확인 수(시나리오 경보), 시각 회귀(목업 9단계) 이전.
 - 전망(outlook.json)이 아직 없어 `public/data/snap` 에 없다 — 생기면 `pnpm import:snapshot --snap <폴더> --outlook <파일>`.

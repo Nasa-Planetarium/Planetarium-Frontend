@@ -5,6 +5,7 @@
    "calendar": { "label": "캘린더", "short": "캘린더" },
    "method": { "label": "방법·검증", "short": "방법" }
   },
-  "page": { "calendar": "캘린더", "method": "방법·검증" }
+  "page": { "calendar": "캘린더", "method": "방법·검증" },
+  "locked": { "any": "{page} 화면은 예시 로그인 뒤에 열립니다" }
  }
 }

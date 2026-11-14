@@ -5,6 +5,7 @@
    "calendar": { "label": "Calendar", "short": "Calendar" },
    "method": { "label": "Method & validation", "short": "Method" }
   },
-  "page": { "calendar": "Calendar", "method": "Method & validation" }
+  "page": { "calendar": "Calendar", "method": "Method & validation" },
+  "locked": { "any": "{page} opens after a sample sign-in" }
  }
 }

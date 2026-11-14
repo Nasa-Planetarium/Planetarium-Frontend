@@ -23,10 +23,13 @@ import { useFitLevel } from "../model/use-fit-level";
 
 /**
  * 머리줄 — 목업 core.js renderTop(r8 관제 콘솔)을 그대로 옮긴 것. 모양은 목업 index.html 「셸: 머리줄」 규칙을 토큰 유틸로.
- * ① 위치: 로고 표지 · 탭 무리([캘린더][비교 분석][방법·검증] ¦ [상황판][+역할 탭]) · 나라 칩
+ * ① 위치: 로고 표지 · 탭 무리([캘린더][비교 분석][방법·검증] ¦ 로그인 뒤 [상황판][역할 탭]) · 나라 칩
+ *    로그인 전에는 뒤 무리가 비므로 가운데 구분선도 그리지 않는다(결정 F12).
  * ② 상황: 위험지수(한국) | 이번 달 배수(다른 나라) · 다음 통과 · 기상(한국) · 연결·시계 — 모든 화면 같은 칸·같은 순서
  * ③ 나: 언어(웹) · 알림(로그인) · 계정 | 로그인(웹) | 사람 메뉴(그 밖 기기)
  * 좁아지면 우선순위 낮은 칸부터 통째로 뺀다(data-tf, model/fit-level.ts). 말줄임 없음.
+ * 폰은 두 줄(목업 g5 · CALENDAR-PIVOT §3.3): 줄 1 = 나라 · 상황 · 나, 줄 2(--strip-h) = 탭. ① 묶음은 폰에서 display:contents 로 풀린다.
+ * 상황 구역은 폰에서 기준 폭 0 — 줄 1 이 넘쳐도 줄바꿈 대신 넘침 단계가 칸을 뺀다.
  *
  * 아직 옮기지 않은 칸(다음 단계): 다음 위성 통과(목업 EM.passes 궤도 계산 → entities/satellite-pass),
  * 다른 나라 「이번 달 배수」 값(목업 생성기 EM.anomalyNow → 실제 API 값으로) — 지금은 「–」.
@@ -120,10 +123,10 @@ export function TopBar() {
         id="topbar"
         data-tf="0"
         data-page={cur ?? undefined}
-        className="flex h-(--bar-h) min-w-0 items-center gap-3 gutter-x pt-[env(safe-area-inset-top,0px)] phone:gap-2"
+        className="flex h-(--bar-h) min-w-0 items-center gap-3 gutter-x pt-[env(safe-area-inset-top,0px)] phone:h-(--top) phone:flex-wrap phone:content-start phone:gap-x-2 phone:gap-y-0"
       >
         {/* ① 위치 */}
-        <div className="flex min-w-0 flex-none items-center gap-3 self-stretch phone:gap-2">
+        <div className="flex min-w-0 flex-none items-center gap-3 self-stretch phone:contents">
           <span role="img" aria-label="Emberline" className="inline-flex flex-none items-center gap-2 text-t1 phone:hidden">
             <LogoMark />
             <b aria-hidden="true" className="text-mark leading-none font-strong midsize:hidden">
@@ -131,9 +134,12 @@ export function TopBar() {
             </b>
           </span>
           {vr()}
-          <nav aria-label={t("shell.top.nav")} className="flex min-w-0 items-stretch gap-1 self-stretch phone:gap-0">
+          <nav
+            aria-label={t("shell.top.nav")}
+            className="flex min-w-0 items-stretch gap-1 self-stretch phone:order-10 phone:h-(--strip-h) phone:flex-[0_0_100%] phone:gap-0 phone:border-t phone:border-line-soft"
+          >
             {tabs.challenge.map(tab)}
-            {vr("mx-1")}
+            {tabs.console.length ? vr("mx-1") : null}
             {tabs.console.map(tab)}
           </nav>
           {vr()}
@@ -178,7 +184,7 @@ export function TopBar() {
         </div>
 
         {/* ② 상황 */}
-        <div ref={sitRef} role="group" aria-label={t("shell.top.sit")} className="ml-auto flex min-w-0 flex-[0_1_auto] items-center overflow-hidden">
+        <div ref={sitRef} role="group" aria-label={t("shell.top.sit")} className="ml-auto flex min-w-0 flex-[0_1_auto] items-center overflow-hidden phone:h-[calc(var(--bar-h)-env(safe-area-inset-top,0px))] phone:flex-[1_1_0] phone:justify-end">
           {KOR && sit ? (
             <span
               title={tl("risk", "basis", null, sit.risk_index.basis)}

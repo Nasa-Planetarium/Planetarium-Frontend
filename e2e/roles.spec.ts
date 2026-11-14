@@ -25,7 +25,7 @@ for (const c of CASES) {
     await page.addInitScript(() => localStorage.setItem("em.lang", "ko"));
     await page.goto("/ko/calendar/");
     const tabs = page.locator("#topbar nav a[data-tab]");
-    await expect(tabs).toHaveCount(4);
+    await expect(tabs).toHaveCount(3);
     await expect(page.locator(`#topbar nav a[data-tab="${c.screen}"]`)).toHaveCount(0);
     await page.locator("#loginBtn").click();
     await page.getByRole("button", { name: c.label }).click();
