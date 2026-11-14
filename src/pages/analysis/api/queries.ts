@@ -105,6 +105,38 @@ export const cellsQuery = (aoiId: string, ym: string, mv: string | null, on: boo
     retry: false,
   });
 
+/** 칸 지도 점 층(목) — 그 달 release 기준 감지 점(GET /hotspots layer=reference, 합계에 드는 점). 목업 analysis.js drawCells pm==="month" */
+export interface MonthPt {
+  lon: number;
+  lat: number;
+  t: string;
+  frp: number | null;
+  sat: string;
+}
+export const monthPointsQuery = (aoiId: string, ym: string, mv: string | null, on: boolean) =>
+  queryOptions({
+    queryKey: qk("hotspots", { aoi_id: aoiId, month: ym, layer: "reference" }, mv),
+    queryFn: async ({ signal }): Promise<MonthPt[]> => {
+      const y = Number(ym.slice(0, 4));
+      const m = Number(ym.slice(5, 7));
+      const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+      const out: MonthPt[] = [];
+      let cursor: string | undefined;
+      for (let i = 0; i < 5; i++) {
+        const r = (await api
+          .GET("/hotspots", { params: { query: { aoi_id: aoiId, start: `${ym}-01`, end: `${ym}-${String(last).padStart(2, "0")}`, layer: "reference", limit: 10000, ...(cursor ? { cursor } : {}) } as never }, signal })
+          .then(unwrap)) as unknown as { hotspots?: { latitude: number; longitude: number; acq_datetime_utc: string; frp?: number | null; satellite?: string }[]; next_cursor?: string | null };
+        (r.hotspots ?? []).forEach((p) => out.push({ lon: p.longitude, lat: p.latitude, t: p.acq_datetime_utc, frp: p.frp ?? null, sat: p.satellite ?? "" }));
+        if (!r.next_cursor) break;
+        cursor = r.next_cursor;
+      }
+      return out;
+    },
+    staleTime: 24 * 60 * 60 * 1000,
+    enabled: !!mv && on,
+    retry: false,
+  });
+
 /** 기간 합계(/aois/{id}/summary?start&end&freq=day) — 일별 칸 합. 목은 503(점·일 자료가 스냅숏에 없음) */
 export interface SummaryData {
   aoi_id: string;
@@ -112,6 +144,10 @@ export interface SummaryData {
   end: string;
   freq: string;
   series: { date: string; value: number | null; status?: string }[];
+  /** 기간 합(일별 칸 합 + 월 추정분 포함분) — 실서버 v1.1: residual_included · residual_prorated */
+  total?: { value: number | null; residual_included?: number | null; residual_prorated?: boolean | null } | null;
+  /** 달마다 월 추정분(MODIS 기간 점으로 안 보이는 몫 · 관측 빠진 날 채움분). 일별 value 에는 섞지 않는다 */
+  month_residual?: { year: number; month: number; month_residual: number; residual_prorated?: boolean; included_days?: number; days_in_month?: number; residual_included?: number }[] | null;
 }
 export const summaryQuery = (aoiId: string, start: string, end: string, mv: string | null, on: boolean) =>
   queryOptions({

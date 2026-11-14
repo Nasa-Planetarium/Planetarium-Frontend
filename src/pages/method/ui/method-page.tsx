@@ -3,10 +3,11 @@
 import { Fragment, Suspense, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLocale } from "next-intl";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { countryName, useCountry } from "@/entities/country";
 import { calendarQuery } from "@/entities/month-value";
 import { methodQuery } from "@/entities/release";
+import { api, qk, unwrap } from "@/shared/api";
 import { ORDER } from "@/shared/data-cases";
 import { useT, type TFn } from "@/shared/i18n";
 import { useDevice } from "@/shared/lib/use-device";
@@ -64,6 +65,7 @@ interface Ctx {
   cal: MonthRow[] | null;
   calErr: string | null;
   aoiName: string;
+  aoiId: string;
   web: boolean;
 }
 
@@ -110,7 +112,7 @@ function MethodScreen() {
     { key: "status" as Sec, label: T("k.missing_months", { a: aoiName }), value: cal ? cal.filter((x) => x.status === "missing").length : null },
   ];
   const ready = !!M && (cq.isFetched || !mv);
-  const ctx: Ctx | null = M ? { t, T, W, nf, lang, M, cal, calErr, aoiName, web: device === "web" } : null;
+  const ctx: Ctx | null = M ? { t, T, W, nf, lang, M, cal, calErr, aoiName, aoiId, web: device === "web" } : null;
 
   return (
     <div className="h-full min-h-0 min-w-0" data-page="method">
@@ -585,7 +587,9 @@ function SecV11(c: Ctx) {
   ) : (
     <None c={c} />
   );
-  /* 월 추정분 합(목업 kr-daily 합)은 화면에서 더하지 않는다 — 일 단위 /summary 의 month_residual 은 기간별로만 온다(남은 차이) */
+  /* 월 추정분 합(목업 secV11 rs · rn — kr-daily 달 residual 합): 실서버 /summary(freq=day)는 한 번에 366일까지라 해마다 한 번씩 받아
+     month_residual 을 더한다(값은 서버 그대로, 화면은 더하기만). 한국 지역만 · 하나라도 못 받으면 줄을 내지 않는다 */
+  const rs = useResidSum(c.aoiId, M.method_version ?? null, P?.as_of_date ?? null);
   const res = (
     <Kv
       pairs={[
@@ -593,6 +597,16 @@ function SecV11(c: Ctx) {
         [T("v11.r_types"), T("v11.r_types_t")],
         [T("v11.r_use"), T("v11.r_use_t")],
         [T("v11.r_period"), T("v11.r_period_t")],
+        ...(rs
+          ? ([
+              [
+                `${c.aoiName} · ${T("v11.r_kr")}`,
+                <span key="v" data-rsum="">
+                  <Num>{nf(rs.sum, 1)}</Num> · <Num>{rs.n}</Num> {T("v11.months")}
+                </span>,
+              ],
+            ] as [string, ReactNode][])
+          : []),
       ]}
     />
   );
@@ -612,4 +626,39 @@ function SecV11(c: Ctx) {
       <Panel title={T("v11.p_daily")}>{day}</Panel>
     </div>
   );
+}
+
+/** 월 추정분 합(2000-11 – 진행 중 달): 해마다 /aois/{id}/summary?freq=day 한 번(서버 한도 366일) → month_residual 합 · 0 아닌 달 수 */
+function useResidSum(aoiId: string, mv: string | null, asOf: string | null) {
+  const kor = /^(KR|SIDO_|SGG_)/.test(aoiId);
+  const last = asOf && /^\d{4}-\d{2}-\d{2}$/.test(asOf) ? asOf : null;
+  const y1 = last ? +last.slice(0, 4) : 0;
+  const years = kor && last ? Array.from({ length: y1 - 2000 + 1 }, (_, i) => 2000 + i) : [];
+  const qs = useQueries({
+    queries: years.map((y) => {
+      const start = y === 2000 ? "2000-11-01" : `${y}-01-01`;
+      const end = y === y1 ? (last as string) : `${y}-12-31`;
+      return {
+        queryKey: qk(`aois/${aoiId}/summary`, { start, end, freq: "day" }, mv),
+        queryFn: async ({ signal }: { signal: AbortSignal }) =>
+          (await api.GET("/aois/{aoiId}/summary", { params: { path: { aoiId }, query: { start, end, freq: "day" } as never }, signal }).then(unwrap)) as unknown as {
+            month_residual?: { month_residual?: number | null }[] | null;
+          },
+        staleTime: 24 * 60 * 60 * 1000,
+        enabled: !!mv,
+        retry: false,
+      };
+    }),
+  });
+  if (!years.length || qs.some((q) => !q.data)) return null;
+  let sum = 0;
+  let n = 0;
+  qs.forEach((q) =>
+    (q.data?.month_residual ?? []).forEach((r) => {
+      const v = r.month_residual ?? 0;
+      sum += v;
+      if (v) n++;
+    }),
+  );
+  return { sum, n };
 }

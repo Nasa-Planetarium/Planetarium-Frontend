@@ -5,7 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { useCoarseCells } from "@/entities/world-grid";
 import { ApiError } from "@/shared/api";
-import { aoisQuery, cellsQuery, summaryQuery, type CellsData } from "../api/queries";
+import { API_BASE, DATA_MODE } from "@/shared/config";
+import { aoisQuery, cellsQuery, monthPointsQuery, summaryQuery, type CellsData } from "../api/queries";
 import {
   TRMAX,
   daysBetween,
@@ -27,7 +28,7 @@ import {
 import { calInput, cellCase, fmtCompact, inRange, monthWord, VIEWS, ymIso, type CalView } from "../model/core";
 import { Status, useRamp } from "./bits";
 import { CalSvg } from "./cal-svg";
-import { Bars, CellDots, Lines, saveText, svgToPng, type CellDot } from "./charts";
+import { Bars, CellDots, Lines, saveText, svgToPng, type CellDot, type CellPt } from "./charts";
 import { cx } from "./cx";
 import { DistChart } from "./dist-chart";
 import { VdMark } from "./vd-mark";
@@ -547,7 +548,11 @@ function Trend({ x }: { x: Ctx }) {
       value: d.value,
       title: `${d.date} · ${x.nf(d.value)}`,
     }));
-    const tot = R.series.reduce((s, d) => s + (d.value ?? 0), 0);
+    const T0 = R.total ?? null;
+    const resid = T0?.residual_included ?? 0;
+    /* E1: 일별 합은 칸 일 값의 합 + 월 추정분 포함분(api_contract /summary). 추정분이 있으면 「일별 합 p + 월 추정분 r」로 나눠 보인다(목업 tr_split) */
+    const tot = T0?.value ?? R.series.reduce((s, d) => s + (d.value ?? 0), 0) + resid;
+    const pts = R.series.reduce((s, d) => s + (d.value ?? 0), 0);
     const mFull = trMonths(x.cal, R.start.slice(0, 7), R.end.slice(0, 7));
     const endOf = (r: (typeof mFull)[number]) => (r.status === "partial" && r.as_of_date ? r.as_of_date : isoD(r.year, r.month, lastDay(r.year, r.month)));
     const whole = mFull.length > 0 && R.start.slice(8) === "01" && endOf(mFull[mFull.length - 1] as (typeof mFull)[number]) <= R.end && mFull.every((r) => r.value != null);
@@ -558,6 +563,13 @@ function Trend({ x }: { x: Ctx }) {
           {R.start} – {R.end}
         </span>{" "}
         · {T("g6.tr_nd", { n })} · {T("g6.tr_total_cells")} <b className={cx("num")}>{x.nf(tot)}</b>
+        {resid ? (
+          <span className={cx("an-trr")} data-tsplit="">
+            {" "}
+            ({T("g6.tr_split", { p: x.nf(pts), r: x.nf(resid) })}
+            {T0?.residual_prorated ? ` · ${T("g6.tr_prorated")}` : ""})
+          </span>
+        ) : null}
         {amSum != null ? (
           <>
             {" "}
@@ -567,7 +579,9 @@ function Trend({ x }: { x: Ctx }) {
       </>
     );
     const part = mFull.find((r) => r.status === "partial");
-    note = part && part.value != null ? T("g6.partial", { d: part.as_of_date ?? "", v: x.nf(part.value), p: x.nf(part.value_projected) }) : "";
+    /* 월 추정분 종류(release residual_type): 2012-01 까지 modis_unseen · 2012-02 부터 missing_day_fill */
+    const rn = resid ? [R.start.slice(0, 7) < "2012-02" ? T("g6.tr_rnote") : "", R.end.slice(0, 7) >= "2012-02" ? T("g6.tr_rnote_fill") : ""].filter(Boolean).join(" · ") : "";
+    note = [rn, part && part.value != null ? T("g6.partial", { d: part.as_of_date ?? "", v: x.nf(part.value), p: x.nf(part.value_projected) }) : ""].filter(Boolean).join(" · ");
     chart = n ? <Bars items={items} width={wid} height={200} ticks={n <= 31 ? 16 : 12} allLabels={n > 31 && n <= 400} label={T("g6.tr_title")} /> : <div className={cx("an-empty sm")}><span>{T("ui.no_data_to_plot")}</span></div>;
   }
   const csv = () => {
@@ -575,9 +589,15 @@ function Trend({ x }: { x: Ctx }) {
     if (!sq.data) return;
     const mv = x.M?.method_version ?? "";
     const rel = String(x.M?.data_version ?? "");
-    const rows: Record<string, unknown>[] = sq.data.series.map((d) => ({ row_type: "day", aoi_id: x.aoi, date: d.date, value: d.value, freq: "day", method_version: mv, release: rel }));
-    rows.push({ row_type: "total", aoi_id: x.aoi, date: `${sq.data.start}/${sq.data.end}`, value: Math.round(sq.data.series.reduce((s, d) => s + (d.value ?? 0), 0) * 1000) / 1000, freq: "day", method_version: mv, release: rel });
-    saveText(`emberline_summary_${safeName(x.aoi)}_${tr.start}_${tr.end}_day.csv`, toCSV(rows, ["row_type", "aoi_id", "date", "value", "freq", "method_version", "release"]));
+    /* 행 종류 day | month_residual | total — 월 추정분은 날짜 행에 섞지 않는다(목업 trendCSV) */
+    const R = sq.data;
+    const rows: Record<string, unknown>[] = R.series.map((d) => ({ row_type: "day", aoi_id: x.aoi, date: d.date, value: d.value, freq: "day", method_version: mv, release: rel }));
+    (R.month_residual ?? []).forEach((q) => {
+      if (q.month_residual) rows.push({ row_type: "month_residual", aoi_id: x.aoi, date: ymIso(q.year, q.month), value: q.month_residual, days_in_range: q.included_days ?? "", days_in_month: q.days_in_month ?? "", freq: "day", method_version: mv, release: rel });
+    });
+    const tv = R.total?.value ?? R.series.reduce((s, d) => s + (d.value ?? 0), 0);
+    rows.push({ row_type: "total", aoi_id: x.aoi, date: `${R.start}/${R.end}`, value: Math.round(tv * 1000) / 1000, residual_prorated: R.total?.residual_prorated ?? "", freq: "day", method_version: mv, release: rel });
+    saveText(`emberline_summary_${safeName(x.aoi)}_${tr.start}_${tr.end}_day.csv`, toCSV(rows, ["row_type", "aoi_id", "date", "value", "value_projected", "as_of_date", "days_in_range", "days_in_month", "residual_prorated", "freq", "method_version", "release"]));
   };
   return (
     <section className={cx("panel an-trend")} aria-label={T("g6.tr_title")}>
@@ -679,6 +699,15 @@ function CellPanel({ x }: { x: Ctx }) {
   const co = useCoarseCells({ aoiId: x.aoi, aois: aq.data, y, m, on: wide });
   const q: { data: CellsData | undefined; error: unknown; isPending: boolean } = wide ? { data: (co.data ?? undefined) as CellsData | undefined, error: co.isError ? q0.error : null, isPending: co.isPending } : q0;
   const [box, wid] = useWidth(640);
+  /* 점 층(목업 ptsMode): 실서버 = FIRMS 최근 24시간(WMS 그림) · 목 = 그 달 release 감지 점(/hotspots) — 둘 다 한국 지역만 */
+  const pm = isKorAoi(x.aoi) ? (DATA_MODE === "http" ? "firms" : "month") : null;
+  const [lyrOn, setLyrOn] = useState(false);
+  const on = !!pm && lyrOn;
+  const hq = useQuery(monthPointsQuery(x.aoi, ym, mv, on && pm === "month"));
+  const points: CellPt[] = on && pm === "month" ? (hq.data ?? []).map((p) => ({ lon: p.lon, lat: p.lat, title: `${p.t.replace("T", " ").replace(/Z$/, "")} UTC · FRP ${p.frp == null ? "–" : x.nf(p.frp)} MW · ${p.sat}` })) : [];
+  const WMS_BB: [number, number, number, number] = [127.8, 35.9, 129.6, 37.2];
+  const image = on && pm === "firms" ? { href: `${API_BASE}/firms/wms-tiles?layer=viirs_noaa20_24h&bbox=${WMS_BB.join(",")}&width=640&height=470`, bbox: WMS_BB } : null;
+  const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" });
   const cells: CellDot[] = [];
   let noField = false;
   (q.data?.features ?? []).forEach((f) => {
@@ -704,11 +733,22 @@ function CellPanel({ x }: { x: Ctx }) {
         <h3>
           {T("g3.cell_map")} <span className={cx("num")}>{ym}</span>
         </h3>
+        {pm ? (
+          <button type="button" className={cx("an-lyr")} data-lyr={pm} aria-pressed={lyrOn} onClick={() => setLyrOn((v) => !v)}>
+            {/* 목업 아이콘 「pass」(위성 통과 호) */}
+            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 20A14 14 0 0 1 15 6.2" />
+              <path d="M19 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
+              <path d="M3 20h4" />
+            </svg>
+            <span>{T(pm === "month" ? "g6.pts_layer" : "g3.firms_layer")}</span>
+          </button>
+        ) : null}
       </div>
       <div className={cx("panel-b an-cellb")}>
         <div className={cx("an-cellsvg")} ref={box}>
           {ramp && cells.length ? (
-            <CellDots cells={cells} ramp={ramp} scaleMax={vmax} width={Math.min(wid, 640)} label={`${T("g3.cell_map")} ${ym}`} />
+            <CellDots cells={cells} ramp={ramp} scaleMax={vmax} width={Math.min(wid, 640)} label={`${T("g3.cell_map")} ${ym}`} points={points} image={image} />
           ) : (
             <div className={cx("an-empty sm")}>
               <i className={cx("miss-sw big")} />
@@ -732,6 +772,18 @@ function CellPanel({ x }: { x: Ctx }) {
               · {q.data?.properties?.cell_size_deg ?? 0.1}°
             </span>
             {st !== "ok" && q.data ? <Status st={st} /> : null}
+            {on && pm === "firms" ? (
+              <span className={cx("an-cmeta")} data-lyrmeta="firms">
+                <i className={cx("an-pt")} aria-hidden="true" />
+                {T("g3.firms_layer")} <span className={cx("an-firmsd")}>{T("g3.firms_24h", { d: today })}</span>
+              </span>
+            ) : null}
+            {on && pm === "month" ? (
+              <span className={cx("an-cmeta")} data-lyrmeta="month">
+                <i className={cx("an-pt")} aria-hidden="true" />
+                {T("g6.pts_layer")} {hq.data ? <span className={cx("num")}>{x.nf(hq.data.length)}</span> : hq.isError ? W("err.data_not_loaded") : "…"}
+              </span>
+            ) : null}
           </div>
         </div>
       </div>

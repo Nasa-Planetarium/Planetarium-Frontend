@@ -152,7 +152,13 @@ export interface CellDot {
   value: number;
   title: string;
 }
-export function CellDots(o: { cells: CellDot[]; ramp: (t: number) => string; scaleMax: number; width: number; label: string }) {
+/** 점 층(목업 EM.charts.cells points · image): 감지 점 = 속 빈 작은 원, FIRMS WMS = 그림 한 장(bbox 서,남,동,북) */
+export interface CellPt {
+  lon: number;
+  lat: number;
+  title: string;
+}
+export function CellDots(o: { cells: CellDot[]; ramp: (t: number) => string; scaleMax: number; width: number; label: string; points?: CellPt[]; image?: { href: string; bbox: [number, number, number, number] } | null }) {
   if (!o.cells.length) return null;
   const lats = o.cells.map((c) => c.lat);
   const lons = o.cells.map((c) => c.lon);
@@ -175,6 +181,25 @@ export function CellDots(o: { cells: CellDot[]; ramp: (t: number) => string; sca
         .map((c) => (
           <circle key={`${c.lat},${c.lon}`} cx={X(c.lon)} cy={Y(c.lat)} r={R[stepOf(c.value)]} fill={o.ramp(Math.sqrt(Math.min(1, c.value / (o.scaleMax || 1))))} fillOpacity={0.85} stroke={C.bg} strokeWidth={0.75}>
             <title>{c.title}</title>
+          </circle>
+        ))}
+      {o.image ? (
+        <image
+          data-an-wms=""
+          href={o.image.href}
+          x={X(o.image.bbox[0])}
+          y={Y(o.image.bbox[3])}
+          width={X(o.image.bbox[2]) - X(o.image.bbox[0])}
+          height={Y(o.image.bbox[1]) - Y(o.image.bbox[3])}
+          preserveAspectRatio="none"
+          pointerEvents="none"
+        />
+      ) : null}
+      {(o.points ?? [])
+        .filter((p) => p.lat >= s && p.lat <= n && p.lon >= w && p.lon <= e)
+        .map((p, i) => (
+          <circle key={i} data-an-pt="" cx={X(p.lon)} cy={Y(p.lat)} r={1.8} fill="var(--surface-0)" stroke="var(--text-1)" strokeWidth={0.8}>
+            <title>{p.title}</title>
           </circle>
         ))}
     </svg>

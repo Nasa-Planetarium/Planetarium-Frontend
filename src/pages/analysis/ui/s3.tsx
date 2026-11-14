@@ -138,7 +138,7 @@ export function S3({ x }: { x: Ctx }) {
 }
 
 /* 인쇄 전용(@media print) — 목업 printDoc 6절: ①지역·기간 ②결과 ③방법 ④검증 수치 ⑤한계 ⑥출처. 결과가 없으면 「인쇄할 결과 없음」 */
-function PrintDoc({ x }: { x: Ctx }) {
+export function PrintDoc({ x }: { x: Ctx }) {
   const { T, W, c, M, base } = x;
   const name = x.aoiName(x.rec);
   const ym = ymIso(x.y, x.m);

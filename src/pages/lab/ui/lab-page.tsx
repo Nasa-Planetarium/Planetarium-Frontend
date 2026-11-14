@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { boundaryQuery, countryName, useCountry } from "@/entities/country";
@@ -140,6 +140,49 @@ function LabScreen() {
   const selRow = rowOf(selId);
   const regLabel = selId ? (regions.find((r) => r.id === selId)?.name ?? selId) : (FC?.total.region_name ?? aoiLabel);
   const selAoi = selId ? (regions.find((r) => r.id === selId)?.aoi ?? null) : totId;
+  /* 고른 시군과 상관없이 권역 전체 이름(목업 ALL — 불러오기 전 「권역 전체」, 뒤 total.region_name) */
+  const allLabel = FC?.total.region_name ?? (kor ? T_("lab.ui.whole_area") : aoiLabel);
+
+  /* 표 아래 「{권역} N개 중 M개 보임, 표를 내려 더 보기」(목업 lab.js tblMore) — 행이 다 보이면 숨김 */
+  const sideRef = useRef<HTMLElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [more, setMore] = useState<{ n: number; seen: number } | null>(null);
+  useEffect(() => {
+    const side = sideRef.current;
+    const wrap = wrapRef.current;
+    if (!side || !wrap) return;
+    let raf = 0;
+    const measure = () => {
+      raf = 0;
+      const trs = Array.from(wrap.querySelectorAll("tbody tr"));
+      const head = wrap.querySelector("thead");
+      if (!trs.length || !head) return setMore(null);
+      const lim = Math.min(side.getBoundingClientRect().bottom, wrap.getBoundingClientRect().bottom);
+      const top = head.getBoundingClientRect().bottom;
+      const seen = trs.filter((tr) => {
+        const b = tr.getBoundingClientRect();
+        return b.bottom <= lim + 1 && b.top >= top - 1;
+      }).length;
+      setMore((p) => (seen >= trs.length ? null : p && p.n === trs.length && p.seen === seen ? p : { n: trs.length, seen }));
+    };
+    const later = () => {
+      if (!raf) raf = requestAnimationFrame(measure);
+    };
+    side.addEventListener("scroll", later, { passive: true });
+    wrap.addEventListener("scroll", later, { passive: true });
+    const ro = new ResizeObserver(later);
+    ro.observe(side);
+    ro.observe(wrap);
+    const tb = wrap.querySelector("table");
+    if (tb) ro.observe(tb);
+    later();
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      side.removeEventListener("scroll", later);
+      wrap.removeEventListener("scroll", later);
+      ro.disconnect();
+    };
+  }, [FC, lvf, sort]);
   const ph = device === "phone";
 
   /* ── 머리: 화면 이름 + 범위 + 개수 띠(권역 예측 · 평년보다 높음 시군 수) ── */
@@ -354,7 +397,7 @@ function LabScreen() {
     );
   })();
 
-  const ctx = { FC, O, F, T_, t, kor, regions, sel: selId, select, rowOf, selRow, regLabel, selAoi, lang, device, fitBbox };
+  const ctx = { FC, O, F, T_, t, kor, regions, sel: selId, select, rowOf, selRow, regLabel, allLabel, selAoi, lang, device, fitBbox };
 
   return (
     <div className="min-h-0 min-w-0" data-page="lab">
@@ -364,7 +407,7 @@ function LabScreen() {
           <section className={cx("lb-stage")} aria-label={T_("lab.ui.30_day_outlook_map_by")}>
             <LabMap {...ctx} />
           </section>
-          <aside className={cx("lb-side")} aria-label={T_("lab.ui.outlook_table_by")}>
+          <aside className={cx("lb-side")} aria-label={T_("lab.ui.outlook_table_by")} ref={sideRef}>
             <section className={cx("panel lb-tot")}>{total()}</section>
             <section className={cx("panel lb-tblp")}>
               <div className={cx("listhead")}>
@@ -376,7 +419,20 @@ function LabScreen() {
                   </button>
                 </span>
               </div>
-              <div className={cx("lb-tblwrap")}>{table()}</div>
+              <div className={cx("lb-tblwrap")} ref={wrapRef}>
+                {table()}
+              </div>
+              {more ? (
+                <div className={cx("lb-more")} data-more="">
+                  <span>
+                    {T_("lab.ui.s451")}
+                    {more.n}
+                    {T_("lab.ui.rows")}
+                    <b className={cx("num")}>{more.seen}</b>
+                    {T_("lab.ui.shown_scroll_for_more")}
+                  </span>
+                </div>
+              ) : null}
               <p className={cx("lb-cap lb-tcap")}>
                 <span className={cx("lb-rbk")}>
                   <i className={cx("lb-rbk-b")} />
@@ -421,6 +477,7 @@ export type LabCtx = {
   rowOf: (id: string | null) => Row | null;
   selRow: Row | null;
   regLabel: string;
+  allLabel: string;
   selAoi: string | null;
   lang: string;
   device: string;

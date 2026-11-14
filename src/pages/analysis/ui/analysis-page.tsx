@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
@@ -14,23 +14,25 @@ import { prefs } from "@/shared/lib/prefs";
 import { useDevice } from "@/shared/lib/use-device";
 import { aoisQuery, calendarAllQuery, comparisonQuery, type AoiRec } from "../api/queries";
 import { AOI_OK, KOR_AOIS, coverage, defaultAoi, isStep, monthRec, regimes, selectable, ymK, type Step } from "../model/analysis";
-import { iso3OfAoi, monthWord, nameEn, VIEWS, ymIso, type CalView } from "../model/core";
+import { iso3OfAoi, monthIndex, monthWord, nameEn, VIEWS, ymIso, ymOfIndex, type CalView } from "../model/core";
 import { AoiPicker } from "./aoi-picker";
-import { Status, StIcon } from "./bits";
+import { Status, StIcon, useRamp } from "./bits";
 import { Track, useNf } from "./charts";
 import { cx } from "./cx";
 import { S2 } from "./s2";
 import { BoundaryPreview, Eras } from "./s1-side";
-import { S3 } from "./s3";
+import { PrintDoc, S3 } from "./s3";
 import type { Ctx, MethodDoc } from "./types";
 import { VdMark } from "./vd-mark";
+import { WorldReplay } from "./world";
 
 /**
  * ② 비교 분석 3단계(S1 범위 → S2 캘린더·비교 → S3 근거·보고) — 원천: 목업 pages/analysis.js · analysis.css(g6 확정본).
  * 데이터: 계약 /api/v1 만(aois · calendar · comparison · cells · summary · methods/current). 값·판정은 release 그대로(A1), 경우 가르기는 judgeMonth(E4).
  * 주소: ?step=1|2|3&aoi=<aoi_id>&ym=YYYY-MM&view=… (목업 #analysis?… 와 같은 키). 캘린더 「비교 분석」이 step=2 로 넘긴다.
  * S1 경계 미리보기 = 지금 나라 1급 경계 + 고른 지역 강조(전 지역, s1-side.tsx) · 지원 기간 아래 위성 연대 띠.
- * 목업과 다른 점(남은 차이): 미리보기 하천 없음(전국 선 자료 없음) · 전 세계 1° 재생 없음 · 홈/출동 넘김 칩 없음 · 인쇄 전용 6절 문서 없음(브라우저 인쇄) · 캘린더 다른 달 흐림 덮개 없음.
+ * 상태 읽는 순서(목업 analysis.js S): 넘김(from=home|ops) → 주소 → em.an.v3(localStorage) → 기본. 주소에 분석 키가 하나도 없을 때만 em.an.v3 를 주소로 옮긴다.
+ * 목업과 다른 점(남은 차이): 미리보기 하천 없음(전국 선 자료 없음 — 사람 결정 W0).
  */
 export function AnalysisPage() {
   return (
@@ -41,6 +43,15 @@ export function AnalysisPage() {
 }
 
 const isView = (v: string | null): v is CalView => !!v && (VIEWS as readonly string[]).includes(v);
+/** em.an.v3(목업 analysis.js KEY) — 단계·지역·해·달·보기. 저장소가 없거나 모양이 틀리면 null */
+function readSaved(): { step?: unknown; aoi?: unknown; year?: unknown; month?: unknown; view?: unknown } | null {
+  try {
+    const o: unknown = JSON.parse(prefs.get("an.v3") ?? "null");
+    return o && typeof o === "object" ? (o as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}
 
 function AnalysisScreen() {
   const t = useT();
@@ -139,6 +150,26 @@ function AnalysisScreen() {
   const errWord = fail ? W(fail instanceof ApiError && fail.code === "data_not_loaded" ? "err.data_not_loaded" : "err.network") : null;
   const ready = !!aq.data && (!aoi || !!cal || !!cq.error) && (step === 1 || !!c || !!kq.error);
 
+  /* em.an.v3: 주소에 분석 키가 없으면(메뉴로 들어옴) 지난 작업(단계·지역·달·보기)을 주소로 되살린다 — 한 번만 */
+  const restored = useRef(false);
+  useEffect(() => {
+    if (restored.current) return;
+    restored.current = true;
+    if (["step", "aoi", "ym", "view", "from"].some((k) => sp.get(k) != null)) return;
+    const o = readSaved();
+    if (!o) return;
+    const p: Record<string, string | null> = {};
+    if (typeof o.aoi === "string" && AOI_OK(o.aoi)) p.aoi = o.aoi;
+    if (typeof o.year === "number" && typeof o.month === "number" && o.month >= 1 && o.month <= 12) p.ym = ymIso(o.year, o.month);
+    if (typeof o.view === "string" && isView(o.view) && o.view !== "value") p.view = o.view;
+    if (o.step === 2 || o.step === 3) p.step = String(o.step);
+    if (Object.keys(p).length) writeQ(p);
+  }, [sp, writeQ]);
+  useEffect(() => {
+    if (!ready || !aoi) return;
+    prefs.set("an.v3", JSON.stringify({ step, aoi, year: qy, month: month ?? null, view }));
+  }, [ready, aoi, step, qy, month, view]);
+
   const ctx: Ctx = { t, T, W, lang, nf, device, aoi: aoi ?? "", rec, cal, c, M, view, y: qy, m: month ?? qm, base, aoiName, writeQ, go, errWord, has };
 
   const counts: { key: string; label: string; value: string; unit?: string }[] = [];
@@ -200,6 +231,12 @@ function AnalysisScreen() {
         </header>
         <div className={cx("an-body")} data-an-body="">
           {!ready && !errWord ? null : step === 1 ? <S1 x={ctx} KOR={KOR} yr={yr} setYr={setYr} inScope={inScope} iso3={iso3} /> : step === 2 ? <S2 x={ctx} /> : <S3 x={ctx} />}
+          {/* 1·2단계에서 인쇄해도 3단계와 같은 종이 요약(목업 addPrint) — 결과가 없으면 「인쇄할 결과 없음」 */}
+          {ready && step !== 3 ? (
+            <div className={cx("an-pwrap")} data-pwrap="">
+              <PrintDoc x={ctx} />
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
@@ -211,10 +248,16 @@ function S1({ x, KOR, yr, setYr, inScope, iso3 }: { x: Ctx; KOR: boolean; yr: nu
   const { T, W, cal, rec, aoi, has, lang } = x;
   const [pickOpen, setPickOpen] = useState(false);
   const [anchor, setAnchor] = useState<{ left: number; bottom: number } | null>(null);
-  /* 홈(상황판)에서 넘어온 조건(목업 analysis.js handoff — 「홈에서 가져온 조건」 · 지역 · 달 · 닫기) */
+  /* 상황판·출동에서 넘어온 조건(목업 analysis.js handoff — 「가져온 조건」 · 이름(label, 없으면 지역) · approx · 달 · 범위 밖 · 닫기).
+     받는 쪽 주소: from=home|ops & aoi & ym & label(넘긴 쪽 이름 — 시군 묶음·그린 영역) & approx(덮는 지원 지역 설명) */
   const sp = useQueryParams();
   const [hoClosed, setHoClosed] = useState(false);
-  const handoff = sp.get("from") === "home" && !hoClosed;
+  const hoFrom = sp.get("from");
+  const handoff = (hoFrom === "home" || hoFrom === "ops") && !hoClosed;
+  const hoLabel = (sp.get("label") ?? "").replace(/[<>]/g, "").slice(0, 80);
+  const hoApprox = (sp.get("approx") ?? "").replace(/[<>]/g, "").slice(0, 80);
+  const hoAoi = sp.get("aoi");
+  const hoOut = !!hoAoi && !(AOI_OK(hoAoi) && has(hoAoi));
   const { list: countries } = useCountry();
   const aq = useQuery(aoisQuery(x.M?.method_version ?? null));
   const cov = coverage(rec?.first_month, rec?.last_month, cal);
@@ -246,21 +289,36 @@ function S1({ x, KOR, yr, setYr, inScope, iso3 }: { x: Ctx; KOR: boolean; yr: nu
   const curVs = monthRec(cal, x.y, x.m)?.value_source ?? null;
   const rows = Array.from({ length: 12 }, (_, i) => monthRec(cal, y, i + 1) ?? { year: y, month: i + 1, status: "out_of_range", data_source: null, value_source: null });
   const allMiss = (cal?.months ?? []).filter((r) => r.status === "missing");
+  const ramp = useRamp();
+  /* 재생 지도에서 나라를 누르면 그 나라 단위 분석(같은 나라면 그 달만) — 목업 mountWorld onCountry */
+  const onCountry = (i3: string, i: number) => {
+    const [yy, mm] = ymOfIndex(i);
+    setYr(yy);
+    if (i3 === iso3) x.writeQ({ ym: ymIso(yy, mm), step: null });
+    else x.writeQ({ aoi: i3 === "KOR" ? null : `ADM0_${i3}`, ym: ymIso(yy, mm), step: null }, false, i3);
+  };
 
   return (
     <div className={cx("an-s1")}>
       <div className={cx("an-s1l")}>
         <section className={cx("an-q panel")} aria-label={T("ui.analysis_scope")}>
           {handoff ? (
-            <div className={cx("an-handoff")} role="status" data-handoff="">
+            <div className={cx("an-handoff")} role="status" data-handoff={hoFrom ?? ""}>
               <div className={cx("an-hot")}>
                 <span className={cx("eyebrow")}>{T("ui.conditions_from_overview")}</span>
                 <p>
-                  <b>{rec ? (lang === "ko" ? rec.name_ko : nameEn(rec) || rec.name_ko) || aoi : (aoi ?? "–")}</b>
-                  {sp.get("ym") ? (
+                  <b>{hoLabel || (rec ? (lang === "ko" ? rec.name_ko : nameEn(rec) || rec.name_ko) || aoi : (aoi ?? "–"))}</b>
+                  {hoApprox ? ` · ${hoApprox}` : null}
+                  {/^\d{4}-\d{2}$/.test(sp.get("ym") ?? "") ? (
                     <>
                       {" · "}
                       <b className={cx("num")}>{sp.get("ym")}</b>
+                    </>
+                  ) : null}
+                  {hoOut ? (
+                    <>
+                      {" "}
+                      <Status st="out_of_range" />
                     </>
                   ) : null}
                 </p>
@@ -498,6 +556,14 @@ function S1({ x, KOR, yr, setYr, inScope, iso3 }: { x: Ctx; KOR: boolean; yr: nu
           </div>
         </section>
       </aside>
+      <section className={cx("panel an-wd")} aria-label={T("w1.title")} data-wd="">
+        <div className={cx("panel-h")}>
+          <h3>
+            {T("w1.title")} <span className={cx("num")}>1°</span>
+          </h3>
+        </div>
+        {ramp ? <WorldReplay mv={x.M?.method_version ?? null} month={selectable(cal, x.y, x.m) ? monthIndex(x.y, x.m) : null} ramp={ramp} partialLine={(o) => T("g6.partial", o)} onCountry={onCountry} /> : null}
+      </section>
       <AoiPicker open={pickOpen} onOpenChange={setPickOpen} anchor={anchor} phone={x.device === "phone"} aois={aq.data ?? []} countries={countries} current={aoi} onPick={(id) => AOI_OK(id) && id !== "WORLD" && setAoi(id)} />
     </div>
   );

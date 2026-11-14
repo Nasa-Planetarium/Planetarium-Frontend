@@ -676,7 +676,7 @@ function How(c: LabCtx) {
       <summary>
         <ChevronRight aria-hidden="true" />
         <span>{T_("lab.ui.data_method")}</span>
-        <span className={cx("dc-m")}>{c.regLabel}</span>
+        <span className={cx("dc-m")}>{c.allLabel}</span>
       </summary>
       <div className={cx("dc-b")}>
         <div>{body}</div>
