@@ -5,7 +5,7 @@ import { useLocale } from "next-intl";
 import { ChevronLeft, ChevronRight, Image as ImageIcon } from "lucide-react";
 import { useT } from "@/shared/i18n";
 import type { Band, CalendarData, CalView, GridRow, MonthCase } from "../model/calendar";
-import { FIRST, fmtCompact, fmtVal, inRange, LAST, partialOf, vsCls, Y0, Y1, ymIso, ymWord, monthWord } from "../model/calendar";
+import { FIRST, fmtCell, fmtVal, inRange, LAST, partialOf, vsCls, Y0, Y1, ymIso, ymWord, monthWord } from "../model/calendar";
 import { StIcon } from "./bits";
 import { CalSvg } from "./cal-svg";
 import { cx } from "./cx";
@@ -13,7 +13,7 @@ import { exportCalendarPng } from "./png";
 
 /**
  * C 연×월 캘린더 칸(목업 drawGrid · drawPhone · drawLegend · exportPNG).
- * 웹 = 27 연 × 12 달 SVG(칸 크기는 폭에 맞춰 18–40px, 모자라면 가로 스크롤). 터치 기기 = 개관(숫자 없음, 보기만) → 연 고르기 → 12 달 격자(누름 칸 44 이상).
+ * 웹 = 27 연 × 12 달 SVG — g9: 지도 오른쪽 열의 작은 캘린더(칸 10–40px, 폭 맞춤). 칸 22px 미만이면 숫자 없이 색만(값은 칸 제목·선택 달 상세). 터치 기기 = 개관(숫자 없음, 보기만) → 연 고르기 → 12 달 격자(누름 칸 44 이상).
  */
 export interface CalGridProps {
   cal: CalendarData;
@@ -59,7 +59,7 @@ export function CalGrid(o: CalGridProps) {
   const bandL = useMemo(() => o.bands.map((b) => ({ ...b, label: `${vsWord(b.vs)} · ${ymIso(b.from[0], b.from[1])} – ${ymIso(b.to[0], b.to[1])}` })), [o.bands, t]); // eslint-disable-line react-hooks/exhaustive-deps
   const unit = o.aoi === "WORLD" && o.view === "value" ? `${T("ui.world_value")} · ${W("unit.snpp_equiv")}` : unitWord(t, o.view);
 
-  /* 웹: 칸 크기 = 폭 맞춤(18–40) */
+  /* 웹: 칸 크기 = 폭 맞춤(10–40) — 오른쪽 열 작은 캘린더 */
   const wrap = useRef<HTMLDivElement>(null);
   const [wpx, setW] = useState(900);
   useEffect(() => {
@@ -69,9 +69,10 @@ export function CalGrid(o: CalGridProps) {
     ro.observe(el);
     return () => ro.disconnect();
   }, [o.phone]);
-  const cs = o.phone ? Math.max(8, Math.floor((wpx - 34 - 8) / (Y1 - Y0 + 1)) - 2) : Math.max(18, Math.min(40, Math.floor((wpx - 34 - 8) / (Y1 - Y0 + 1)) - 2));
-  const maxLen = cs >= 36 ? 5 : cs >= 30 ? 4 : 3;
-  const fitAll = o.grid.rows.every((r) => r.cs.every((c) => c.value == null || fmtCompact(lang, c.value).length <= maxLen));
+  const cs = o.phone ? Math.max(8, Math.floor((wpx - 34 - 8) / (Y1 - Y0 + 1)) - 2) : Math.max(10, Math.min(40, Math.floor((wpx - 34 - 8) / (Y1 - Y0 + 1)) - 2));
+  /* 칸 숫자(목업 규칙): 칸에 다 들어가면 전부, 아니면 고른 해 한 열, 칸이 22px 미만이면 숫자 없음 */
+  const maxLen = cs >= 36 ? 5 : cs >= 30 ? 4 : cs >= 22 ? 3 : 0;
+  const fitAll = maxLen > 0 && o.grid.rows.every((r) => r.cs.every((c) => c.value == null || fmtCell(lang, c.value).length <= maxLen));
 
   /* PNG */
   const [busy, setBusy] = useState(false);
@@ -174,7 +175,7 @@ export function CalGrid(o: CalGridProps) {
                     onClick={() => o.onPick(o.y, mm)}
                   >
                     <span className={cx("cl-mn")}>{monthWord(lang, mm)}</span>
-                    <b className={cx("num")}>{c.value == null ? (c.st === "out_of_range" ? "" : stWord(c.st)) : fmtCompact(lang, c.value)}</b>
+                    <b className={cx("num")}>{c.value == null ? (c.st === "out_of_range" ? "" : stWord(c.st)) : fmtCell(lang, c.value)}</b>
                     {c.st !== "ok" && c.st !== "out_of_range" ? <StIcon st={c.st === "before_sensor" ? "out_of_range" : c.st} /> : null}
                     {o.view === "value" && r?.value_source && inR ? <i className={cx("cl-vsb")} data-b={vsCls(r.value_source)} aria-hidden="true" /> : null}
                   </button>
@@ -188,13 +189,14 @@ export function CalGrid(o: CalGridProps) {
               <CalSvg
                 {...svgProps}
                 cs={cs}
-                yearEvery={cs >= 30 ? 1 : 2}
+                yearEvery={cs >= 30 ? 1 : cs >= 18 ? 2 : 5}
+                bandText={cs >= 18}
                 eras
                 keyboard
                 zeroMark
                 only={o.only}
-                showValues={fitAll ? () => true : (yy) => yy === o.y}
-                fmtVal={(v) => fmtCompact(lang, v)}
+                showValues={!maxLen ? () => false : fitAll ? () => true : (yy) => yy === o.y}
+                fmtVal={(v) => fmtCell(lang, v)}
                 label={`${t(`shell.view.${o.view}`)} · ${T("ui.grid")}`}
                 onPick={(yy, mm) => inRange(yy, mm) && o.onPick(yy, mm)}
               />

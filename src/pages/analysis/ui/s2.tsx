@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Download } from "lucide-react";
-import { cellsQuery, summaryQuery } from "../api/queries";
+import { useCoarseCells } from "@/entities/world-grid";
+import { ApiError } from "@/shared/api";
+import { aoisQuery, cellsQuery, summaryQuery, type CellsData } from "../api/queries";
 import {
   TRMAX,
   daysBetween,
@@ -664,12 +666,18 @@ function StepChart({ x }: { x: Ctx }) {
   );
 }
 
-/* 칸 지도(F9 점(원)): /cells 칸 중심 원. 목은 503 → 「자료 준비 중」 */
+/* 칸 지도(F9 점(원)): /cells 칸 중심 원. 칸 1만 개를 넘는 범위(대륙·큰 나라 — 실서버 400 range_too_large)는 정적 world-1deg 의 1° 묶음으로(목업 hCells 나라 몫).
+   목(MSW)은 503 data_not_loaded → 「자료 준비 중」, 그 밖 오류는 통신 오류 낱말 */
 function CellPanel({ x }: { x: Ctx }) {
   const { T, W, view, y, m } = x;
   const ramp = useRamp();
   const ym = ymIso(y, m);
-  const q = useQuery(cellsQuery(x.aoi, ym, x.M?.method_version ?? null, true));
+  const mv = x.M?.method_version ?? null;
+  const q0 = useQuery(cellsQuery(x.aoi, ym, mv, true));
+  const wide = q0.error instanceof ApiError && q0.error.code === "range_too_large";
+  const aq = useQuery({ ...aoisQuery(mv), enabled: !!mv && wide });
+  const co = useCoarseCells({ aoiId: x.aoi, aois: aq.data, y, m, on: wide });
+  const q: { data: CellsData | undefined; error: unknown; isPending: boolean } = wide ? { data: (co.data ?? undefined) as CellsData | undefined, error: co.isError ? q0.error : null, isPending: co.isPending } : q0;
   const [box, wid] = useWidth(640);
   const cells: CellDot[] = [];
   let noField = false;
@@ -689,7 +697,7 @@ function CellPanel({ x }: { x: Ctx }) {
   if (q.data?.features.length && !cells.length && view !== "value") noField = q.data.features.every((f) => (view === "raw_modis" ? f.properties.raw_modis : f.properties.raw_viirs) == null);
   const st = q.data?.properties?.month_status ?? (q.data ? "ok" : "out_of_range");
   const vmax = Math.max(1, ...cells.map((c) => c.value));
-  const err = q.error ? W("err.data_not_loaded") : null;
+  const err = q.error ? W(q.error instanceof ApiError && q.error.code === "data_not_loaded" ? "err.data_not_loaded" : "err.network") : null;
   return (
     <section className={cx("panel an-cellp")}>
       <div className={cx("panel-h")}>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bandsOf, caseOf, counts, fmtCompact, iso3OfAoi, parseLatLon, partialOf, type CalendarData, type MonthRow } from "./calendar";
+import { bandsOf, caseOf, counts, fmtCell, fmtCompact, iso3OfAoi, parseLatLon, partialOf, type CalendarData, type MonthRow } from "./calendar";
 
 const row = (y: number, m: number, o: Partial<MonthRow> = {}): MonthRow => ({ year: y, month: m, value: 10, value_lo: 8, value_hi: 12, raw_modis: 3, raw_viirs: 9, status: "ok", value_source: "snpp_observed", ...o });
 
@@ -39,5 +39,14 @@ describe("캘린더 모델(E1–E4)", () => {
     expect([iso3OfAoi("SGG_47730"), iso3OfAoi("ADM0_BRA"), iso3OfAoi("WORLD")]).toEqual(["KOR", "BRA", null]);
     expect(fmtCompact("ko", 2353)).toBe("2.4천");
     expect(fmtCompact("en", 0.01)).toBe("<0.1");
+  });
+  it("칸 숫자(g9 · 목업 EM.fmt.cell): 1,000–9,999 는 정수 그대로, 1만 이상만 짧은 표기 — 「1.6천」 섞임 없음", () => {
+    expect(fmtCell("ko", 1597.4)).toBe("1597");
+    expect(fmtCell("ko", 2800)).toBe("2800");
+    expect(fmtCell("ko", 165)).toBe("165");
+    expect(fmtCell("ko", 4.25)).toBe("4.3");
+    expect(fmtCell("ko", 12500)).toBe("1.3만");
+    expect(fmtCell("en", 12500)).toBe("12.5K");
+    expect(fmtCell("ko", null)).toBe("");
   });
 });

@@ -4,9 +4,10 @@ import { useMemo } from "react";
 import { useLocale } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { boundaryQuery } from "@/entities/country";
+import { useCoarseCells, type CoarseAoi } from "@/entities/world-grid";
 import { ApiError } from "@/shared/api";
 import { useT } from "@/shared/i18n";
-import { boundaryApiQuery, cellsQuery, hotspotsMonthQuery } from "../api/queries";
+import { boundaryApiQuery, cellsQuery, hotspotsMonthQuery, type CellsData } from "../api/queries";
 import type { CalView } from "../model/calendar";
 import { caseFor, cellCase, fmtNum, fmtVal, iso3OfAoi, monthIndex, ymIso } from "../model/calendar";
 import { Status } from "./bits";
@@ -21,12 +22,16 @@ import { WorldReplay } from "./world-replay";
  */
 const K_T = [0.3, 0.48, 0.66, 0.84, 1];
 
-export function CalMap(o: { aoi: string; y: number; m: number; view: CalView; mv: string | null; inGb: boolean; ramp: (t: number) => string; onCountry: (iso3: string, i: number) => void; onWorldMonth: (i: number) => void }) {
+export function CalMap(o: { aoi: string; aois?: CoarseAoi[] | null; y: number; m: number; view: CalView; mv: string | null; inGb: boolean; ramp: (t: number) => string; onCountry: (iso3: string, i: number) => void; onWorldMonth: (i: number) => void }) {
   const t = useT();
   const lang = useLocale();
   const ym = ymIso(o.y, o.m);
   const world = o.aoi === "WORLD";
-  const cq = useQuery(cellsQuery(o.aoi, ym, o.mv, !world));
+  const cq0 = useQuery(cellsQuery(o.aoi, ym, o.mv, !world));
+  /* 칸 1만 개를 넘는 범위(대륙·큰 나라 — 실서버 400 range_too_large)는 정적 world-1deg 1° 묶음으로 */
+  const wide = cq0.error instanceof ApiError && cq0.error.code === "range_too_large";
+  const co = useCoarseCells({ aoiId: o.aoi, aois: o.aois, y: o.y, m: o.m, on: wide });
+  const cq: { data: CellsData | undefined; error: unknown; isPending: boolean } = wide ? { data: (co.data ?? undefined) as CellsData | undefined, error: co.isError ? cq0.error : null, isPending: co.isPending } : cq0;
   const bq = useQuery(boundaryApiQuery(o.aoi, o.mv, !world));
   const iso3 = iso3OfAoi(o.aoi);
   const geoQ = useQuery({ ...boundaryQuery(iso3 ?? "KOR"), enabled: !world && bq.isError && !!iso3 && iso3 !== "KOR" });

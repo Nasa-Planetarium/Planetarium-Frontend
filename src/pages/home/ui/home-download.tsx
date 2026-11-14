@@ -96,6 +96,9 @@ export function HomeDownload(c: Ctx) {
       </button>
       {open ? (
         <div className={cx("hm-menu")} role="menu">
+          <div className={cx("hm-menu-g")} role="presentation">
+            {c.t("home.item.export_view")}
+          </div>
           <button type="button" role="menuitem" onClick={() => (calPng(), setOpen(false))} disabled={!c.months.length}>
             <ImageIcon aria-hidden="true" strokeWidth={1.9} width={16} height={16} />
             <span>
@@ -114,7 +117,7 @@ export function HomeDownload(c: Ctx) {
             <MapPin aria-hidden="true" strokeWidth={1.9} width={16} height={16} />
             <span>
               <b>{c.t("home.item.raw_detections_csv")}</b>
-              <span>{c.t("home.item.map_period") + (c.range ? `${c.range.start} – ${c.range.end}` : "")}</span>
+              <span>{c.dataAoiName + c.t("home.item.map_period") + (c.range ? `${c.range.start} – ${c.range.end}` : "")}</span>
             </span>
           </button>
           {note ? <div className={cx("hm-menu-f")}>{note}</div> : null}

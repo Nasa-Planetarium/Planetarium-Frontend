@@ -1,4 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
+import { worldGridQuery, type LatBand, type WorldMeta } from "@/entities/world-grid";
 import { api, ApiError, qk, unwrap } from "@/shared/api";
 import type { CalendarData, CellProps, MonthRow } from "../model/calendar";
 import { Y0, Y1 } from "../model/calendar";
@@ -208,38 +209,9 @@ export const hotspotsMonthQuery = (aoiId: string, ym: string, caseId: string | n
     retry: false,
   });
 
-/** 전 세계 1° 재생 자료(정적 world-1deg) */
-export interface WorldMeta {
-  method_version: string;
-  months: { start: string; n: number };
-  n_active: number;
-  bitmap_bytes_per_month: number;
-  quant: { lnmin: number; lnmax: number };
-  counts: number[];
-  total: (number | null)[];
-  as_of_date?: string;
-  partial?: { m: number; as_of_date: string; total: number; total_projected: number }[];
-  world_aoi: { v: (number | null)[]; vs: (number | null)[]; ds: (number | null)[]; st: (number | null)[]; vp?: (number | null)[] };
-  codes: { vs: string[]; ds: string[]; st: string[] };
-}
-export interface LatBand {
-  band_south: number[];
-  v: ((number | null)[] | null)[];
-}
-export const worldGridQuery = () =>
-  queryOptions({
-    queryKey: ["static", "world-1deg"] as const,
-    queryFn: async ({ signal }) => {
-      const [meta, buf, band] = await Promise.all([
-        fetch("/data/snap/world-1deg/meta.json", { signal }).then((r) => r.json() as Promise<WorldMeta>),
-        fetch("/data/snap/world-1deg/grid.bin", { signal }).then((r) => r.arrayBuffer()),
-        fetch("/data/snap/world-1deg/lat-band.json", { signal }).then((r) => r.json() as Promise<LatBand>),
-      ]);
-      return { meta, buf, band };
-    },
-    staleTime: Infinity,
-    gcTime: Infinity,
-  });
+/** 전 세계 1° 재생 자료(정적 world-1deg) — entities/world-grid 가 정본(칸 지도 1° 묶음과 같은 캐시) */
+export { worldGridQuery };
+export type { LatBand, WorldMeta };
 
 /** 나라 단위 값(재생 지도에서 나라를 눌렀을 때) = 그 나라 AOI 캘린더 행 */
 export type { MonthRow };

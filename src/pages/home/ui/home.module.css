@@ -693,3 +693,17 @@ button.hm-scr-i:focus-visible{outline-offset: -2px;}
 @keyframes hm-yin{from{opacity:.35}to{opacity:1}}
 @keyframes m3pulse{0%{transform:scale(.45);opacity:.95}100%{transform:scale(1.35);opacity:0}}
 @keyframes tin{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+
+/* 내려받기 메뉴 — 목업 pages/home.css .hm-menu 규칙 이식(g9: 모듈에 빠져 항목이 한 줄로 붙어 보였음) */
+.hm-menu{position: absolute; top: calc(100% + var(--sp-2)); right: 0; z-index: 40; width: 318px; padding: var(--sp-2); background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: var(--r-m); box-shadow: var(--elev-3); animation: hm-drop var(--dur-base) var(--ease-out); word-break: keep-all; overflow-wrap: anywhere;}
+.hm-menu button{display: flex; gap: var(--sp-3); align-items: flex-start; width: 100%; padding: var(--sp-2) var(--sp-3); border: 0; border-radius: var(--r-s); background: transparent; color: var(--text-1); text-align: left; cursor: pointer;}
+.hm-menu button:hover,.hm-menu button:focus-visible{background: var(--surface-3);}
+.hm-menu button svg{color: var(--text-3); margin-top: var(--sp-half); flex: none;}
+.hm-menu b{display: block; font-size: var(--fs-3); font-weight: var(--fw-strong);}
+.hm-menu span span{display: block; font-size: var(--fs-2); color: var(--text-2);}
+.hm-menu i{font-style: normal; color: var(--text-1);}
+.hm-menu button[disabled]{cursor: not-allowed; opacity: .62;}
+.hm-menu button[disabled]:hover{background: transparent;}
+.hm-menu-g{display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3) var(--sp-1); font-family: var(--font-body); font-size: var(--fs-2); color: var(--text-3);}
+.hm-menu-f{margin-top: var(--sp-1); padding: var(--sp-2) var(--sp-3) var(--sp-1); border-top: 1px solid var(--line-soft); font-family: var(--font-body); font-size: var(--fs-2); color: var(--text-3);}
+:global(html[data-device="phone"]) .hm-menu,:global(html[data-device="foldable"]) .hm-menu{left: auto; right: 0; width: min(318px,calc(100vw - 32px));}

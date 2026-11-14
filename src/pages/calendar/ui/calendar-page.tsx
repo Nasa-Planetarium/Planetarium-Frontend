@@ -288,22 +288,6 @@ function CalendarScreen() {
             </section>
           ) : (
             <div className={cx("cl-grid")}>
-              <CalGrid
-                cal={cal}
-                aoi={aoi}
-                aoiName={aoiName(aoi)}
-                release={release}
-                view={view}
-                grid={grid}
-                bands={bands}
-                y={y}
-                m={m}
-                only={only}
-                ramp={ramp}
-                phone={device !== "web"}
-                onPick={selectMonth}
-              />
-              <CalDetail cal={cal} aoi={aoi} view={view} y={y} m={m} mv={mv} onPick={selectMonth} touch={device !== "web"} />
               <section className={cx("panel cl-mapp")} aria-labelledby="cl-h-map">
                 <div className={cx("panel-h")}>
                   <h2 id="cl-h-map">
@@ -329,7 +313,7 @@ function CalendarScreen() {
                   </div>
                 </div>
                 <div className={cx("panel-b")}>
-                  <CalMap key={`${aoi}|${ymIso(y, m)}|${view}`} aoi={aoi} y={y} m={m} view={view} mv={mv} inGb={inGb(aoi, byId)} ramp={ramp} onCountry={(i3, i) => {
+                  <CalMap key={`${aoi}|${ymIso(y, m)}|${view}`} aoi={aoi} aois={aois} y={y} m={m} view={view} mv={mv} inGb={inGb(aoi, byId)} ramp={ramp} onCountry={(i3, i) => {
                     const [yy, mm] = ymOfIndex(i);
                     setAoi(aoiOfIso3(i3), { ym: ymIso(yy, mm) });
                   }} onWorldMonth={(i) => {
@@ -338,6 +322,22 @@ function CalendarScreen() {
                   }} />
                 </div>
               </section>
+              <CalGrid
+                cal={cal}
+                aoi={aoi}
+                aoiName={aoiName(aoi)}
+                release={release}
+                view={view}
+                grid={grid}
+                bands={bands}
+                y={y}
+                m={m}
+                only={only}
+                ramp={ramp}
+                phone={device !== "web"}
+                onPick={selectMonth}
+              />
+              <CalDetail cal={cal} aoi={aoi} view={view} y={y} m={m} mv={mv} onPick={selectMonth} touch={device !== "web"} />
             </div>
           )}
         </div>

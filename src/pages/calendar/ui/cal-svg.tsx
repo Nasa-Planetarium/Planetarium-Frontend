@@ -309,7 +309,7 @@ export const CalSvg = forwardRef<SVGSVGElement, CalSvgProps>(function CalSvg(o, 
           <line x1="0" y1="0" x2="0" y2="5" stroke={C.dim} strokeWidth="1.6" />
         </pattern>
       </defs>
-      {years.map((y, i) => (i % o.yearEvery === 0 || i === years.length - 1 ? <Tx key={`y${y}`} x={padL + i * (cs + gap) + cs / 2} y={padT - 7} s={`'${String(y).slice(2)}`} anchor="middle" /> : null))}
+      {years.map((y, i) => ((o.yearEvery > 2 ? (years.length - 1 - i) % o.yearEvery === 0 : i % o.yearEvery === 0 || i === years.length - 1) ? <Tx key={`y${y}`} x={padL + i * (cs + gap) + cs / 2} y={padT - 7} s={`'${String(y).slice(2)}`} anchor="middle" /> : null))}
       {Array.from({ length: 12 }, (_, i) => (
         <Tx key={`m${i}`} x={padL - 6} y={padT + i * (cs + gap) + cs / 2 + 3.5} s={i + 1} anchor="end" />
       ))}

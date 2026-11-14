@@ -295,6 +295,13 @@ export function fmtCompact(lang: string, n: number | null | undefined) {
   if (a < 1000) return a < 10 && !Number.isInteger(+n) ? fmtNum(lang, n, 1) : fmtNum(lang, Math.round(n));
   return intl(lang, "c", { notation: "compact", maximumFractionDigits: 1 }).format(Number(n));
 }
+/** 캘린더 칸 숫자(목업 EM.fmt.cell): 10 미만 소수 한 자리 · 10–9,999 는 정수(칸 안이라 쉼표 없음) · 1만 이상만 짧은 표기 — 「1.6천」과 「824」가 한 달력에 섞이지 않게 */
+export function fmtCell(lang: string, n: number | null | undefined) {
+  if (n == null || Number.isNaN(n)) return "";
+  const a = Math.abs(n);
+  if (a >= 1000 && a < 10000) return String(Math.round(n));
+  return fmtCompact(lang, n);
+}
 /** 값 표기: 0.1 미만 「<0.1」, 소수 한 자리(정수면 정수) */
 export function fmtVal(lang: string, x: number | null | undefined) {
   if (x == null || Number.isNaN(x)) return "–";
