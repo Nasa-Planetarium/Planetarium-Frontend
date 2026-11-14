@@ -1,0 +1,26 @@
+{
+ "source": "/home/trevi/planetarium/snap",
+ "files": {
+  "korea.json": {
+   "bytes": 2836741,
+   "sha256": "3b1356dbcf75325f080a075f41f1c5323acd1a9eaffcf05dbe581d087babf841"
+  },
+  "countries.json": {
+   "bytes": 511243,
+   "sha256": "2ec81deee8c55494889db5c51df10388bab1db5e9e96c6005c2cb4220455f3e8"
+  },
+  "world-1deg/grid.bin": {
+   "bytes": 2928044,
+   "sha256": "eec87177479345436785fc386c4fdeb79972eb7193e3b32278d748f7cc0726b9"
+  },
+  "world-1deg/meta.json": {
+   "bytes": 26012,
+   "sha256": "927116e9c5639d74b717b9238878ed07191456014b50ed183b0b5a6535e0df31"
+  },
+  "world-1deg/lat-band.json": {
+   "bytes": 59792,
+   "sha256": "fed0521e49673d38dd0e3fe4b617895906961cc09b3e49ef7b37c64f40b160b4"
+  }
+ },
+ "outlook": "없음 — 전망 파일이 만들어지면 --outlook 으로 다시 돌린다"
+}

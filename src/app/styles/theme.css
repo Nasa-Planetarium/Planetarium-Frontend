@@ -1,0 +1,154 @@
+/* Tailwind v4 진입점. 순서: Tailwind → 토큰(tokens.css, 목업 :root 그대로) → 글꼴 덮기 → @theme 별칭 → 변형(variant) → 이름 있는 유틸 → 바탕 규칙.
+   규칙: 새 색·크기 값을 여기서 만들지 않는다. @theme 은 tokens.css 변수의 「별칭」만 둔다(값 0개 추가).
+   shadcn/ui 는 동작·접근성 원소로만 쓴다 — shadcn 기본 둥근 모서리·그림자·색이 화면에 나오면 결함이다. */
+@import "tailwindcss";
+@import "./tokens.css";
+@import "./base.css";
+
+/* next/font 가 자체 호스팅한 글꼴은 이름이 바뀐다(--font-plex-*). 목업 토큰의 글꼴 순서는 그대로 두고 첫 이름만 바꾼다 */
+:root {
+  --font-body: var(--font-plex-kr), var(--font-plex), "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-data: var(--font-plex-mono), var(--font-plex-kr), ui-monospace, monospace;
+}
+:root:lang(en) {
+  --font-body: var(--font-plex), var(--font-plex-kr), system-ui, sans-serif;
+}
+
+/* 기기군: html[data-device] (app/layout.tsx 첫 그림 전 스크립트가 단다) */
+@custom-variant phone (&:where([data-device="phone"], [data-device="phone"] *));
+@custom-variant tablet (&:where([data-device="tablet"], [data-device="tablet"] *));
+@custom-variant foldable (&:where([data-device="foldable"], [data-device="foldable"] *));
+@custom-variant web (&:where([data-device="web"], [data-device="web"] *));
+@custom-variant midsize (&:where([data-device="tablet"], [data-device="tablet"] *, [data-device="foldable"], [data-device="foldable"] *));
+@custom-variant touch (&:where([data-touch="1"], [data-touch="1"] *));
+/* 머리줄 넘침 단계(목업 fitTop tf-1…tf-9): 머리줄 요소에 data-tf="n" 이 붙으면 n 이하 단계가 모두 켜진다 */
+@custom-variant tf1 (&:where([data-tf] *):not(:where([data-tf="0"] *)));
+@custom-variant tf2 (&:where([data-tf="2"] *, [data-tf="3"] *, [data-tf="4"] *, [data-tf="5"] *, [data-tf="6"] *, [data-tf="7"] *, [data-tf="8"] *, [data-tf="9"] *));
+@custom-variant tf3 (&:where([data-tf="3"] *, [data-tf="4"] *, [data-tf="5"] *, [data-tf="6"] *, [data-tf="7"] *, [data-tf="8"] *, [data-tf="9"] *));
+@custom-variant tf4 (&:where([data-tf="4"] *, [data-tf="5"] *, [data-tf="6"] *, [data-tf="7"] *, [data-tf="8"] *, [data-tf="9"] *));
+@custom-variant tf5 (&:where([data-tf="5"] *, [data-tf="6"] *, [data-tf="7"] *, [data-tf="8"] *, [data-tf="9"] *));
+@custom-variant tf6 (&:where([data-tf="6"] *, [data-tf="7"] *, [data-tf="8"] *, [data-tf="9"] *));
+@custom-variant tf7 (&:where([data-tf="7"] *, [data-tf="8"] *, [data-tf="9"] *));
+@custom-variant tf8 (&:where([data-tf="8"] *, [data-tf="9"] *));
+@custom-variant tf9 (&:where([data-tf="9"] *));
+/* 넓은 웹(목업 @media min-width:1680 / max-width:1279.98) */
+@custom-variant wide (@media (min-width: 1680px));
+@custom-variant narrow-web (@media (max-width: 1279.98px));
+@custom-variant ge1280 (@media (min-width: 1280px));
+
+@theme inline {
+  /* shadcn 이름 → EMBERLINE 의미 토큰(별칭만) */
+  --color-background: var(--surface-0);
+  --color-foreground: var(--text-1);
+  --color-card: var(--surface-1);
+  --color-card-foreground: var(--text-1);
+  --color-popover: var(--surface-2);
+  --color-popover-foreground: var(--text-1);
+  --color-primary: var(--text-1);
+  --color-primary-foreground: var(--on-brand);
+  --color-secondary: var(--surface-3);
+  --color-secondary-foreground: var(--text-1);
+  --color-muted: var(--surface-2);
+  --color-muted-foreground: var(--text-2);
+  --color-accent: var(--surface-3);
+  --color-accent-foreground: var(--text-1);
+  --color-destructive: var(--alert-4-strong);
+  --color-border: var(--line-soft);
+  --color-input: var(--line-strong);
+  --color-ring: var(--focus-ring);
+
+  /* 짧은 이름: 면 s0–s3 · 글자 t1–t3 · 선 */
+  --color-s0: var(--surface-0);
+  --color-s1: var(--surface-1);
+  --color-s2: var(--surface-2);
+  --color-s3: var(--surface-3);
+  --color-t1: var(--text-1);
+  --color-t2: var(--text-2);
+  --color-t3: var(--text-3);
+  --color-line-soft: var(--line-soft);
+  --color-line-strong: var(--line-strong);
+  --color-on-brand: var(--on-brand);
+  --color-paper-mark: var(--raw-paper);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+
+  /* 데이터 색(차트·지도·상태) */
+  --color-alert-1: var(--alert-1);
+  --color-alert-2: var(--alert-2);
+  --color-alert-3: var(--alert-3);
+  --color-alert-4: var(--alert-4);
+  --color-alert-4-ink: var(--alert-4-ink);
+  --color-alert-4-strong: var(--alert-4-strong);
+  --color-h0: var(--h0);
+  --color-h1: var(--h1);
+  --color-h2: var(--h2);
+  --color-h3: var(--h3);
+  --color-h4: var(--h4);
+  --color-h5: var(--h5);
+  --color-h6: var(--h6);
+  --color-data-modis: var(--data-modis);
+  --color-data-viirs: var(--data-viirs);
+  --color-data-harm: var(--data-harm);
+
+  /* 글자 */
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-data);
+  --text-count: var(--fs-count);
+  --text-page: var(--fs-page);
+  --text-title: var(--fs-title);
+  --text-sec: var(--fs-sec);
+  --text-stat: var(--fs-stat);
+  --text-row: var(--fs-row);
+  --text-body: var(--fs-body);
+  --text-mark: var(--fs-mark);
+  --text-fs1: var(--fs-1);
+  --text-fs2: var(--fs-2);
+  --text-fs3: var(--fs-3);
+  --text-fs4: var(--fs-4);
+  --font-weight-regular: var(--fw-regular);
+  --font-weight-medium: var(--fw-medium);
+  --font-weight-strong: var(--fw-strong);
+
+  /* 간격: 4px 격자(목업 --sp-n = n×4 · sp-7 32 · sp-8 48 은 p-8 · p-12) */
+  --spacing: 4px;
+
+  /* 모양 */
+  --radius-xs: var(--r-xs);
+  --radius-sm: var(--r-s);
+  --radius-md: var(--r-m);
+  --radius-lg: var(--r-l);
+  --radius-sheet: var(--r-sheet);
+  --radius-pill: var(--r-pill);
+  --shadow-elev-2: var(--elev-2);
+  --shadow-elev-3: var(--elev-3);
+  --ease-em: var(--ease-out);
+  --animate-tin: tin var(--dur-base) var(--ease-out);
+}
+
+/* 이름 있는 유틸(기기군 블록이 값을 바꾸는 크기) */
+@utility hit { min-width: var(--hit); min-height: var(--hit); }
+@utility bar-h { height: var(--bar-h); }
+@utility bar-btn { height: var(--bar-btn); }
+@utility ctl { height: var(--ctl-h); }
+@utility ctl-sm { height: var(--ctl-h-sm); }
+@utility gutter-x { padding-inline: var(--gutter); }
+@utility hatch { background: var(--hatch); }
+@utility seam { box-shadow: var(--seam-ring); }
+@utility sel-b { box-shadow: var(--sel-b); }
+@utility ic-inline { width: var(--ic-inline); height: var(--ic-inline); }
+@utility ic-btn { width: var(--ic-btn); height: var(--ic-btn); }
+@utility ic-nav { width: var(--ic-nav); height: var(--ic-nav); }
+/* 보이는 크기가 --hit 보다 작은 단추는 누르는 영역만 넓힌다(목업 ::after 규칙) */
+@utility hit-after {
+  &::after { content: ""; position: absolute; inset: min(0px, calc(50% - var(--hit) / 2)); }
+}
+@utility num { font-family: var(--font-body); font-variant-numeric: tabular-nums; }
+@utility mono { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+
+@keyframes tin {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes navIn {
+  from { background: var(--surface-3); }
+}

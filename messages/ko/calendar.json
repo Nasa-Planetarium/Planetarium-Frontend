@@ -1,0 +1,89 @@
+{
+ "calendar": {
+  "act": {
+   "close": "닫기",
+   "next_month": "다음 달",
+   "next_year": "다음 해",
+   "pick": "지역 고르기",
+   "prev_month": "이전 달",
+   "prev_year": "이전 해",
+   "to_analysis": "비교 분석으로"
+  },
+  "flag": {
+   "interval_out": "구간 밖 · 구간 버림"
+  },
+  "k": {
+   "interval": "구간",
+   "n": "기준 연수",
+   "n_v": "{n}년 · {a}–{b}",
+   "pct": "백분위",
+   "ratio": "중앙값 대비",
+   "ratio_v": "{r}배",
+   "source": "값 출처",
+   "status": "상태",
+   "verdict": "판정"
+  },
+  "lv": {
+   "country": "나라",
+   "group": "묶음",
+   "kr_sgg": "시군구",
+   "kr_sido": "시도",
+   "world": "전 세계"
+  },
+  "mode": {
+   "cal": "지역 캘린더",
+   "world": "전 세계 재생"
+  },
+  "pick": {
+   "countries": "나라",
+   "kr": "대한민국 · 시도",
+   "none": "맞는 지역 없음",
+   "search": "지역 검색",
+   "sgg": "{p} · 시군구",
+   "show_sgg": "{p} 시군구 보기",
+   "world": "전 세계"
+  },
+  "st": {
+   "before_sensor": "운용 전"
+  },
+  "ui": {
+   "bands": "값 출처 구간",
+   "base": "기준 연도",
+   "cells_n": "칸 {n}",
+   "deg": "{d}°",
+   "eval": "선택 연도",
+   "grid": "연×월 캘린더",
+   "high": "많음",
+   "low": "적음",
+   "map": "칸 지도",
+   "median": "중앙값",
+   "mode": "모드",
+   "months_grid": "{y}년 달별",
+   "months_u": "개월",
+   "no_cells": "그 달 칸 없음",
+   "overview": "전체 연도",
+   "p95": "p95 {n}",
+   "region": "지역",
+   "same": "같은 달 연도별",
+   "sel": "선택한 달",
+   "title": "캘린더",
+   "view": "보기",
+   "world_value": "전 세계 지역 값",
+   "year": "연도",
+   "zero": "0"
+  },
+  "w": {
+   "cells": "감지 있는 1° 칸",
+   "latband": "위도 5° 띠 × 달",
+   "legend": "1° 칸 · 달 감지량 · 로그 눈금",
+   "month": "달",
+   "pause": "멈춤",
+   "play": "재생",
+   "speed": "재생 속도",
+   "to_country": "이 나라 캘린더",
+   "total": "0.1° 칸 합",
+   "verdict": "예년 대비",
+   "whole": "전체 보기"
+  }
+ }
+}

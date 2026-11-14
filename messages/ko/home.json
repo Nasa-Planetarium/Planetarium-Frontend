@@ -1,0 +1,526 @@
+{
+ "home": {
+  "alert_row": {
+   "detections": "관측 점 ",
+   "max_frp": "최대 열 ",
+   "unread": "읽지 않음"
+  },
+  "aoi": {
+   "all": "{a} 전체",
+   "and_more": "{a} 외 {n}",
+   "approx_adm1": "집계 지역 {r}",
+   "approx_kor": "집계 시군 {r}",
+   "bbox": "사각형 영역",
+   "default": "경북 북부",
+   "drawn": "그린 영역",
+   "group_adm1": "지역",
+   "group_kor": "시군",
+   "polygon": "다각형 영역",
+   "radius": "반경 {r} km"
+  },
+  "apply_geom": {
+   "calendar_indicators_and_csv": " → 캘린더·지표·CSV 반영"
+  },
+  "at": {
+   "yday": "어제 {t}"
+  },
+  "cell_title": {
+   "comparison_only_joined_without": " · 비교용(보정 없이 이음) · 배수를 내지 않는다",
+   "days_partial_month_reference": "일 기준 · 부분월 참고용",
+   "excl_target_year": " (평가 연도 제외)",
+   "month_in_progress": "진행 중인 달 · "
+  },
+  "close_pt": {
+   "aggregated_by_regions_within": "반경 안 시군으로 집계",
+   "apply": "영역 적용",
+   "cancel": "취소",
+   "lat_n": "위도 °N",
+   "lon_e": "경도 °E",
+   "point_and_radius": "좌표·반경으로 정하기",
+   "radius_km": "반경 km"
+  },
+  "cluster": {
+   "title": "가까운 화점 {n}곳 · 누르면 이 화점을 고르고 확대"
+  },
+  "cmp": {
+   "aria": "해마다 같은 시기 {n}일 합계, 올해 강조"
+  },
+  "daily": {
+   "aria": "{ym} 일별 핫스팟 · 점선은 {p}",
+   "aria2": "{ym} 일별 관측 활동 · 막대를 누르면 지도 기간이 그날로 바뀐다",
+   "fires": "사건 기록 {n}건",
+   "prev": "전년 {n}",
+   "pts": "{n}개"
+  },
+  "days_n": "{n}일",
+  "detect_tag": {
+   "fire_record_class": "산불 기록 분류"
+  },
+  "dom": "{d}일",
+  "dp": {
+   "day_aria": "{y}년 {m}월 {d}일",
+   "weekdays": "일,월,화,수,목,금,토"
+  },
+  "empty_feed": {
+   "no_matching_alerts": "해당 경보 없음",
+   "no_new_detections": "신규 감지 없음"
+  },
+  "entry": {
+   "title": "{a} · {ym} 분석"
+  },
+  "export_it": {
+   "cannot_build_analysis_csv": "분석 CSV를 만들 수 없다",
+   "detection_calendar_2001_2026": "관측 활동 캘린더 2001–2026 · ",
+   "no_raw_detections_to": "내려받을 원시 탐지 점이 없다",
+   "widen_the_period_or": "기간을 넓히거나 관심 영역을 바꾼다"
+  },
+  "f1": {
+   "1_findings": "1. 관측된 특징",
+   "2_comparison_terms": "2. 비교 조건",
+   "3_further_checks": "3. 추가 확인 사항",
+   "4_sources": "4. 출처",
+   "5_year_over_year": "5. 전년 대비 · 지도 기간",
+   "area": "지역      ",
+   "area_2": "   지역 ",
+   "area_months": " · 권역 월 ",
+   "baseline_n": "같은 달   n",
+   "bias": " · 편향 ",
+   "boundaries": "   - 경계 ",
+   "by_sensor_not_summed": " (센서별 · 더하지 않음)",
+   "clipped_to_supported_range": " · 지원 기간으로 자름",
+   "compare": "비교      ",
+   "complete_month": " · 완료 월",
+   "data": " · 자료 ",
+   "day_scaled": "(일수 환산)",
+   "days": "일)",
+   "days_comparison_for_reference": "일까지) · 비교는 참고용",
+   "difference": "차이 ",
+   "emberline_same_month_comparison": "Emberline · 과거 같은 달 비교 요약 보고",
+   "excluded": " 제외",
+   "fire_records_report_and": "[산불 기록] 신고·진화 기준 기록 · 위성 관측점 수와 따로 집계",
+   "formula": "   - 보정식 ",
+   "generated": "생성 ",
+   "last_year": " / 전년 ",
+   "last_year_0_no": "전년 0(비율 없음)",
+   "leave_one_year_out": ": 연도 제외 MAE ",
+   "map_raw_points": " · 지도 원시 점 ",
+   "median": ") · 중앙값 ",
+   "median_2": "중앙값의 ",
+   "method": "   - 방법 ",
+   "metric": "지표      ",
+   "missing": ", 결측 ",
+   "month": "분석 월   ",
+   "n_a": "잴 수 없음",
+   "no_ratio": "배수 없음(",
+   "not_selected": "선택 안 됨",
+   "not_summed": " (더하지 않음)",
+   "outside_record_coverage": "- 기록 확보 기간 밖 · ",
+   "partial_month": " · 부분월(",
+   "period": "   기간 ",
+   "processing": " · 처리 상태 ",
+   "product": "   - 제품 ",
+   "raw_modis": " · 원시 MODIS ",
+   "raw_modis_and_viirs": " · 원시 MODIS·VIIRS 는 따로 적었다(더하지 않음) · 사건 기록은 확보 기간 안에서만 센다",
+   "raw_viirs": " · 원시 VIIRS ",
+   "reference_only": " · 참고용",
+   "satellite_detection_counts_are": "위성 관측점 수는 산불 건수·피해 면적과 같은 값이 아닙니다.",
+   "screen_area": "          화면 관심 영역: ",
+   "slope": "     기울기 ",
+   "state": "결과 상태 ",
+   "target_year": ", 평가 연도 ",
+   "time": " · 시간 ",
+   "unit": " · 단위 ",
+   "updated": " · 갱신 ",
+   "validation": "   - 검증(",
+   "value_harmonized": "값        보정 지표 ",
+   "view_sensor": "[화면 설정] 센서 보기 ",
+   "x": "번째",
+   "year_block_bootstrap_95": " (연도 묶음 부트스트랩 95% ",
+   "years_excluded": "개 연도 제외",
+   "years_rank": "개 연도 중 "
+  },
+  "fc": {
+   "pts_u": "개",
+   "rank_hist": "과거 산불 {n}건 중 {r}",
+   "rank_of": "{n}건 중 {r}",
+   "same": "같은 지역·시기 {n}일"
+  },
+  "feed": {
+   "closed": "(종결 {n})",
+   "n": "경보 {n}",
+   "n_v": "{n}건",
+   "open_aria": "{t} · 경보·출동에서 열기"
+  },
+  "in_aoi": {
+   "fires_in_period": "기간 안 산불 ",
+   "incident_records_by_report": "신고·진화 기준 사건 기록",
+   "outside_fire_record_coverage": "산불 기록 확보 기간 밖",
+   "partial": "(일부만 확보)"
+  },
+  "in_range": {
+   "active_now_outside_period": "지금 진행 중(기간 밖)"
+  },
+  "item": {
+   "analysis": "분석 결과 · ",
+   "analysis_csv": "분석 CSV",
+   "calendar_png": "캘린더 PNG",
+   "cannot_export": "내보낼 수 없음 · ",
+   "current_map_view_with": "지금 보이는 지도 + 범례 띠",
+   "export_view": "화면 내보내기",
+   "findings_comparison_terms_checks": "관측 특징 · 비교 조건 · 확인할 점 · 출처",
+   "map_period": " · 지도 기간 ",
+   "map_png": "지도 PNG",
+   "points_rows_by_sensor": " 점 · 센서별 행",
+   "raw_detections_csv": "원시 탐지 CSV",
+   "summary_report_txt": "요약 보고(.txt)",
+   "value_state_reason_version": " · 값·상태·이유·버전",
+   "written_with_insufficient_data": " · 판단 정보 부족으로 작성",
+   "year_over_year": " · 전년 대비"
+  },
+  "mean": {
+   "2001_2011_conversion": "2001–2011 환산 ",
+   "2011_2012_change": "2011→2012 변화 ",
+   "2011_2012_step": "2011→2012 계단 ",
+   "month": "/월",
+   "no_adjustment": "보정 없음",
+   "operating_since_2012": "2012년 운용 시작",
+   "pixel_1_km": "화소 1 km",
+   "sensor_change_modis_1": "센서 전환 MODIS 1 km → VIIRS 375 m",
+   "unit_modis_hotspots_month": "단위 MODIS 핫스팟 수/월",
+   "unit_viirs_hotspots_month": "단위 VIIRS 핫스팟 수/월",
+   "validation_error_mae": "검증 오차(MAE) "
+  },
+  "menu": {
+   "acsv": "같은 {m} {n}개 연도 + {w} {k}행"
+  },
+  "offv": {
+   "go": "영역으로 이동",
+   "text": "{a}, 지도 화면 밖"
+  },
+  "outv": {
+   "n": "진행 중 {n}곳",
+   "text": "고른 기간({a}–{b}) 밖에 {n}"
+  },
+  "over": {
+   "boundaries": "시군 경계",
+   "box": "사각형",
+   "draw_a_box_on": "지도에 사각형 그리기",
+   "draw_a_polygon_on": "지도에 다각형 그리기",
+   "fires": "산불",
+   "hotspots": "핫스팟",
+   "map_tools_layers_draw": "지도 도구 · 레이어 · 관심 영역 그리기",
+   "passes_24h": "24시간 통과 ",
+   "passes_today": "오늘 통과 ",
+   "point": "좌표",
+   "polygon": "다각형",
+   "response_units": "대응 자원",
+   "search_places": "시군·지명 검색",
+   "set_area_by_point": "좌표·반경으로 관심 영역 정하기",
+   "set_by_latitude_longitude": "위도·경도와 반경으로 정하기",
+   "units": "출동 자원"
+  },
+  "page": {
+   "title": "통합 관제 홈"
+  },
+  "pass": {
+   "aria": "오늘 지난 위성 통과 {n}회: {list}",
+   "n": "{n}회",
+   "title": "{s} · {t} 통과"
+  },
+  "path": {
+   "daily_harmonized_this_period": "일별 보정 지표 · 올해 기간 합 ",
+   "day_bins": "일 묶음",
+   "day_total": "일 합",
+   "onward": "부터 ",
+   "same_period_last_year": " · 전년 같은 기간 합 ",
+   "this_year": " · 올해 "
+  },
+  "pick_day": {
+   "fire_records": " · 산불 기록 "
+  },
+  "place": {
+   "picker": " 고르기"
+  },
+  "pt": {
+   "err_lat": "위도는 {a}–{b} 사이로 넣는다",
+   "err_lon": "경도는 {a}–{b} 사이로 넣는다",
+   "err_rad": "반경은 0.5–60 km 사이로 넣는다"
+  },
+  "qa": {
+   "in_progress_reference": "(진행 중이라 참고)",
+   "no_data_to_compare": "비교할 자료 없음"
+  },
+  "quick_ranges": {
+   "last_7_days": "최근 7일",
+   "this_month": "이번 달"
+  },
+  "rank": {
+   "nth": "{r}위",
+   "of_years": "{n}개 해 중 {r}위"
+  },
+  "ratio": {
+   "diff": "중앙값 0, 차이 {d}",
+   "long": "같은 달 중앙값 {m}의 {x}",
+   "long_part": "같은 달 중앙값 {m}({d}일 환산)의 {x}",
+   "short": "중앙값의 {x}"
+  },
+  "ratio_text": {
+   "insufficient_data": "판단 정보 부족"
+  },
+  "rcal": {
+   "hint_end": "끝 날을 누르세요",
+   "hint_start": "시작 날을 누르세요",
+   "title": "달력에서 고르기"
+  },
+  "refresh_map": {
+   "raw_points": "원시 점 "
+  },
+  "regs": {
+   "harmonized": "보정 지표",
+   "harmonized_viirs_equivalent": "보정 지표(VIIRS 기준 환산)",
+   "harmonized_viirs_equivalent_unit": "보정 지표(VIIRS 기준 환산) · 단위: VIIRS 기준 핫스팟 수/월",
+   "mixed_sensor_raw_hotspots": "센서가 섞인 원시 핫스팟 수/월 · 비교용",
+   "modis_hotspots_month": "MODIS 핫스팟 수/월",
+   "modis_raw": {
+    "_": "MODIS 원시",
+    "short": "MODIS 원시"
+   },
+   "modis_raw_detections": "MODIS 원시 관측",
+   "modis_raw_detections_unit": "MODIS 원시 관측 · 단위: MODIS 핫스팟 수/월",
+   "unadjusted": "보정 전",
+   "unadjusted_for_comparison_raw": "보정 전(비교용) — 2011년까지 MODIS 원시, 2012년부터 VIIRS 원시를 보정 없이 이음",
+   "unadjusted_raw_modis_and": "보정 전(MODIS·VIIRS 원시를 이음)",
+   "viirs_equivalent_hotspots_month": "VIIRS 기준 핫스팟 수/월",
+   "viirs_hotspots_month": "VIIRS 핫스팟 수/월",
+   "viirs_raw": {
+    "_": "VIIRS 원시",
+    "short": "VIIRS 원시"
+   },
+   "viirs_raw_detections": "VIIRS 원시 관측",
+   "viirs_raw_detections_unit": "VIIRS 원시 관측 · 단위: VIIRS 핫스팟 수/월 · 2012년 이전 운용 전"
+  },
+  "render_aoibadge": {
+   "clear_area": "관심 영역 해제",
+   "harmonized": " · 보정 지표",
+   "harmonized_viirs_equivalent_unit": " · 보정 지표(VIIRS 기준 환산) · 단위 VIIRS 기준 핫스팟 수/월"
+  },
+  "render_cal": {
+   "2_same_month_median": "같은 달 중앙값의 2배 이상",
+   "days": "일 기준)",
+   "days_reference_only": "일 기준 · 참고용",
+   "dots_use_the_2012": "캘린더 점은 2012–2025 같은 달 중앙값 기준(참고). 배수는 칸에 마우스를 올리면 평가 연도를 뺀 분석 결과로 보인다",
+   "high": "많음",
+   "low": "적음",
+   "missing_tap_a_cell": "결측(칸을 누르면 이유)",
+   "modis_0_cells_before": "2012년 이전 MODIS 0 칸 · 작은 불을 놓쳤을 수 있어 판단 보류",
+   "modis_0_undetermined": "MODIS 0(판단 보류)",
+   "modis_month": "MODIS/월",
+   "month_comparison_only": "/월 · 비교용",
+   "month_in_progress": "진행 중인 달(",
+   "no_data": "자료 없음",
+   "no_detections": " 관측 0",
+   "not_operating_before_2012": "운용 전(2012년 이전)",
+   "or_more": " 이상",
+   "partial_month": " · 부분월 ",
+   "viirs_month": "VIIRS/월"
+  },
+  "render_fire_cmp": {
+   "changes_when_you_pick": "지도·감지 목록에서 산불을 고르면 바뀝니다",
+   "highest_level_fire": "가장 높은 단계 산불",
+   "ledger_max": "원장 최대: ",
+   "max_frp": "최대 FRP",
+   "no_active_fires": "진행 중인 산불 없음",
+   "selected_fire": "선택한 산불",
+   "viirs_raw_points": "VIIRS 원시 관측점",
+   "vs_past_fires": " · 과거 산불과 비교"
+  },
+  "render_month": {
+   "1_day_map_raw": " 하루 · 지도 원시 점 ",
+   "baseline": "기준 ",
+   "comparison_view_harmonized": "비교용 보기 · 보정 지표 기준 ",
+   "in_progress": "진행 중(",
+   "missing_month": "결측 달",
+   "no_fire_records_this": "이 달 산불 기록 없음",
+   "no_year_over_year": "비교용 보기에는 전년 대비 없음",
+   "outside_record_coverage": "기록 확보 기간 밖",
+   "same_month_last_year": "전년 같은 달, ",
+   "same_month_median_daily": "같은 달 중앙값 일평균 ",
+   "seasonal_peak": "계절 최다 ",
+   "set_the_period_to": "기간을 이 달로 바꾸고 지도를 그 달 범위로 맞춘다",
+   "show_on_map": "지도에 표시",
+   "within_coverage": "확보 기간 안에서는 ",
+   "x": "일",
+   "x_2": " 외 ",
+   "x_3": "외 ",
+   "years": "개 연도"
+  },
+  "render_qans": {
+   "reference": " · 참고"
+  },
+  "render_range": {
+   "map_period": "지도 기간",
+   "map_period_2": "지도 기간 ",
+   "open_picker": " · 고르기 창",
+   "selected_period_beside_the": "고른 기간과 1년 전 같은 기간을 나란히",
+   "year_over_year": "전년 대비"
+  },
+  "render_yo_y": {
+   "by_sensor": "센서별",
+   "daily_harmonized": "일별 · 보정 지표",
+   "daily_mean": "하루 평균 ",
+   "day": "/일",
+   "days_last_year": "일) · 전년 ",
+   "days_last_year_2": "일 · 전년 ",
+   "days_with_detections": "관측 있는 날 ",
+   "fire_records": "산불 기록",
+   "harmonized": "· 보정 지표",
+   "harmonized_total": "보정 지표 합",
+   "last_year": " · 전년 ",
+   "outside_coverage": "확보 기간 밖",
+   "peak_day": "가장 많은 날 ",
+   "period": " · 기간 ",
+   "raw_detections": "원시 관측 ",
+   "same_dates_a_year": "1년 전 같은 날짜",
+   "same_period_last_year": "전년 같은 기간",
+   "this_period": "올해 기간",
+   "to_date": "오늘까지"
+  },
+  "search": {
+   "k_adm1": "지역",
+   "k_kor": "시군"
+  },
+  "season": {
+   "autumn": "가을철 산불조심기간(11.1–12.15)"
+  },
+  "set_aoi": {
+   "area": "관심 영역 · ",
+   "calendar_indicators_questions_and": "캘린더·지표·세 질문·CSV 반영"
+  },
+  "set_layer_k": {
+   "past_fire": "과거 산불",
+   "river": "하천"
+  },
+  "set_range": {
+   "1_day": " 하루",
+   "map_raw_points": "지도 원시 점 ",
+   "period": "기간 ",
+   "raw_detection_csv_updated": " · 원시 탐지 CSV 반영"
+  },
+  "set_yo_y": {
+   "indicators": "오른쪽 지표 ",
+   "indicators_daily_chart_and": " · 오른쪽 지표·일별 그래프·요약 보고 반영",
+   "vs_same_month_in": " 과거 같은 달 대비",
+   "year_over_year_off": "전년 대비 끔",
+   "year_over_year_on": "전년 대비 켬"
+  },
+  "sheet": {
+   "grip": "감지 목록 높이 · 지금 {stop} · 눌러 바꾸기, 위아래 화살표",
+   "stop_full": "전체",
+   "stop_half": "절반",
+   "stop_peek": "접힘"
+  },
+  "short_label": {
+   "area": "관심 영역",
+   "area_period_download": "관심 영역·기간·내려받기",
+   "by_date_same_window": "날짜 기준 · 해마다 같은 시기 · 보정 지표",
+   "calendar_summary": "캘린더 요약",
+   "choose_area": "관심 영역 시군 고르기",
+   "choose_period": "기간 고르기",
+   "compare": "비교 분석",
+   "detection_calendar": "관측 활동 캘린더",
+   "detection_calendar_2": "관측 활동 캘린더 ",
+   "detection_calendar_arrow_keys": "관측 활동 캘린더 · 화살표로 연·월 이동, Enter로 일별 보기",
+   "detections": "감지 목록",
+   "download": "내려받기",
+   "end_date": "종료 날짜",
+   "enter_dates": "날짜 직접 입력",
+   "excl_target_year": "평가 연도 제외",
+   "in_progress_reference_only": "진행 중 기간 · 참고용",
+   "last_update": "마지막 갱신",
+   "metric": "지표 보기",
+   "overview": "상황판",
+   "peak_month": "가장 많았던 달 ",
+   "peak_year": "가장 많았던 해 ",
+   "period": "기간",
+   "quick_pick": "빠른 선택",
+   "reference_date": "비교 기준 날짜",
+   "show_monthly_values_in": "칸 안에 월 값 표시",
+   "situation_panel": "상황 패널",
+   "start_date": "시작 날짜",
+   "values": "숫자 보기",
+   "vs_same_month_in": "과거 같은 달 대비",
+   "window_length": "창 길이"
+  },
+  "show_flash": {
+   "close": "닫기",
+   "open_in_alerts": "경보·출동에서 열기",
+   "show_on_map": "지도에서 보기"
+  },
+  "show_sugg": {
+   "no_results": "검색 결과 없음"
+  },
+  "svc": {
+   "aria": "{p} 열기, {r} 역할"
+  },
+  "svc_val": {
+   "30_day_outlook": "30일 예측",
+   "pending": "산정 대기",
+   "similar": "비슷",
+   "standby": "대기",
+   "vs_normal": "예년 대비",
+   "x": "대",
+   "x_2": "건",
+   "x_3": "배",
+   "ytd_vs_normal": "올해 예년 대비"
+  },
+  "sync": {
+   "none": "없음",
+   "open_calendar": " · 달력 열기",
+   "pick_a_date": "날짜 고르기"
+  },
+  "t": {
+   "daily_same_month_last": " 일별(전년 같은 달)"
+  },
+  "top": {
+   "role_screens": "역할 화면"
+  },
+  "unit": {
+   "crew": "{n}명"
+  },
+  "v": {
+   "annual_total": "연간 합계",
+   "naive_join_comparison_only": "잘못 이어 붙인 경우(비교용)",
+   "top_annual_totals": "연간 합계 상위",
+   "viirs_start": "VIIRS 시작"
+  },
+  "val": {
+   "days_so_far_month": "일까지 · 진행 중인 달",
+   "last_12_months": "최근 12개월",
+   "live_eq": "실시간 관측 · VIIRS 기준",
+   "missing": "결측",
+   "viirs_eq": "VIIRS 기준"
+  },
+  "y": {
+   "excl_this_year": "(올해 제외)",
+   "harmonized": " · 보정 지표 ",
+   "median": " / 중앙값 ",
+   "outside_data_range_from": "자료 범위 밖(2001-01-15 이후)",
+   "same_window_median": "같은 시기 중앙값 "
+  },
+  "year": "{y}년",
+  "ym_of": {
+   "next_month": "다음 달",
+   "next_year": "다음 해",
+   "previous_month": "이전 달",
+   "previous_year": "이전 해"
+  },
+  "yoy_delta": {
+   "last_year_0": "전년 0",
+   "last_year_was_0": "전년 값이 0이라 비율을 내지 않는다",
+   "not_comparable": "비교 불가"
+  },
+  "yoy_prev": {
+   "last_year": "전년 "
+  }
+ }
+}

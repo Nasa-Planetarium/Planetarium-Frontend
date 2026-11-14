@@ -1,0 +1,46 @@
+#!/usr/bin/env node
+/**
+ * release 정적 스냅숏 → public/data/snap/ (MSW 가 계약 모양으로 바꿔 응답하는 원천).
+ *
+ * 쓰는 법: node scripts/import-snapshot.mjs --snap <스냅숏 폴더>   (korea.json · countries.json · world-1deg/ · FORMAT.md)
+ *
+ * 값은 release data-v1-m2v-2026-11-14 그대로(결정 A1 「모델을 따른다」). 이 스크립트는 복사와 SHA-256 기록만 한다.
+ * 전망(outlook.json)이 있으면 함께 복사한다(--outlook <파일>, 없으면 건너뜀).
+ */
+import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+
+const argv = process.argv.slice(2);
+const argOf = (n) => {
+  const i = argv.indexOf(n);
+  return i >= 0 ? argv[i + 1] : undefined;
+};
+const root = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1")), "..");
+const snap = path.resolve(argOf("--snap") ?? process.env.SNAP_DIR ?? path.join(root, "..", "snap"));
+const outlook = argOf("--outlook") ?? process.env.OUTLOOK_FILE;
+const dest = path.join(root, "public", "data", "snap");
+
+const FILES = ["korea.json", "countries.json", "FORMAT.md", "world-1deg/grid.bin", "world-1deg/meta.json", "world-1deg/lat-band.json"];
+fs.rmSync(dest, { recursive: true, force: true });
+fs.mkdirSync(path.join(dest, "world-1deg"), { recursive: true });
+const manifest = { source: snap, files: {} };
+for (const f of FILES) {
+  const from = path.join(snap, f);
+  if (!fs.existsSync(from)) {
+    if (f === "FORMAT.md") continue;
+    throw new Error(`스냅숏 파일 없음: ${from}`);
+  }
+  fs.copyFileSync(from, path.join(dest, f));
+  const buf = fs.readFileSync(from);
+  manifest.files[f] = { bytes: buf.length, sha256: crypto.createHash("sha256").update(buf).digest("hex") };
+}
+if (outlook && fs.existsSync(outlook)) {
+  fs.copyFileSync(outlook, path.join(dest, "outlook.json"));
+  const buf = fs.readFileSync(outlook);
+  manifest.files["outlook.json"] = { bytes: buf.length, sha256: crypto.createHash("sha256").update(buf).digest("hex") };
+} else {
+  manifest.outlook = "없음 — 전망 파일이 만들어지면 --outlook 으로 다시 돌린다";
+}
+fs.writeFileSync(path.join(dest, "manifest.json"), JSON.stringify(manifest, null, 1) + "\n");
+console.log(Object.entries(manifest.files).map(([f, v]) => `${f} ${v.bytes} B`).join(" · "), manifest.outlook ?? "");

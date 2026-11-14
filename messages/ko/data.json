@@ -1,0 +1,424 @@
+{
+ "data": {
+  "alert": {
+   "contained": {
+    "body": "{name} 추정 소실 {ha}. 필지 확인이 필요합니다.",
+    "title": "진화 완료 · 피해 면적 산정 대기"
+   }
+  },
+  "aoi": {
+   "and_more": "{a} 외 {n}곳",
+   "bad_n": "고른 영역 중 {n}곳: ",
+   "country_note": "1급 행정구역 {n}곳",
+   "drawn": "직접 그린 영역",
+   "gb-north": {
+    "label": "경북 북부",
+    "short": "경북 북부"
+   },
+   "gb_note": "경북 북부 {n}개 시군",
+   "gw-east": {
+    "label": "강원 동해안"
+   },
+   "korea_all": "한국 전역",
+   "none": "선택 안 됨",
+   "outside": "지원 권역 밖 영역",
+   "outside_of": "{aoi} {n}개 {u} 밖입니다",
+   "preparing": "준비 중",
+   "preparing_reason": "자료 정비 중인 권역입니다",
+   "supported": "지원 권역"
+  },
+  "band": {
+   "above_p90": "보통 범위보다 높음",
+   "below_p10": "보통 범위보다 낮음",
+   "within": "보통 범위 안"
+  },
+  "baseline": {
+   "rule": "같은 지역·같은 지표의 같은 달 · 평가 연도 제외 · 결측 연도 제외"
+  },
+  "busiest": "가장 활발한 {n}일",
+  "cc": {
+   "base": "같은 달 비교 기간: {a}–{b} 중 평가 연도 제외 · 유효 {n}개 연도",
+   "base_miss": " · 결측 {n}개 연도 제외",
+   "boundary": "경계: {b}",
+   "complete": " · 완료 월",
+   "data": "자료: {p} · 기준일 {d}",
+   "formula": "보정식: {k} × MODIS (2012년 이전) · VIIRS 그대로 (2012년 이후) · {v}",
+   "metric": "지표: {m} · 단위 {u}",
+   "month": "분석 월: {ym}",
+   "partial": " · 부분월({d}일까지)",
+   "region": "지역: {aoi}",
+   "regions": " · {u} {n}곳({list})",
+   "time": "시간 기준: {t} · 자료 기준일 {d}"
+  },
+  "collection": "컬렉션",
+  "cshort": {
+   "ARE": "UAE",
+   "ATF": "프랑스 남방",
+   "ATG": "앤티가",
+   "AUS": "호주",
+   "BIH": "보스니아",
+   "CAF": "중앙아프리카",
+   "CHN": "중국",
+   "COD": "민주콩고",
+   "COG": "콩고",
+   "DMA": "도미니카",
+   "DOM": "도미니카공",
+   "FSM": "미크로네시아",
+   "KNA": "세인트키츠",
+   "KOR": "한국",
+   "PRK": "북한",
+   "SAU": "사우디",
+   "SGS": "사우스조지아",
+   "STP": "상투메",
+   "TTO": "트리니다드",
+   "VAT": "바티칸",
+   "VCT": "세인트빈센트",
+   "ZAF": "남아공"
+  },
+  "csvdoc": {
+   "baseline_median": "같은 달 기준 연도 중앙값(평가 연도·결측 제외, 환산 전)",
+   "baseline_median_compared": "실제로 비교한 중앙값 — 부분월이면 baseline_median × partial_frac",
+   "partial_frac": "부분월 일수 비율(진행 중인 달만) · 그 밖은 빈칸",
+   "platforms": "그 해 운용 위성",
+   "product_versions": "센서별 제품·컬렉션",
+   "sources": "원천 자료(NASA FIRMS·경계)와 주소"
+  },
+  "detect": {
+   "agri": "위성만(영농 소각)",
+   "early": "위성 선감지",
+   "reported": "신고 일치"
+  },
+  "fa": {
+   "def": "감지에서 첫 현장 도착까지",
+   "title": "감지에서 첫 현장 도착까지(중앙값), {from}부터 {to}까지 {n}건(실측 {real}건, 추정 {est}건)"
+  },
+  "fc": {
+   "assume": {
+    "1": "같은 날짜 창의 과거 분포가 올해도 비슷하다고 가정한다(기후·토지 이용 변화 미반영)",
+    "2": "최근 30일의 이상치가 다음 기간에 절반만 이어진다고 가정한다(계수 0.5)",
+    "3": "기상·연료 수분·사람 활동 같은 원인 변수를 쓰지 않는다",
+    "4": "2012년 이전 기준 연도는 MODIS 단독 환산 값이다"
+   },
+   "label": "예측",
+   "level": {
+    "high": "평년보다 높음",
+    "low": "평년보다 낮음",
+    "normal": "평년 수준"
+   },
+   "level_rule": "중앙값 ≥ 기준선 p50 × 1.25 → high · ≤ p50 × 0.8 → low · 그 밖 normal(차이 1 미만은 normal) · 기준 연도 3개 미만이면 null",
+   "limit": {
+    "1": "값은 핫스팟 관측 수 전망이며 산불 건수·피해 면적과 단위가 다르다",
+    "2": "지역 예측을 더해도 권역 예측과 같지 않다(분위수는 더해지지 않는다)"
+   },
+   "method": "계절 기준선(같은 날짜 창 · 2001–2025 · 평가 연도·결측 연도 제외)의 p10·p50·p90 × 이상치 계수 a = clamp(1 + 0.5 × (최근 30일 / 같은 창 과거 중앙값 − 1), 0.5, 2.5) · 80% 구간 = [p10·a, p90·a]",
+   "note_missing": "최근 30일에 결측이 있어 계수 1(기준선만)",
+   "note_zero": "같은 창 과거 중앙값이 0이라 계수 1(기준선만)",
+   "notice": "계절 기준선과 최근 30일 추세로 낸 통계 전망입니다."
+  },
+  "fire_n": "{n, plural, other {{n}건}}",
+  "formula": "보정 지표 = {k} × MODIS (2012년 이전) · = VIIRS (2012년 이후)",
+  "fr": {
+   "coverage": "기록 기간 {a} – {b}",
+   "n": "{n, plural, other {기록 {n}건}}",
+   "none": "사건 기록 없음",
+   "out": "기록 기간 밖 · {a} – {b}",
+   "partial": "기록 기간 {a} – {b} 만 집계"
+  },
+  "hc": {
+   "method": "달 단위 · 한 달 앞 · 기준선은 평가 연도를 뺀 2001–2025 같은 달 · 이상치 계수는 직전 달로 만든다",
+   "note": "평년값은 계수 없이 기준선 중앙값만 쓴 경우 — 계수가 오차를 줄이는지 견준다"
+  },
+  "home_n": "{n, plural, other {{n}가구}}",
+  "hourly": {
+   "occur": {
+    "dist": "발생 시각 분포",
+    "label": "발생 시각",
+    "note": "하루 중 언제 불이 나는지 일별 건수를 시간대로 나눠 봅니다",
+    "short": "발생 시각"
+   },
+   "pass_rule": "{s} 통과 시각",
+   "pass_rule_harm": "2012년 이전 MODIS 통과 시각 · 2012년 이후 VIIRS 통과 시각(보정 지표 기준)",
+   "sat": {
+    "dist": "위성 통과 시각 분포",
+    "label": "위성 관측 시각",
+    "note": "위성이 지나간 시각 기준이라 통과 시각에 몰립니다",
+    "short": "위성 관측 시각"
+   },
+   "weekend": "토·일(공휴일 미반영)"
+  },
+  "htype": {
+   "0": "식생 화재",
+   "1": "활화산",
+   "2": "고정 열원",
+   "3": "해상"
+  },
+  "lede": {
+   "dek": {
+    "early": "119 신고 접수 전 위성 선감지.",
+    "pts": "이 불의 위성 관측 점 {pts}(VIIRS {v}, MODIS {m}), 열 세기(FRP) 최대 {frp}.",
+    "region": "권역 전체로는 진행 중인 불 {n}(이 불 포함), 출동한 자원 {u}.",
+    "units": "출동한 자원 {u}.",
+    "vil": "반경 2 km 안 마을 {v}."
+   },
+   "first": "{t} 첫 감지",
+   "hed": {
+    "new": "{place}에서 새 불 감지",
+    "spread": "{place} 불, {dir}쪽으로 번지는 중",
+    "work": "{place} 불 대응 중"
+   },
+   "none": {
+    "dek": "마지막 위성 통과에서 새 열원 군집이 잡히지 않았다. 대기 자원 {units}.",
+    "hed": "지금 진행 중인 산불 없음"
+   }
+  },
+  "metric": {
+   "harmonized": {
+    "label": "보정 지표(VIIRS 기준 환산)",
+    "unit": "VIIRS 기준 핫스팟 수/월"
+   },
+   "modis": {
+    "label": "MODIS 원시 관측",
+    "unit": "MODIS 핫스팟 수/월"
+   },
+   "viirs": {
+    "label": "VIIRS 원시 관측",
+    "unit": "VIIRS 핫스팟 수/월"
+   }
+  },
+  "ms": {
+   "missing": "{s} 결측 · {why}",
+   "outside": "지원 기간({a} – {b}) 밖입니다",
+   "partial": "진행 중인 달 · {d}일까지 자료 · 완료 월만 분석할 수 있습니다"
+  },
+  "no_data": "자료 없음",
+  "op": {
+   "base": "과거 {n}개 연도({a}–{b}) 같은 달 중앙값 {med}, 보통 범위(p10–p90) {lo}–{hi}.",
+   "diff": "과거 중앙값 0 · 차이 {d}.",
+   "head": "{aoi} {when} {metric} {v} ({unit}).",
+   "limited": "배수·순위는 참고값({why}).",
+   "na": "{aoi} {when} · 비교할 수 없음 — {why}.",
+   "no_value": "값 없음",
+   "rank": "{n}개 연도 중 {k}번째.",
+   "rank1": "{n}개 연도 중 가장 많음.",
+   "ratio": "중앙값의 {r}배 · {band}.",
+   "raw": "센서별 원자료 MODIS {m} · VIIRS {v}.",
+   "scaled": "(일수 비율 적용)",
+   "this_month": "선택한 달",
+   "through": "({d}일까지)",
+   "viirs_pre": "운용 전"
+  },
+  "oq": {
+   "cloud": "구름이 많은 달은 관측이 적게 잡힐 수 있어요",
+   "few": "같은 달 과거 자료가 적어 순위는 참고로 봐 주세요",
+   "missing": "결측 달: {t}",
+   "modis_zero": "2012년 이전 MODIS 0 칸은 작은 불을 놓쳤을 수 있어요",
+   "narrow": "2012년 이후 연도만으로 비교 기간을 좁혀 다시 보세요",
+   "outside": "지원 권역({aoi} {n}개 {u}) 안에서 다시 골라 주세요",
+   "partial": "달이 끝나면 완료 월 값으로 다시 비교해 보세요",
+   "platform": "VIIRS 위성 추가(2018·2023) 앞뒤는 관측 수가 달라질 수 있어요",
+   "records": "같은 달 사건 기록: {list}"
+  },
+  "plat": {
+   "aggregation": "운용 중인 VIIRS 위성 통합",
+   "note": "2018(NOAA-20)·2023(NOAA-21) 위성 추가 앞뒤로 관측 수가 달라질 수 있음",
+   "pre": "MODIS {m} · VIIRS 운용 전"
+  },
+  "proc": {
+   "collect": "원시 탐지 수집(FIRMS)",
+   "done": "완료",
+   "harm": "보정 지표 계산({v})",
+   "loyo": "연도 제외 검증(2012–{y})",
+   "month_kr": "시군 경계 결합 · KST 월 집계",
+   "month_local": "1급 경계 결합 · 현지 시각 월 집계"
+  },
+  "prov": {
+   "role": {
+    "admin1": "1급 행정구역 경계",
+    "modis": "2001–2025 원시 관측",
+    "sigungu": "시군 경계",
+    "viirs": "2012–2025 원시 관측"
+   },
+   "sp": "표준 처리",
+   "sp_full": "표준 처리(SP)",
+   "time_kr": "UTC 원시 → KST 표시·집계",
+   "time_local": "UTC 원시 → 현지 시각 표시·집계"
+  },
+  "pt_n": "{n, plural, other {{n}개}}",
+  "reason": {
+   "baseline_insufficient": "비교에 필요한 과거 자료가 부족합니다",
+   "baseline_missing": "기준 연도 중 결측 연도를 뺐습니다",
+   "baseline_modis_zero": "같은 달 과거 연도에 MODIS 0인 해가 많아 과거 수준이 낮게 잡혔을 수 있음",
+   "baseline_short": "같은 달 기준 연도가 8개보다 적습니다",
+   "median_zero": "과거 중앙값이 0이라 배수 대신 절대 차이로 봅니다",
+   "missing": "분석 월 자료가 결측입니다",
+   "modis_only_period": "MODIS 단독 환산 구간 포함(2001–2011)",
+   "modis_only_small": "MODIS 0 · 작은 불을 놓쳤을 수 있음",
+   "modis_zero_cells": "일부 시군의 MODIS 0 칸(작은 불 미탐지 가능)",
+   "not_selected": "지역 또는 분석 월이 선택되지 않았습니다",
+   "outside_support": "지원 범위 밖입니다",
+   "partial_month": "부분월 · 진행 중인 달",
+   "platform_change": "위성 구성 변화 구간 포함 · 위성 추가 앞뒤로 관측 수가 달라질 수 있음",
+   "sensor_not_operating": "VIIRS 운용 전(2012년 이전)이라 VIIRS 원시 관측이 없습니다",
+   "validation_out_of_scope": "이 지역은 검증 범위 밖입니다"
+  },
+  "rep": {
+   "label": "대표 사례",
+   "note": "2025년 3월 의성·안동 대형산불",
+   "note_max": "{ym} · 검증 범위 안 가장 많은 달"
+  },
+  "rw": {
+   "adm1": "지역",
+   "kor": "시군"
+  },
+  "season": {
+   "autumn": "가을",
+   "spring": "봄",
+   "summer": "여름",
+   "winter": "겨울"
+  },
+  "seg": {
+   "after_validation": {
+    "label": "검증 기간 뒤",
+    "text": "VIIRS 원값 그대로(환산 없음) · 보정식 검증 기간 밖 완료 월"
+   },
+   "assumed": {
+    "label": "가정 구간",
+    "text": "MODIS 단독 환산 · 중첩기 비율을 그대로 적용"
+   },
+   "validated": {
+    "label": "검증 범위",
+    "text": "MODIS·VIIRS 중첩기 · 연도 제외 검증"
+   }
+  },
+  "state": {
+   "comparable": "비교 가능",
+   "limited": "제한",
+   "unavailable": "판단 정보 부족"
+  },
+  "state_rule": {
+   "comparable": "같은 달 기준 연도 {n}개 이상 · 분석 월 값 있음 · 제한 이유 없음",
+   "limited": "부분월, 기준 연도 {a}–{b}개, 과거 중앙값 0, 2012년 이전 MODIS 0 중 하나 · 배수는 참고용",
+   "unavailable": "선택 누락, 지원 범위 밖, 분석 월 결측, 기준 연도 {n}개 미만 · 비교 결과를 내지 않음"
+  },
+  "unit": {
+   "harm_day": "VIIRS 기준 핫스팟 수/일",
+   "harm_month": "VIIRS 기준 핫스팟 수/월",
+   "harm_n_days": "VIIRS 기준 핫스팟 수/{n}일",
+   "raw_day": "{s} 원시 핫스팟 수/일"
+  },
+  "unit_n": "{n, plural, other {{n}대}}",
+  "v": {
+   "applied": "적용",
+   "baseline_method": "단순 기준선 A: VIIRS 단독(2012년 이전 결측) · 단순 기준선 B: 원시 MODIS 그대로 이어 붙임",
+   "cov": "{n}개 연도",
+   "cov_a": "{a}/{b}개 연도(2001–2011 결측)",
+   "d1": {
+    "evidence": "같은 표본에서 단순 기준선 A·B 대 비율 보정의 연도 제외 MAE·편향",
+    "not_yet": "다른 권역으로 넓혀 같은 검증 반복",
+    "title": "비교 가능성 먼저 검증"
+   },
+   "d2": {
+    "evidence": "결측·부분월·범위 밖·표본 부족을 값 대신 이유와 함께 표시",
+    "not_yet": "구름·관측 가능 면적 정보 결합",
+    "title": "판단 어려운 구간 표시"
+   },
+   "d3": {
+    "evidence": "화면과 같은 결과로 만든 CSV·인쇄 요약(지역·월·단위·버전·이유 포함)",
+    "not_yet": "공유 링크로 같은 조건 다시 열기",
+    "title": "근거가 남는 결과물"
+   },
+   "ext_rule": "중첩기 권역 월 상위 5%(최소 5개월)",
+   "held": "연도 하나씩 제외(LOYO, {n}회): 그 해를 뺀 나머지로 기울기를 다시 추정해 그 해에 적용",
+   "label": "연도 제외 검증",
+   "lim": {
+    "1": "기준값은 중첩기 VIIRS다",
+    "2": "2001–2011은 중첩기 비율을 그대로 적용한다",
+    "3": "구름·관측 가능 면적은 보정하지 않는다",
+    "4": "검증 권역: {aoi} {n}개 {u}"
+   },
+   "m": {
+    "ratio": "제안 방법 · 비율 보정(VIIRS ≈ k × MODIS)",
+    "raw_modis": "단순 기준선 B · 원시 MODIS 이어 붙임",
+    "viirs_only": "단순 기준선 A · VIIRS 단독"
+   },
+   "method": "연도 하나씩 빼고 보정식 재추정(2012–2025, 14회) · MAE·편향은 권역 월 합계 · R²는 지역×월 쌍 · 구간은 연도 묶음 부트스트랩 2,000회 · 기준값은 중첩기 VIIRS",
+   "note": {
+    "ratio": "연도 제외 기울기 {a}–{b}",
+    "raw_modis": "센서 감도 차이를 그대로 남긴다",
+    "viirs_only": "2012년 이전을 만들지 않아 오차를 잴 수 없다. 기준선 길이가 짧아진다"
+   },
+   "r2_note": "상관(R²)만으로 우수성을 판단하지 않는다 — MAE·편향·계절·극값을 함께 본다",
+   "reference": "기준값: 중첩기 VIIRS",
+   "scope": "{aoi} {n}개 {u} · 중첩기 {a}–{b}",
+   "zero_note": "MODIS 0인 {u}·월 중 VIIRS가 1개 이상 본 비율 — 2012년 이전 0 칸에 판단 보류를 붙이는 근거"
+  },
+  "village_n": "{n, plural, other {{n}곳}}",
+  "vs": {
+   "after": "{y}년 이후 · VIIRS 값 그대로(환산 없음)",
+   "assumed": "2001–2011 · MODIS 단독 환산 · 중첩기(2012–{y}) 비율을 그대로 적용",
+   "validated": "중첩기 2012–{y} · 연도 제외 검증 범위 안"
+  },
+  "x": {
+   "base_n": "기준 연도 {n}개",
+   "diff": "차이 {d}",
+   "miss_years": "{n}개 연도 결측 제외",
+   "modis_month": "분석 월이 MODIS 단독 환산 값",
+   "modis_years": "기준 연도 {n}개 중 {k}개가 MODIS 단독 환산(2001–2011)",
+   "modis_zero_sum": "분석 월 권역 MODIS 합계 0",
+   "no_month": "분석 월 없음",
+   "no_region": "지역 없음",
+   "of_years": "기준 연도 {n}개 중 {k}개",
+   "partial": "{d}일까지 · 기준 중앙값을 {d}/{n}로 줄인 참고값",
+   "support": "지원 기간 {a} – {b}",
+   "zero_cells": "{n}개 {u} 중 {z}곳 MODIS 0"
+  },
+  "yoy": {
+   "active_days": {
+    "label": "관측 있는 날",
+    "unit": "일"
+   },
+   "daily_mean": {
+    "label": "하루 평균(보정 지표)",
+    "unit": "VIIRS 기준 핫스팟 수/일"
+   },
+   "fire_records": {
+    "label": "사건 기록(참고)",
+    "unit": "건"
+   },
+   "harmonized": {
+    "label": "보정 지표 합",
+    "unit": "VIIRS 기준 핫스팟 수"
+   },
+   "label": "전년 대비",
+   "modis_raw": {
+    "label": "MODIS 원시 관측",
+    "unit": "MODIS 핫스팟 수"
+   },
+   "na": "비교 불가",
+   "note": "1년 전 같은 날짜(2월 29일은 2월 28일). 진행 중인 달은 오늘까지만 · 원시 센서값은 더하지 않는다",
+   "out_why": "1년 전이 자료 기간({d}~) 밖",
+   "peak_day": {
+    "label": "가장 많은 날(보정 지표)",
+    "unit": "VIIRS 기준 핫스팟 수/일"
+   },
+   "prev_na": "전년 비교 불가 · {why}",
+   "prev_zero": "전년 0",
+   "viirs_raw": {
+    "label": "VIIRS 원시 관측",
+    "unit": "VIIRS 핫스팟 수"
+   },
+   "why": {
+    "missing": "선택 기간에 결측",
+    "missing_prev": "전년 기간에 결측",
+    "viirs_pre": "VIIRS 운용 전",
+    "viirs_pre_prev": "전년 VIIRS 운용 전"
+   }
+  },
+  "ytd": {
+   "ratio": "예년의 {r}배",
+   "similar": "예년과 비슷",
+   "title": "예년 = {a}–{b}년 같은 기간 누계의 중앙값({y}년 제외, 결측 달 있는 해 제외, n={n})",
+   "title_partial": "예년 = {a}–{b}년 같은 기간 누계의 중앙값({y}년 제외, 결측 달 있는 해 제외, n={n}, {md}까지)"
+  }
+ }
+}

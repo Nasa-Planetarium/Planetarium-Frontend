@@ -1,0 +1,564 @@
+{
+ "data": {
+  "alert": {
+   "A-0398": {
+    "body": "No report. Two single hotspots on farmland.",
+    "title": "Small heat source, likely agricultural burning"
+   },
+   "A-0405": {
+    "body": "Contained at 12:40. Moved to the burned-area queue.",
+    "title": "Hotspot detected"
+   },
+   "A-0409": {
+    "body": "Location matches the call at 11:18. Neighboring unit engine on scene.",
+    "title": "Hotspot matches an emergency call"
+   },
+   "A-0412": {
+    "body": "VIIRS 14, MODIS 3, peak FRP 86.4 MW. Seen by satellite before any emergency call.",
+    "title": "New hotspot cluster detected"
+   },
+   "A-0413": {
+    "body": "Cluster area 1.8× the previous pass (VIIRS 14 → 20). With NW wind 5.4 m/s, spread toward Gilancheon to the southeast is likely. 2 villages within 2 km.",
+    "title": "Spread detected: 6 more detections"
+   },
+   "contained": {
+    "body": "{name}: estimated {ha} burned. Parcels need checking.",
+    "title": "Contained · burned area to assess"
+   }
+  },
+  "aoi": {
+   "and_more": "{a} and {n} more",
+   "bad_n": "{n} of the selected areas: ",
+   "country_note": "{n} first-level regions",
+   "drawn": "Drawn area",
+   "gb-north": {
+    "label": "Northern Gyeongbuk",
+    "short": "N. Gyeongbuk"
+   },
+   "gb_note": "{n} districts of Northern Gyeongbuk",
+   "gw-east": {
+    "label": "East Gangwon coast"
+   },
+   "korea_all": "All of Korea",
+   "none": "Not selected",
+   "outside": "Outside the supported area",
+   "outside_of": "outside the {n} {u} of {aoi}",
+   "preparing": "In preparation",
+   "preparing_reason": "Data for this area is being prepared",
+   "supported": "Supported area"
+  },
+  "band": {
+   "above_p90": "above the usual range",
+   "below_p10": "below the usual range",
+   "within": "within the usual range"
+  },
+  "baseline": {
+   "rule": "Same region, same metric, same month · evaluation year excluded · missing years excluded"
+  },
+  "busiest": "Busiest {n} days",
+  "cc": {
+   "base": "Same-month baseline: {a}–{b}, evaluation year excluded · {n} valid years",
+   "base_miss": " · {n} missing years excluded",
+   "boundary": "Boundaries: {b}",
+   "complete": " · complete month",
+   "data": "Data: {p} · as of {d}",
+   "formula": "Formula: {k} × MODIS (before 2012) · VIIRS as is (2012 onward) · {v}",
+   "metric": "Metric: {m} · unit {u}",
+   "month": "Analysis month: {ym}",
+   "partial": " · partial (through day {d})",
+   "region": "Region: {aoi}",
+   "regions": " · {n} {u} ({list})",
+   "time": "Time basis: {t} · data as of {d}"
+  },
+  "collection": "collection",
+  "csvdoc": {
+   "baseline_median": "Same-month baseline median (evaluation and missing years excluded, before scaling)",
+   "baseline_median_compared": "Median actually compared — baseline_median × partial_frac for a partial month",
+   "partial_frac": "Share of days elapsed (month in progress only) · blank otherwise",
+   "platforms": "Satellites operating that year",
+   "product_versions": "Product and collection by sensor",
+   "sources": "Source data (NASA FIRMS, boundaries) and URLs"
+  },
+  "detect": {
+   "agri": "Satellite only (agricultural burn)",
+   "early": "Satellite first",
+   "reported": "Matches a report"
+  },
+  "dir": {
+   "남": "south",
+   "남동": "southeast",
+   "남서": "southwest",
+   "동": "east",
+   "북": "north",
+   "북동": "northeast",
+   "북서": "northwest",
+   "서": "west"
+  },
+  "fa": {
+   "def": "Detection to first arrival on scene",
+   "title": "Detection to first arrival (median), {from} to {to}, {n} incidents ({real} reported, {est} estimated)"
+  },
+  "fc": {
+   "assume": {
+    "1": "Assumes the past distribution for the same window holds this year (no climate or land-use change)",
+    "2": "Assumes half of the last-30-day anomaly carries into the next period (factor 0.5)",
+    "3": "Uses no causal variables such as weather, fuel moisture or human activity",
+    "4": "Baseline years before 2012 are MODIS-only conversions"
+   },
+   "label": "Forecast",
+   "level": {
+    "high": "Above normal",
+    "low": "Below normal",
+    "normal": "Near normal"
+   },
+   "level_rule": "Median ≥ baseline p50 × 1.25 → high · ≤ p50 × 0.8 → low · otherwise normal (differences under 1 are normal) · null with fewer than 3 baseline years",
+   "limit": {
+    "1": "Values forecast hotspot detections, not fire counts or burned area",
+    "2": "Regional forecasts do not add up to the area forecast (quantiles are not additive)"
+   },
+   "method": "Seasonal baseline (same date window · 2001–2025 · evaluation and missing years excluded) p10·p50·p90 × anomaly factor a = clamp(1 + 0.5 × (last 30 days / past median of the same window − 1), 0.5, 2.5) · 80% interval = [p10·a, p90·a]",
+   "note_missing": "Missing data in the last 30 days, factor 1 (baseline only)",
+   "note_zero": "Past median of the window is 0, factor 1 (baseline only)",
+   "notice": "Statistical outlook from the seasonal baseline and the last 30 days."
+  },
+  "fire": {
+   "F-261108-01": {
+    "cause": "Spread from field-edge burning",
+    "name": "Dogok-ri, Irwol-myeon, Yeongyang",
+    "place": "Yeongyang Irwol"
+   },
+   "F-261110-01": {
+    "cause": "Crop residue burning (satellite only)",
+    "name": "Mui-ri, Yonggung-myeon, Yecheon",
+    "place": "Yecheon Yonggung"
+   },
+   "F-261110-02": {
+    "cause": "Suspected power equipment",
+    "name": "Samhwa-ri, Jipum-myeon, Yeongdeok",
+    "place": "Yeongdeok Jipum"
+   },
+   "F-261111-01": {
+    "cause": "Suspected waste burning",
+    "name": "Singi-ri, Pacheon-myeon, Cheongsong",
+    "place": "Cheongsong Pacheon"
+   },
+   "F-261111-02": {
+    "cause": "Suspected hiker ignition",
+    "name": "Yunam-ri, Jeomgok-myeon, Uiseong",
+    "place": "Uiseong Jeomgok"
+   },
+   "F-261111-03": {
+    "cause": "Unknown (under investigation)",
+    "name": "Mukgye-ri, Gilan-myeon, Andong",
+    "place": "Andong Gilan"
+   },
+   "H-2004-AD": {
+    "cause": "Suspected accidental ignition",
+    "name": "Andong Pungcheon fire",
+    "place": "Andong Pungcheon"
+   },
+   "H-2503-UI": {
+    "cause": "Suspected ignition by grave visitors",
+    "name": "Uiseong–Andong megafire",
+    "place": "Uiseong–Andong"
+   }
+  },
+  "fire_n": "{n, plural, one {{n} fire} other {{n} fires}}",
+  "formula": "Harmonized = {k} × MODIS (before 2012) · = VIIRS (2012 onward)",
+  "fr": {
+   "coverage": "Record period {a} – {b}",
+   "meta": {
+    "label": "Wildfire incident records",
+    "note": "Incident records use different units from hotspots; read them side by side"
+   },
+   "n": "{n, plural, one {{n} record} other {{n} records}}",
+   "none": "No incident records",
+   "out": "Outside record period · {a} – {b}",
+   "partial": "Counted for {a} – {b} only"
+  },
+  "hc": {
+   "method": "Monthly · one month ahead · baseline is the same month 2001–2025 without the evaluation year · anomaly factor from the previous month",
+   "note": "Climatology uses the baseline median without the factor — shows whether the factor reduces error"
+  },
+  "home_n": "{n, plural, one {{n} household} other {{n} households}}",
+  "hourly": {
+   "occur": {
+    "dist": "Occurrence time distribution",
+    "label": "Time of occurrence",
+    "note": "Daily counts split by hour of day",
+    "short": "Occurrence"
+   },
+   "pass_rule": "{s} overpass times",
+   "pass_rule_harm": "MODIS overpass times before 2012 · VIIRS overpass times from 2012 (harmonized basis)",
+   "sat": {
+    "dist": "Overpass time distribution",
+    "label": "Satellite observation time",
+    "note": "Counts cluster at overpass times",
+    "short": "Observation"
+   },
+   "weekend": "Sat·Sun (holidays not included)"
+  },
+  "htype": {
+   "0": "Vegetation fire",
+   "1": "Active volcano",
+   "2": "Static heat source",
+   "3": "Offshore"
+  },
+  "lede": {
+   "dek": {
+    "early": "Seen by satellite before any emergency call.",
+    "pts": "{pts} satellite detections on this fire (VIIRS {v}, MODIS {m}), peak fire radiative power (FRP) {frp}.",
+    "region": "Across the area: {n} active (including this one), {u} deployed.",
+    "units": "{u} deployed.",
+    "vil": "Within 2 km: {v}."
+   },
+   "first": "first detected {t}",
+   "hed": {
+    "new": "New fire detected in {place}",
+    "spread": "{place} fire spreading {dir}",
+    "work": "{place} fire under response"
+   },
+   "none": {
+    "dek": "No new heat clusters in the last satellite pass. {units} on standby.",
+    "hed": "No active wildfires"
+   }
+  },
+  "metric": {
+   "harmonized": {
+    "label": "Harmonized index (VIIRS-equivalent)",
+    "unit": "VIIRS-equivalent hotspots / month"
+   },
+   "modis": {
+    "label": "MODIS raw detections",
+    "unit": "MODIS hotspots / month"
+   },
+   "viirs": {
+    "label": "VIIRS raw detections",
+    "unit": "VIIRS hotspots / month"
+   }
+  },
+  "missing": {
+   "2003-11": "Archive gap",
+   "2008-3": "No standard product due to reception outage",
+   "2016-7": "Awaiting reprocessing"
+  },
+  "ms": {
+   "missing": "{s} missing · {why}",
+   "outside": "Outside the supported period ({a} – {b})",
+   "partial": "Month in progress · data through day {d} · only complete months can be analyzed"
+  },
+  "no_data": "No data",
+  "op": {
+   "base": "Same-month median over {n} past years ({a}–{b}) {med}, usual range (p10–p90) {lo}–{hi}.",
+   "diff": "Past median 0 · difference {d}.",
+   "head": "{aoi} {when}: {metric} {v} ({unit}).",
+   "limited": "Ratio and rank are indicative ({why}).",
+   "na": "{aoi} {when} · cannot compare — {why}.",
+   "no_value": "no value",
+   "rank": "Rank {k} of {n} years.",
+   "rank1": "Highest of {n} years.",
+   "ratio": "{r}× the median · {band}.",
+   "raw": "Raw by sensor: MODIS {m} · VIIRS {v}.",
+   "scaled": " (scaled by elapsed days)",
+   "this_month": "the selected month",
+   "through": " (through day {d})",
+   "viirs_pre": "not operating"
+  },
+  "oq": {
+   "cloud": "Cloudy months can show fewer detections",
+   "few": "Few past values for this month; treat the rank as indicative",
+   "missing": "Missing month: {t}",
+   "modis_zero": "MODIS 0 cells before 2012 may have missed small fires",
+   "narrow": "Narrow the baseline to years from 2012 and compare again",
+   "outside": "Choose again within the supported area ({aoi}, {n} {u})",
+   "partial": "Compare again once the month is complete",
+   "platform": "Counts may shift around the VIIRS additions (2018·2023)",
+   "records": "Incident records this month: {list}"
+  },
+  "plat": {
+   "aggregation": "All operating VIIRS satellites combined",
+   "note": "Counts may shift around the 2018 (NOAA-20) and 2023 (NOAA-21) additions",
+   "pre": "MODIS {m} · VIIRS not yet operating"
+  },
+  "proc": {
+   "collect": "Raw detections collected (FIRMS)",
+   "done": "Done",
+   "harm": "Harmonized index computed ({v})",
+   "loyo": "Leave-one-year-out validation (2012–{y})",
+   "month_kr": "District boundaries joined · monthly totals in KST",
+   "month_local": "First-level boundaries joined · monthly totals in local time"
+  },
+  "prov": {
+   "boundary": "OSM admin_level 6 (ODbL) · WGS84 · 2026-11-11",
+   "pv": {
+    "MODIS": "FIRMS MODIS active fire (1 km)",
+    "VIIRS": "FIRMS VIIRS active fire (375 m)"
+   },
+   "role": {
+    "admin1": "First-level boundaries",
+    "modis": "Raw detections 2001–2025",
+    "sigungu": "District boundaries",
+    "viirs": "Raw detections 2012–2025"
+   },
+   "sp": "Standard processing",
+   "sp_full": "Standard processing (SP)",
+   "src": {
+    "osm": "OpenStreetMap admin_level 6 (ODbL)"
+   },
+   "time_kr": "Raw UTC → shown and aggregated in KST",
+   "time_local": "Raw UTC → shown and aggregated in local time"
+  },
+  "pt_n": "{n, plural, one {{n} detection} other {{n} detections}}",
+  "reason": {
+   "baseline_insufficient": "Not enough past data to compare",
+   "baseline_missing": "Missing years were removed from the baseline",
+   "baseline_modis_zero": "Many past years have MODIS 0 for this month, so the baseline may be low",
+   "baseline_short": "Fewer than 8 baseline years for this month",
+   "median_zero": "Past median is 0, so the absolute difference is shown instead of a ratio",
+   "missing": "Data for the analysis month is missing",
+   "modis_only_period": "Includes the MODIS-only converted period (2001–2011)",
+   "modis_only_small": "MODIS 0 · small fires may have been missed",
+   "modis_zero_cells": "Some regions have MODIS 0 cells (small fires may be undetected)",
+   "not_selected": "No region or analysis month selected",
+   "outside_support": "Outside the supported range",
+   "partial_month": "Partial month · in progress",
+   "platform_change": "Includes a satellite constellation change · counts may shift around added satellites",
+   "sensor_not_operating": "VIIRS was not operating before 2012, so there are no raw VIIRS detections",
+   "validation_out_of_scope": "This region is outside the validation scope"
+  },
+  "region": {
+   "andong": "Andong",
+   "bonghwa": "Bonghwa",
+   "cheongsong": "Cheongsong",
+   "gunwi": "Gunwi",
+   "sangju": "Sangju",
+   "uiseong": "Uiseong",
+   "uljin": "Uljin",
+   "yecheon": "Yecheon",
+   "yeongdeok": "Yeongdeok",
+   "yeongju": "Yeongju",
+   "yeongyang": "Yeongyang"
+  },
+  "rep": {
+   "label": "Reference case",
+   "note": "March 2025 Uiseong–Andong megafire",
+   "note_max": "{ym} · highest month in the validated range"
+  },
+  "risk": {
+   "basis": "Fire danger index (0–100) · Andong station"
+  },
+  "river": {
+   "길안천": "Gilancheon",
+   "낙동강": "Nakdong River",
+   "내성천": "Naeseongcheon",
+   "반변천": "Banbyeoncheon",
+   "위천": "Wicheon"
+  },
+  "rw": {
+   "adm1": "regions",
+   "kor": "districts"
+  },
+  "season": {
+   "autumn": "Autumn",
+   "spring": "Spring",
+   "summer": "Summer",
+   "winter": "Winter"
+  },
+  "seg": {
+   "after_validation": {
+    "label": "After validation",
+    "text": "Raw VIIRS values (no conversion) · complete months after the validation period"
+   },
+   "assumed": {
+    "label": "Assumed period",
+    "text": "MODIS-only, converted with the overlap ratio"
+   },
+   "validated": {
+    "label": "Validated range",
+    "text": "MODIS·VIIRS overlap · leave-one-year-out validation"
+   }
+  },
+  "state": {
+   "comparable": "Comparable",
+   "limited": "Limited",
+   "unavailable": "Insufficient information"
+  },
+  "state_rule": {
+   "comparable": "At least {n} baseline years for the month · value present · no limiting reason",
+   "limited": "Partial month, {a}–{b} baseline years, past median 0, or MODIS 0 before 2012 · ratio is indicative",
+   "unavailable": "Nothing selected, outside support, missing month, or fewer than {n} baseline years · no comparison is made"
+  },
+  "unit": {
+   "U-01": {
+    "name": "Engine A-1 · Safety Center A",
+    "org": "Local fire station"
+   },
+   "U-02": {
+    "name": "Water tender B-1 · Main fire station",
+    "org": "Local fire station"
+   },
+   "U-03": {
+    "name": "Wildland engine C-1 · Safety Center C",
+    "org": "Local fire station"
+   },
+   "U-04": {
+    "name": "Engine D-1 · Neighboring unit D",
+    "org": "Neighboring fire station"
+   },
+   "U-05": {
+    "name": "Forest helicopter H-1 (heavy)",
+    "org": "Forest aviation office"
+   },
+   "U-06": {
+    "name": "Wildfire specialist crew 2",
+    "org": "Forest authority"
+   },
+   "U-07": {
+    "name": "Engine E-1 · Neighboring Safety Center E",
+    "org": "Neighboring fire station"
+   },
+   "U-08": {
+    "name": "Volunteer fire brigade A",
+    "org": "Local fire station"
+   },
+   "U-09": {
+    "name": "Incident command vehicle K-1",
+    "org": "Local fire station"
+   },
+   "harm_day": "VIIRS-equivalent hotspots / day",
+   "harm_month": "VIIRS-equivalent hotspots / month",
+   "harm_n_days": "VIIRS-equivalent hotspots / {n} days",
+   "raw_day": "{s} raw hotspots / day"
+  },
+  "unit_n": "{n, plural, one {{n} unit} other {{n} units}}",
+  "v": {
+   "applied": "Applied",
+   "baseline_method": "Simple baseline A: VIIRS only (missing before 2012) · Simple baseline B: raw MODIS spliced as is",
+   "cov": "{n} years",
+   "cov_a": "{a}/{b} years (2001–2011 missing)",
+   "d1": {
+    "evidence": "Leave-one-year-out MAE and bias of baselines A·B vs. ratio harmonization on the same sample",
+    "not_yet": "Repeat the same validation in more areas",
+    "title": "Comparability tested first"
+   },
+   "d2": {
+    "evidence": "Missing, partial, out-of-range and small-sample cases shown with reasons instead of values",
+    "not_yet": "Add cloud and observable-area information",
+    "title": "Hard-to-judge periods flagged"
+   },
+   "d3": {
+    "evidence": "CSV and print summary built from the same result as the screen (region, month, unit, version, reasons)",
+    "not_yet": "Reopen the same conditions from a shared link",
+    "title": "Outputs that keep their evidence"
+   },
+   "ext_rule": "Top 5% of overlap region-months (min 5)",
+   "held": "Leave one year out ({n} runs): refit the slope without that year and apply it to that year",
+   "label": "Leave-one-year-out validation",
+   "lim": {
+    "1": "The reference is overlap-period VIIRS",
+    "2": "2001–2011 uses the overlap ratio as is",
+    "3": "Clouds and observable area are not corrected",
+    "4": "Validation area: {aoi}, {n} {u}"
+   },
+   "m": {
+    "ratio": "Proposed · ratio harmonization (VIIRS ≈ k × MODIS)",
+    "raw_modis": "Simple baseline B · raw MODIS spliced",
+    "viirs_only": "Simple baseline A · VIIRS only"
+   },
+   "method": "Refit leaving one year out (2012–2025, 14 runs) · MAE and bias on area-month totals · R² on region×month pairs · interval from 2,000 year-block bootstraps · reference is overlap VIIRS",
+   "note": {
+    "ratio": "Leave-one-year-out slope {a}–{b}",
+    "raw_modis": "Keeps the sensor sensitivity gap",
+    "viirs_only": "Produces nothing before 2012, so error cannot be measured; the baseline gets shorter"
+   },
+   "r2_note": "R² alone does not decide quality — read MAE, bias, seasons and extremes together",
+   "reference": "Reference: overlap-period VIIRS",
+   "scope": "{aoi}, {n} {u} · overlap {a}–{b}",
+   "zero_note": "Share of MODIS-0 {u}·months where VIIRS saw at least one hotspot — the basis for flagging pre-2012 zero cells"
+  },
+  "village": {
+   "고란리": "Goran-ri",
+   "구수리": "Gusu-ri",
+   "금곡리": "Geumgok-ri",
+   "길송리": "Gilsong-ri",
+   "대사리": "Daesa-ri",
+   "묵계리": "Mukgye-ri",
+   "송사리": "Songsa-ri",
+   "용계리": "Yonggye-ri",
+   "천지리": "Cheonji-ri",
+   "현하리": "Hyeonha-ri"
+  },
+  "village_n": "{n, plural, one {{n} village} other {{n} villages}}",
+  "vs": {
+   "after": "{y} onward · VIIRS values as is (no conversion)",
+   "assumed": "2001–2011 · MODIS-only conversion · overlap (2012–{y}) ratio applied as is",
+   "validated": "Overlap 2012–{y} · within leave-one-year-out validation"
+  },
+  "weather": {
+   "station": "Andong",
+   "wind": "NW 5.4 m/s"
+  },
+  "x": {
+   "base_n": "{n} baseline years",
+   "diff": "Difference {d}",
+   "miss_years": "{n} missing years excluded",
+   "modis_month": "Analysis month is a MODIS-only converted value",
+   "modis_years": "{k} of {n} baseline years are MODIS-only conversions (2001–2011)",
+   "modis_zero_sum": "MODIS total for the month is 0",
+   "no_month": "No analysis month",
+   "no_region": "No region",
+   "of_years": "{k} of {n} baseline years",
+   "partial": "Through day {d} · baseline median scaled by {d}/{n} for reference",
+   "support": "Supported period {a} – {b}",
+   "zero_cells": "MODIS 0 in {z} of {n} {u}"
+  },
+  "yoy": {
+   "active_days": {
+    "label": "Days with detections",
+    "unit": "days"
+   },
+   "daily_mean": {
+    "label": "Daily mean (harmonized)",
+    "unit": "VIIRS-equivalent hotspots / day"
+   },
+   "fire_records": {
+    "label": "Incident records (reference)",
+    "unit": "records"
+   },
+   "harmonized": {
+    "label": "Harmonized total",
+    "unit": "VIIRS-equivalent hotspots"
+   },
+   "label": "Year over year",
+   "modis_raw": {
+    "label": "MODIS raw detections",
+    "unit": "MODIS hotspots"
+   },
+   "na": "Not comparable",
+   "note": "Same dates one year earlier (Feb 29 → Feb 28). The current month runs to today · raw sensor values are not added",
+   "out_why": "A year earlier is outside the data period ({d}~)",
+   "peak_day": {
+    "label": "Peak day (harmonized)",
+    "unit": "VIIRS-equivalent hotspots / day"
+   },
+   "prev_na": "No year-over-year comparison · {why}",
+   "prev_zero": "Last year 0",
+   "viirs_raw": {
+    "label": "VIIRS raw detections",
+    "unit": "VIIRS hotspots"
+   },
+   "why": {
+    "missing": "Missing in the selected period",
+    "missing_prev": "Missing in last year''s period",
+    "viirs_pre": "VIIRS not yet operating",
+    "viirs_pre_prev": "VIIRS not operating last year"
+   }
+  },
+  "ytd": {
+   "ratio": "{r}× usual",
+   "similar": "Similar to usual",
+   "title": "Usual = median of same-period totals {a}–{b} ({y} excluded, years with missing months excluded, n={n})",
+   "title_partial": "Usual = median of same-period totals {a}–{b} ({y} excluded, years with missing months excluded, n={n}, through {md})"
+  }
+ }
+}

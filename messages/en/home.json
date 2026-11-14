@@ -1,0 +1,526 @@
+{
+ "home": {
+  "alert_row": {
+   "detections": "Detections ",
+   "max_frp": "Max FRP ",
+   "unread": "Unread"
+  },
+  "aoi": {
+   "all": "All areas",
+   "and_more": "{a} +{n}",
+   "approx_adm1": "Regions counted: {r}",
+   "approx_kor": "Districts counted: {r}",
+   "bbox": "Box area",
+   "default": "Northern Gyeongbuk",
+   "drawn": "Drawn area",
+   "group_adm1": "Regions",
+   "group_kor": "Districts",
+   "polygon": "Polygon area",
+   "radius": "Radius {r} km"
+  },
+  "apply_geom": {
+   "calendar_indicators_and_csv": " → calendar, indicators and CSV updated"
+  },
+  "at": {
+   "yday": "Yesterday {t}"
+  },
+  "cell_title": {
+   "comparison_only_joined_without": " · comparison only (joined without adjustment) · no ratio",
+   "days_partial_month_reference": " days · partial month, reference only",
+   "excl_target_year": " (excl. target year)",
+   "month_in_progress": "Month in progress · "
+  },
+  "close_pt": {
+   "aggregated_by_regions_within": "Aggregated by regions within radius",
+   "apply": "Apply",
+   "cancel": "Cancel",
+   "lat_n": "Lat °N",
+   "lon_e": "Lon °E",
+   "point_and_radius": "Point and radius",
+   "radius_km": "Radius km"
+  },
+  "cluster": {
+   "title": "{n} nearby fires · tap to select and zoom"
+  },
+  "cmp": {
+   "aria": "{n}-day total for the same window each year, this year highlighted"
+  },
+  "daily": {
+   "aria": "{ym} daily hotspots · dashed line is {p}",
+   "aria2": "{ym} daily detections · tap a bar to set the map period to that day",
+   "fires": "{n} incident records",
+   "prev": "last year {n}",
+   "pts": "{n} pts"
+  },
+  "days_n": "{n} d",
+  "detect_tag": {
+   "fire_record_class": "Fire record class"
+  },
+  "dom": "day {d}",
+  "dp": {
+   "day_aria": "{y}-{m}-{d}",
+   "weekdays": "Su,Mo,Tu,We,Th,Fr,Sa"
+  },
+  "empty_feed": {
+   "no_matching_alerts": "No matching alerts",
+   "no_new_detections": "No new detections"
+  },
+  "entry": {
+   "title": "{a} · {ym} analysis"
+  },
+  "export_it": {
+   "cannot_build_analysis_csv": "Cannot build analysis CSV",
+   "detection_calendar_2001_2026": "Detection calendar 2001–2026 · ",
+   "no_raw_detections_to": "No raw detections to download",
+   "widen_the_period_or": "Widen the period or change the area"
+  },
+  "f1": {
+   "1_findings": "1. Findings",
+   "2_comparison_terms": "2. Comparison terms",
+   "3_further_checks": "3. Further checks",
+   "4_sources": "4. Sources",
+   "5_year_over_year": "5. Year over year · map period",
+   "area": "Area      ",
+   "area_2": "   Area ",
+   "area_months": " · area-months ",
+   "baseline_n": "Baseline  n",
+   "bias": " · bias ",
+   "boundaries": "   - Boundaries ",
+   "by_sensor_not_summed": " (by sensor · not summed)",
+   "clipped_to_supported_range": " · clipped to supported range",
+   "compare": "Compare   ",
+   "complete_month": " · complete month",
+   "data": " · data ",
+   "day_scaled": " (day-scaled)",
+   "days": " days)",
+   "days_comparison_for_reference": " days) · comparison for reference",
+   "difference": "difference ",
+   "emberline_same_month_comparison": "Emberline · same-month comparison report",
+   "excluded": " excluded",
+   "fire_records_report_and": "[Fire records] Report and containment records · counted separately from satellite detections",
+   "formula": "   - Formula ",
+   "generated": "Generated ",
+   "last_year": " / last year ",
+   "last_year_0_no": "last year 0 (no ratio)",
+   "leave_one_year_out": ": leave-one-year-out MAE ",
+   "map_raw_points": " · map raw points ",
+   "median": ") · median ",
+   "median_2": "median ×",
+   "method": "   - Method ",
+   "metric": "Metric    ",
+   "missing": ", missing ",
+   "month": "Month     ",
+   "n_a": "n/a",
+   "no_ratio": "no ratio (",
+   "not_selected": "Not selected",
+   "not_summed": " (not summed)",
+   "outside_record_coverage": "- Outside record coverage · ",
+   "partial_month": " · partial month (",
+   "period": "   Period ",
+   "processing": " · processing ",
+   "product": "   - Product ",
+   "raw_modis": " · raw MODIS ",
+   "raw_modis_and_viirs": " · raw MODIS and VIIRS listed separately (not summed) · incident records counted only within coverage",
+   "raw_viirs": " · raw VIIRS ",
+   "reference_only": " · reference only",
+   "satellite_detection_counts_are": "Satellite detection counts are not fire counts or burned area.",
+   "screen_area": "          Screen area: ",
+   "slope": "     Slope ",
+   "state": "State     ",
+   "target_year": ", target year ",
+   "time": " · time ",
+   "unit": " · unit ",
+   "updated": " · updated ",
+   "validation": "   - Validation (",
+   "value_harmonized": "Value     harmonized ",
+   "view_sensor": "[View] Sensor ",
+   "x": "",
+   "year_block_bootstrap_95": " (year-block bootstrap 95% ",
+   "years_excluded": " years excluded",
+   "years_rank": " years, rank "
+  },
+  "fc": {
+   "pts_u": "",
+   "rank_hist": "{r} of {n} past fires",
+   "rank_of": "{r} of {n}",
+   "same": "Same area and window, {n} d"
+  },
+  "feed": {
+   "closed": " ({n} closed)",
+   "n": "Alerts {n}",
+   "n_v": "{n}",
+   "open_aria": "{t} · open in Alerts"
+  },
+  "in_aoi": {
+   "fires_in_period": "Fires in period ",
+   "incident_records_by_report": "Incident records by report and containment",
+   "outside_fire_record_coverage": "Outside fire record coverage",
+   "partial": " (partial)"
+  },
+  "in_range": {
+   "active_now_outside_period": "active now (outside period)"
+  },
+  "item": {
+   "analysis": "Analysis · ",
+   "analysis_csv": "Analysis CSV",
+   "calendar_png": "Calendar PNG",
+   "cannot_export": "Cannot export · ",
+   "current_map_view_with": "Current map view with legend",
+   "export_view": "Export view",
+   "findings_comparison_terms_checks": "Findings · comparison terms · checks · sources",
+   "map_period": " · map period ",
+   "map_png": "Map PNG",
+   "points_rows_by_sensor": " points · rows by sensor",
+   "raw_detections_csv": "Raw detections CSV",
+   "summary_report_txt": "Summary report (.txt)",
+   "value_state_reason_version": " · value, state, reason, version",
+   "written_with_insufficient_data": " · written with insufficient data",
+   "year_over_year": " · year over year"
+  },
+  "mean": {
+   "2001_2011_conversion": "2001–2011 conversion ",
+   "2011_2012_change": "2011→2012 change ",
+   "2011_2012_step": "2011→2012 step ",
+   "month": "/month",
+   "no_adjustment": "No adjustment",
+   "operating_since_2012": "Operating since 2012",
+   "pixel_1_km": "Pixel 1 km",
+   "sensor_change_modis_1": "Sensor change MODIS 1 km → VIIRS 375 m",
+   "unit_modis_hotspots_month": "Unit MODIS hotspots/month",
+   "unit_viirs_hotspots_month": "Unit VIIRS hotspots/month",
+   "validation_error_mae": "Validation error (MAE) "
+  },
+  "menu": {
+   "acsv": "Same {m}: {n} years + {k} {w} rows"
+  },
+  "offv": {
+   "go": "Go to area",
+   "text": "{a} is off the map"
+  },
+  "outv": {
+   "n": "{n} active",
+   "text": "Outside the period ({a}–{b}): {n}"
+  },
+  "over": {
+   "boundaries": "Boundaries",
+   "box": "Box",
+   "draw_a_box_on": "Draw a box on the map",
+   "draw_a_polygon_on": "Draw a polygon on the map",
+   "fires": "Fires",
+   "hotspots": "Hotspots",
+   "map_tools_layers_draw": "Map tools · layers · draw area",
+   "passes_24h": "Passes, 24 h ",
+   "passes_today": "Passes today ",
+   "point": "Point",
+   "polygon": "Polygon",
+   "response_units": "Response units",
+   "search_places": "Search places",
+   "set_area_by_point": "Set area by point and radius",
+   "set_by_latitude_longitude": "Set by latitude, longitude and radius",
+   "units": "Units"
+  },
+  "page": {
+   "title": "Overview"
+  },
+  "pass": {
+   "aria": "Satellite passes so far today {n}: {list}",
+   "n": "{n}",
+   "title": "{s} · pass {t}"
+  },
+  "path": {
+   "daily_harmonized_this_period": "Daily harmonized · this period total ",
+   "day_bins": "-day bins",
+   "day_total": "-day total",
+   "onward": " onward, ",
+   "same_period_last_year": " · same period last year total ",
+   "this_year": " · this year "
+  },
+  "pick_day": {
+   "fire_records": " · fire records "
+  },
+  "place": {
+   "picker": " picker"
+  },
+  "pt": {
+   "err_lat": "Latitude must be {a}–{b}",
+   "err_lon": "Longitude must be {a}–{b}",
+   "err_rad": "Radius must be 0.5–60 km"
+  },
+  "qa": {
+   "in_progress_reference": " (in progress, reference)",
+   "no_data_to_compare": "No data to compare"
+  },
+  "quick_ranges": {
+   "last_7_days": "Last 7 days",
+   "this_month": "This month"
+  },
+  "rank": {
+   "nth": "#{r}",
+   "of_years": "#{r} of {n} yrs"
+  },
+  "ratio": {
+   "diff": "Median 0, difference {d}",
+   "long": "{x} the same-month median {m}",
+   "long_part": "{x} the same-month median {m} ({d}-day scaled)",
+   "short": "{x} median"
+  },
+  "ratio_text": {
+   "insufficient_data": "Insufficient data"
+  },
+  "rcal": {
+   "hint_end": "Tap the end date",
+   "hint_start": "Tap the start date",
+   "title": "Pick on calendar"
+  },
+  "refresh_map": {
+   "raw_points": "Raw points "
+  },
+  "regs": {
+   "harmonized": "Harmonized",
+   "harmonized_viirs_equivalent": "Harmonized (VIIRS-equivalent)",
+   "harmonized_viirs_equivalent_unit": "Harmonized (VIIRS-equivalent) · unit: VIIRS-equivalent hotspots/month",
+   "mixed_sensor_raw_hotspots": "mixed-sensor raw hotspots/month · comparison only",
+   "modis_hotspots_month": "MODIS hotspots/month",
+   "modis_raw": {
+    "_": "MODIS raw",
+    "short": "MODIS"
+   },
+   "modis_raw_detections": "MODIS raw detections",
+   "modis_raw_detections_unit": "MODIS raw detections · unit: MODIS hotspots/month",
+   "unadjusted": "Unadjusted",
+   "unadjusted_for_comparison_raw": "Unadjusted (for comparison) — raw MODIS through 2011, raw VIIRS from 2012, joined without adjustment",
+   "unadjusted_raw_modis_and": "Unadjusted (raw MODIS and VIIRS joined)",
+   "viirs_equivalent_hotspots_month": "VIIRS-equivalent hotspots/month",
+   "viirs_hotspots_month": "VIIRS hotspots/month",
+   "viirs_raw": {
+    "_": "VIIRS raw",
+    "short": "VIIRS"
+   },
+   "viirs_raw_detections": "VIIRS raw detections",
+   "viirs_raw_detections_unit": "VIIRS raw detections · unit: VIIRS hotspots/month · not operating before 2012"
+  },
+  "render_aoibadge": {
+   "clear_area": "Clear area",
+   "harmonized": " · harmonized",
+   "harmonized_viirs_equivalent_unit": " · harmonized (VIIRS-equivalent) · unit VIIRS-equivalent hotspots/month"
+  },
+  "render_cal": {
+   "2_same_month_median": "2× same-month median or more",
+   "days": " days)",
+   "days_reference_only": " days · reference only",
+   "dots_use_the_2012": "Dots use the 2012–2025 same-month median (reference). Hover a cell for the ratio excluding the target year",
+   "high": "High",
+   "low": "Low",
+   "missing_tap_a_cell": "Missing (tap a cell for reason)",
+   "modis_0_cells_before": "MODIS 0 cells before 2012 · small fires may be missed, so no judgment",
+   "modis_0_undetermined": "MODIS 0 (undetermined)",
+   "modis_month": "MODIS/month",
+   "month_comparison_only": "/month · comparison only",
+   "month_in_progress": "Month in progress (",
+   "no_data": "No data",
+   "no_detections": " no detections",
+   "not_operating_before_2012": "Not operating (before 2012)",
+   "or_more": " or more",
+   "partial_month": " · partial month ",
+   "viirs_month": "VIIRS/month"
+  },
+  "render_fire_cmp": {
+   "changes_when_you_pick": "Changes when you pick a fire on the map or in Detections",
+   "highest_level_fire": "Highest-level fire",
+   "ledger_max": "Ledger max: ",
+   "max_frp": "Max FRP",
+   "no_active_fires": "No active fires",
+   "selected_fire": "Selected fire",
+   "viirs_raw_points": "VIIRS raw points",
+   "vs_past_fires": " · vs. past fires"
+  },
+  "render_month": {
+   "1_day_map_raw": " (1 day) · map raw points ",
+   "baseline": "Baseline ",
+   "comparison_view_harmonized": "Comparison view · harmonized ",
+   "in_progress": "In progress (",
+   "missing_month": "Missing month",
+   "no_fire_records_this": "no fire records this month",
+   "no_year_over_year": "No year-over-year in comparison view",
+   "outside_record_coverage": "Outside record coverage",
+   "same_month_last_year": "Same month last year, ",
+   "same_month_median_daily": "Same-month median daily mean ",
+   "seasonal_peak": "Seasonal peak ",
+   "set_the_period_to": "Set the period to this month and fit the map",
+   "show_on_map": "Show on map",
+   "within_coverage": "Within coverage, ",
+   "x": "",
+   "x_2": " +",
+   "x_3": "+",
+   "years": " years"
+  },
+  "render_qans": {
+   "reference": " · reference"
+  },
+  "render_range": {
+   "map_period": "Map period",
+   "map_period_2": "Map period ",
+   "open_picker": " · open picker",
+   "selected_period_beside_the": "Selected period beside the same dates a year earlier",
+   "year_over_year": "Year over year"
+  },
+  "render_yo_y": {
+   "by_sensor": "by sensor",
+   "daily_harmonized": "Daily · harmonized",
+   "daily_mean": "Daily mean ",
+   "day": "/day",
+   "days_last_year": " days) · last year ",
+   "days_last_year_2": " days · last year ",
+   "days_with_detections": "Days with detections ",
+   "fire_records": "Fire records",
+   "harmonized": "· harmonized",
+   "harmonized_total": "Harmonized total",
+   "last_year": " · last year ",
+   "outside_coverage": "Outside coverage",
+   "peak_day": "Peak day ",
+   "period": " · period ",
+   "raw_detections": "Raw detections ",
+   "same_dates_a_year": "Same dates a year earlier",
+   "same_period_last_year": "Same period last year",
+   "this_period": "This period",
+   "to_date": "to date"
+  },
+  "search": {
+   "k_adm1": "Region",
+   "k_kor": "District"
+  },
+  "season": {
+   "autumn": "Autumn fire watch (11.1–12.15)"
+  },
+  "set_aoi": {
+   "area": "Area · ",
+   "calendar_indicators_questions_and": "Calendar, indicators, questions and CSV updated"
+  },
+  "set_layer_k": {
+   "past_fire": "Past fire",
+   "river": "River"
+  },
+  "set_range": {
+   "1_day": " (1 day)",
+   "map_raw_points": "Map raw points ",
+   "period": "Period ",
+   "raw_detection_csv_updated": " · raw detection CSV updated"
+  },
+  "set_yo_y": {
+   "indicators": "Indicators ",
+   "indicators_daily_chart_and": " · indicators, daily chart and report updated",
+   "vs_same_month_in": " vs. same month in past years",
+   "year_over_year_off": "Year over year off",
+   "year_over_year_on": "Year over year on"
+  },
+  "sheet": {
+   "grip": "Detections height · now {stop} · tap or arrow keys to change",
+   "stop_full": "full",
+   "stop_half": "half",
+   "stop_peek": "collapsed"
+  },
+  "short_label": {
+   "area": "Area",
+   "area_period_download": "Area, period, download",
+   "by_date_same_window": "By date · same window each year · harmonized",
+   "calendar_summary": "Calendar summary",
+   "choose_area": "Choose area",
+   "choose_period": "Choose period",
+   "compare": "Compare",
+   "detection_calendar": "Detection calendar",
+   "detection_calendar_2": "Detection calendar ",
+   "detection_calendar_arrow_keys": "Detection calendar · arrow keys move by year and month, Enter opens daily view",
+   "detections": "Detections",
+   "download": "Download",
+   "end_date": "End date",
+   "enter_dates": "Enter dates",
+   "excl_target_year": "excl. target year",
+   "in_progress_reference_only": "In progress · reference only",
+   "last_update": "Last update",
+   "metric": "Metric",
+   "overview": "Overview",
+   "peak_month": "Peak month ",
+   "peak_year": "Peak year ",
+   "period": "Period",
+   "quick_pick": "Quick pick",
+   "reference_date": "Reference date",
+   "show_monthly_values_in": "Show monthly values in cells",
+   "situation_panel": "Situation panel",
+   "start_date": "Start date",
+   "values": "Values",
+   "vs_same_month_in": "vs. same month in past years",
+   "window_length": "Window length"
+  },
+  "show_flash": {
+   "close": "Close",
+   "open_in_alerts": "Open in Alerts",
+   "show_on_map": "Show on map"
+  },
+  "show_sugg": {
+   "no_results": "No results"
+  },
+  "svc": {
+   "aria": "Open {p}, {r} role"
+  },
+  "svc_val": {
+   "30_day_outlook": "30-day outlook",
+   "pending": "Pending",
+   "similar": "Similar",
+   "standby": "Standby",
+   "vs_normal": "vs. normal",
+   "x": "",
+   "x_2": "",
+   "x_3": "×",
+   "ytd_vs_normal": "YTD vs. normal"
+  },
+  "sync": {
+   "none": "none",
+   "open_calendar": " · open calendar",
+   "pick_a_date": "Pick a date"
+  },
+  "t": {
+   "daily_same_month_last": " daily (same month last year)"
+  },
+  "top": {
+   "role_screens": "Role screens"
+  },
+  "unit": {
+   "crew": "{n} crew"
+  },
+  "v": {
+   "annual_total": "Annual total",
+   "naive_join_comparison_only": "Naive join (comparison only)",
+   "top_annual_totals": "Top annual totals",
+   "viirs_start": "VIIRS start"
+  },
+  "val": {
+   "days_so_far_month": " days so far · month in progress",
+   "last_12_months": "Last 12 months",
+   "live_eq": "Live feed · VIIRS basis",
+   "missing": "Missing",
+   "viirs_eq": "VIIRS-eq."
+  },
+  "y": {
+   "excl_this_year": " (excl. this year)",
+   "harmonized": " · harmonized ",
+   "median": " / median ",
+   "outside_data_range_from": "Outside data range (from 2001-01-15)",
+   "same_window_median": "Same-window median "
+  },
+  "year": "{y}",
+  "ym_of": {
+   "next_month": "Next month",
+   "next_year": "Next year",
+   "previous_month": "Previous month",
+   "previous_year": "Previous year"
+  },
+  "yoy_delta": {
+   "last_year_0": "Last year 0",
+   "last_year_was_0": "Last year was 0, so no ratio",
+   "not_comparable": "Not comparable"
+  },
+  "yoy_prev": {
+   "last_year": "Last year "
+  }
+ }
+}

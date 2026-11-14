@@ -1,0 +1,280 @@
+{
+ "ops": {
+  "act": {
+   "ack_alert": "경보 확인"
+  },
+  "act_fire": {
+   "dispatch_request_from_regional": "광역 상황실 출동 요청",
+   "no_standby_units": "대기 자원 없음",
+   "recommended_units": "출동 자원 추천"
+  },
+  "act_responder": {
+   "alert_level": "위기경보 단계",
+   "cancel": "취소",
+   "channel": "방식",
+   "check_before_sending": "요청 전 확인",
+   "confirm_evacuation_notice": "대피 안내 요청 확인",
+   "emergency_sms_village_pa": "재난문자 · 마을 방송",
+   "local_government_emergency_desk": "관할 지자체 재난안전 담당",
+   "message": "요청 문안",
+   "recipient": "받는 곳",
+   "request": "안내 요청",
+   "request_dispatch": "출동 요청",
+   "request_evacuation_notice": "대피 안내 요청",
+   "review_the_satellite_detection": "위성 감지 내용 확인 후 접수",
+   "send_request": "안내 요청 보내기",
+   "set": "지정",
+   "set_alert_level": "위기경보 단계 지정",
+   "target": "대상",
+   "to_the_local_fire": "관할 소방서 현장지휘 수신함으로"
+  },
+  "age": {
+   "closed": "{at} 감지, {end}",
+   "closed_word": "종결",
+   "contained_at": "{t} 진화",
+   "elapsed": "{at}, {m}분 경과",
+   "elapsed_word": "경과"
+  },
+  "asg": {
+   "left": "약 {m}분"
+  },
+  "assigned": {
+   "no_units_assigned": "투입 자원 없음",
+   "no_units_assigned_all": "투입 자원 없음(모두 귀소)",
+   "no_units_assigned_before": "투입 자원 없음(소방 배치 전)"
+  },
+  "at": {
+   "yday": "어제 {t}"
+  },
+  "boot_once": {
+   "alert_details": "경보 상세",
+   "alert_inbox": "경보 수신함",
+   "alert_list": "경보 목록",
+   "alert_status": "경보 상태",
+   "collapse_inbox": "수신함 접기",
+   "collapsed_alert_inbox": "접힌 경보 수신함",
+   "details": "상세",
+   "dispatch_summary": "출동 요약",
+   "inbox": "수신함",
+   "more_below": "아래 더 보기",
+   "situation_map": "상황 지도",
+   "view": "보는 판"
+  },
+  "by": {
+   "avl": "차량 위치(AVL)"
+  },
+  "closed": {
+   "burned": ", 추정 소실 {ha}",
+   "contained": ", 진화 {t}"
+  },
+  "cmp": {
+   "open": "분석에서 열기",
+   "partial": "진행 중인 달",
+   "through": "{d}까지",
+   "years": "({n}개 연도)"
+  },
+  "contain": {
+   "q": "{f} 불을 진화 완료로 기록할까요?",
+   "result": "열린 경보 종결, 투입 자원 귀소, 피해 면적 산정 대기 등록",
+   "verb": "진화 완료"
+  },
+  "dur": {
+   "hm": "{h}시간 {m}분",
+   "m": "{m}분"
+  },
+  "ev": {
+   "first": "{t} 첫 감지"
+  },
+  "evac": {
+   "msg": "[광역 상황실] {f} 인근 산불. {v} 주민 대피 안내를 요청합니다.",
+   "msg_dir": "[광역 상황실] {f} 인근 산불, 예상 확산 방향 {d}. {v} 주민 대피 안내를 요청합니다.",
+   "sub": "반경 2 km 마을 {n}곳 {h}가구({v})"
+  },
+  "ff": {
+   "arrived_n": "현장 도착 {n}대",
+   "enroute": "이동 중"
+  },
+  "grp": {
+   "aria": "{t} {n}건"
+  },
+  "head": {
+   "alert_at": "경보 {t}",
+   "name": "경보·출동",
+   "scope": "경북 북부, 오늘"
+  },
+  "is_closed": {
+   "active": "진행 중",
+   "unhandled": "미처리"
+  },
+  "log": {
+   "ack": "경보 확인",
+   "arrived": "현장 도착 · {u} ({n}명)",
+   "contained": "진화 완료 · 잔불 감시 전환",
+   "dispatch_1": "출동 지시 · {u} · 최단 ETA {eta}분",
+   "dispatch_n": "출동 지시 · {u} 외 {n}대 · 최단 ETA {eta}분",
+   "evac": "대피 안내 요청 · {v} {h}가구",
+   "level": "위기경보 단계 지정 · {a} → {b}",
+   "n": "{n}건",
+   "onscene": "현장 도착 보고 · 현장지휘 개시",
+   "req": "출동 요청 · 관할 소방서"
+  },
+  "lv": {
+   "set_at": "{t} 지정"
+  },
+  "m3": {
+   "baseline_median": "기준 중앙값",
+   "day_scaled_median": "일수 환산 중앙값",
+   "diff_from_median": "중앙값과 차이",
+   "harmonized_index": "보정 지표",
+   "regional_comparison": "지역 비교",
+   "same_month_vs_past": "같은 달 과거 대비",
+   "viirs_equivalent_hotspots": "VIIRS 기준 핫스팟",
+   "vs_median": "중앙값 대비",
+   "within_same_month_range": "같은 달 분포 안 위치"
+  },
+  "off": {
+   "aria": "지도 {side} 밖 {what} · 눌러 전체 보기",
+   "chip": "화면 밖 {what}",
+   "k": {
+    "dispatched": "출동",
+    "fire": "불",
+    "return": "귀소",
+    "standby": "대기"
+   },
+   "say_fire": "불 {n}건",
+   "say_unit": "{k} 자원 {n}대"
+  },
+  "out": {
+   "to_kor": "대한민국으로",
+   "word": "관할 밖"
+  },
+  "page": {
+   "title": "경보·출동 관제"
+  },
+  "pick": {
+   "sum": "{n}대 {c}명, 최단 {eta}분"
+  },
+  "pick_foot": {
+   "dispatch": "출동 지시",
+   "no_units_selected": "고른 자원 없음"
+  },
+  "region_card": {
+   "x": "배"
+  },
+  "render_detail": {
+   "activity_log": "처리 이력",
+   "by_distance_est_eta": "거리순(ETA 추정)",
+   "closed_alert": "종결된 경보",
+   "detection_evidence": "감지 근거",
+   "dispatch_and_scene": "출동·현장",
+   "nearest_standby_units": "가까운 대기 자원",
+   "no_alert_selected": "고른 경보 없음",
+   "none": " 경보 없음",
+   "pixel_size_viirs_375": "화소 크기 VIIRS 375 m 대 MODIS 1 km",
+   "response_actions": "대응 조치",
+   "satellite_first_not_yet": "위성 선감지, 상황실 확인 전",
+   "sent_to_land_management": "피해 면적 산정을 위해 토지 관리로 전달됨",
+   "time_since_detection": "감지 뒤 경과"
+  },
+  "render_rail": {
+   "expand_alert_inbox": "경보 수신함 펼치기"
+  },
+  "res": {
+   "dist": "{km} km, {n}명",
+   "less": "가까운 {n}대만",
+   "more": "나머지 {n}대 보기",
+   "pick": "{u} 선택",
+   "rec_sub": "대기 {n}대, 거리순(ETA는 도로 보정 추정)"
+  },
+  "row": {
+   "assigned_units": "투입 자원",
+   "detections": "관측 점 ",
+   "none": "없음",
+   "units": "투입 ",
+   "unread": "읽지 않음",
+   "x": "대"
+  },
+  "sel_alert": {
+   "evacuation_villages": "대피 대상 마을",
+   "hotspots": "핫스팟",
+   "on_scene": "현장",
+   "routes": "경로",
+   "spread_1_2_3": "확산 예측 1·2·3h",
+   "spread_forecast": "확산 예측",
+   "today_last_3_days": "오늘, 지난 3일",
+   "units": "자원",
+   "wind": "바람"
+  },
+  "sen": {
+   "cluster_movement": "핫스팟 군집 이동",
+   "confidence": "신뢰도",
+   "excluded": "제외",
+   "intense_burning": "강한 연소",
+   "matched": "일치",
+   "matches_emergency_call_location": "119 신고와 위치 일치",
+   "max_frp": "열 세기(FRP) 최대",
+   "moderate": "보통",
+   "no_data": "정보 없음",
+   "none": "미접수",
+   "offshore": " · 해상 ",
+   "report": "신고",
+   "satellite_first": "위성 선감지",
+   "spread_direction": "확산 방향",
+   "static_sources": "고정 열원 "
+  },
+  "sheet": {
+   "grip": "경보 목록 높이 · 지금 {stop} · 눌러 바꾸기, 위아래 화살표",
+   "stop_full": "전체",
+   "stop_half": "절반",
+   "stop_peek": "접힘"
+  },
+  "step": {
+   "ack": "확인"
+  },
+  "stepper": {
+   "response_stage": "처리 단계"
+  },
+  "swath": {
+   "inside": "관측폭 안, {s}",
+   "next": " 통과 예정({d} 후)"
+  },
+  "sync": {
+   "bottom": "아래쪽",
+   "left": "왼쪽",
+   "right": "오른쪽",
+   "top": "위쪽"
+  },
+  "tab": {
+   "closed": "종결"
+  },
+  "tab_of": {
+   "acknowledge": "확인",
+   "new": "신규",
+   "on_scene": "현장 도착"
+  },
+  "toast": {
+   "contained_sub": "피해 면적 산정 대기열로 넘김, 자원 귀소",
+   "dispatch": "출동 지시 {n}대",
+   "dispatch_sub": "지도에 출동 경로 표시",
+   "evac": "대피 안내 요청 전달",
+   "evac_sub": "마을 {n}곳 {h}가구, 관할 지자체로",
+   "level": "위기경보 {lv} 지정",
+   "no_alert": "이 불로 온 경보 없음({st})",
+   "req": "출동 요청 전달",
+   "req_sub": "관할 소방서 현장지휘 수신함"
+  },
+  "unit": {
+   "crew": "{n}명",
+   "min": "분",
+   "pts": "개"
+  },
+  "vil": {
+   "homes": "{v} {n}가구",
+   "homes_n": "{n}가구",
+   "sum": "마을 {n}곳 {h}가구"
+  },
+  "wind": {
+   "station": "{s} 관측"
+  }
+ }
+}

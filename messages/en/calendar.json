@@ -1,0 +1,89 @@
+{
+ "calendar": {
+  "act": {
+   "close": "Close",
+   "next_month": "Next month",
+   "next_year": "Next year",
+   "pick": "Choose region",
+   "prev_month": "Previous month",
+   "prev_year": "Previous year",
+   "to_analysis": "Open in comparison"
+  },
+  "flag": {
+   "interval_out": "Outside interval · interval dropped"
+  },
+  "k": {
+   "interval": "Interval",
+   "n": "Baseline years",
+   "n_v": "{n} yrs · {a}–{b}",
+   "pct": "Percentile",
+   "ratio": "vs median",
+   "ratio_v": "{r}×",
+   "source": "Value source",
+   "status": "Status",
+   "verdict": "Verdict"
+  },
+  "lv": {
+   "country": "Country",
+   "group": "Group",
+   "kr_sgg": "District",
+   "kr_sido": "Province",
+   "world": "World"
+  },
+  "mode": {
+   "cal": "Regional calendar",
+   "world": "Global playback"
+  },
+  "pick": {
+   "countries": "Countries",
+   "kr": "South Korea · provinces",
+   "none": "No matching region",
+   "search": "Search regions",
+   "sgg": "{p} · districts",
+   "show_sgg": "Show districts of {p}",
+   "world": "World"
+  },
+  "st": {
+   "before_sensor": "Not yet operating"
+  },
+  "ui": {
+   "bands": "Value-source periods",
+   "base": "Baseline years",
+   "cells_n": "{n} cells",
+   "deg": "{d}°",
+   "eval": "Selected year",
+   "grid": "Year × month calendar",
+   "high": "More",
+   "low": "Less",
+   "map": "Cell map",
+   "median": "Median",
+   "mode": "Mode",
+   "months_grid": "{y} by month",
+   "months_u": "mo",
+   "no_cells": "No cells this month",
+   "overview": "All years",
+   "p95": "p95 {n}",
+   "region": "Region",
+   "same": "Same month by year",
+   "sel": "Selected month",
+   "title": "Calendar",
+   "view": "View",
+   "world_value": "World regional value",
+   "year": "Year",
+   "zero": "0"
+  },
+  "w": {
+   "cells": "1° cells with detections",
+   "latband": "5° latitude bands × month",
+   "legend": "1° cell · monthly detections · log scale",
+   "month": "Month",
+   "pause": "Stop",
+   "play": "Play",
+   "speed": "Playback speed",
+   "to_country": "Open this country''s calendar",
+   "total": "Sum of 0.1° cells",
+   "verdict": "Vs usual",
+   "whole": "Whole world"
+  }
+ }
+}

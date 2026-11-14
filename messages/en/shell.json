@@ -1,0 +1,439 @@
+{
+ "shell": {
+  "act": {
+   "cancel": "Cancel",
+   "close": "Close",
+   "copied": "Copied",
+   "copy": "Copy",
+   "open": "Open"
+  },
+  "anom": {
+   "lv1": "Below usual",
+   "lv2": "Usual",
+   "lv3": "High",
+   "lv4": "Very high",
+   "title": "This month''s harmonized detections ÷ same-month historical median (partial month scaled by elapsed days)"
+  },
+  "app": {
+   "title": "Emberline Wildfire Ops"
+  },
+  "bell": {
+   "all_read": "Mark all read",
+   "aria": "{n, plural, one {{n} unread notification} other {{n} unread notifications}}",
+   "aria_sev": "{n} unread notifications, including severe",
+   "forwarded": "Sent to the Alerts & Dispatch inbox",
+   "none": "No notifications.",
+   "title": "Notifications"
+  },
+  "by": {
+   "satellite": "Satellite detection",
+   "system": "System"
+  },
+  "chart": {
+   "anom_at": "{n}× usual or more",
+   "bars": "Bar chart",
+   "base_year": "Baseline year",
+   "cal": "Detection activity calendar",
+   "cal_kb": "arrow keys move between cells, Enter opens the month",
+   "daily": "Daily hotspots, {ym}",
+   "daily_median": "Usual daily mean {n}",
+   "dist": "Same month by year",
+   "eval_excl": "Evaluation year (excluded from baseline)",
+   "eval_year": "Evaluation year",
+   "excl_base": "excluded from baseline",
+   "excl_eval": "evaluation year excluded,",
+   "fires": "{n} ledger fires",
+   "hold": "uncertain (MODIS 0, small fires may be missed)",
+   "less": "Fewer",
+   "lg_future": "Before operation · future",
+   "lg_hold": "Uncertain (MODIS 0)",
+   "lg_missing": "Missing (with reason)",
+   "lg_partial": "Month in progress",
+   "lg_zero": "0 detections",
+   "line": "Line chart",
+   "median": "Median {n}",
+   "missing": "Missing",
+   "missing_cell": "Missing (no value, not 0)",
+   "more": "More · {n}+/month",
+   "n": "{n}",
+   "not_operating": "Sensor not operating (no detections)",
+   "out_base": "outside the same-month baseline",
+   "partial": " (partial month, {f} of the month)",
+   "partial_word": "partial month",
+   "scale_note": "Partial-month comparison · past bars scaled ×{k} (share of days)",
+   "scaled": "full month {a} → scaled by days to {b}",
+   "scatter": "Scatter plot",
+   "selected": "analysis month",
+   "viirs_start": "VIIRS from 2012",
+   "vs_usual": "{r}× usual",
+   "year_total": "{y} total {n}",
+   "zero": "0 detections (not missing)"
+  },
+  "conf": {
+   "high": "High",
+   "label": "Confidence",
+   "low": "Low",
+   "nominal": "Nominal"
+  },
+  "cont": {
+   "AF": "Africa",
+   "AM": "Americas",
+   "AS": "Asia",
+   "EU": "Europe",
+   "OC": "Oceania"
+  },
+  "count": {
+   "busy": "Deployed",
+   "busy_units": {
+    "_": "Units deployed",
+    "short": "Deployed"
+   },
+   "live": {
+    "_": "Active fires",
+    "short": "Active"
+   },
+   "new": "Open",
+   "new_alert": {
+    "_": "Open alerts",
+    "short": "Open"
+   },
+   "queue": "To assess",
+   "ready": "Standby",
+   "work": "In progress"
+  },
+  "country": {
+   "aria": "Country · {name}",
+   "label": "Country",
+   "none": "No matching country",
+   "recent": "Recent",
+   "search": "Country name or ISO code",
+   "title": "Choose country"
+  },
+  "counts": {
+   "aria": "Status counts"
+  },
+  "det": {
+   "area": "Detected pixel area",
+   "clusters": {
+    "_": "Detection clusters, 24 h",
+    "short": "Clusters"
+   },
+   "col": {
+    "area": "Pixel area (ha)",
+    "frp": "Max FRP (MW)",
+    "high": "High conf.",
+    "last": "Last seen",
+    "n": "Detections",
+    "place": "Region",
+    "sensors": "VIIRS / MODIS"
+   },
+   "feed_n": "{n, plural, one {{n} cluster} other {{n} clusters}}",
+   "high": {
+    "_": "High confidence",
+    "short": "High conf."
+   },
+   "none": "No detections in the last 24 hours",
+   "points": {
+    "_": "Detections, 24 h",
+    "short": "Detections"
+   },
+   "regions": "Regions",
+   "row": "Unconfirmed detection",
+   "title": "Unconfirmed detections"
+  },
+  "dl": {
+   "copied": "Copied to clipboard",
+   "rows": "{n, plural, one {{n} row} other {{n} rows}}",
+   "saved": "Saved {name}"
+  },
+  "dsrc": {
+   "nrt": "NRT",
+   "sp": "Standard"
+  },
+  "dur": {
+   "h": "{h} h",
+   "hm": "{h} h {m} min",
+   "later": "in {d}",
+   "m": "{n} min"
+  },
+  "eras": {
+   "label": "Satellite eras",
+   "start": "observing since {d}"
+  },
+  "err": {
+   "data_not_loaded": "Data loading",
+   "network": "Offline",
+   "render": "This screen could not be drawn",
+   "request": "Request failed"
+  },
+  "ev": {
+   "sat_gap": "{s} gap {a} – {b}",
+   "sat_gap1": "{s} gap {a}",
+   "vs_from": "{vs} from {at}"
+  },
+  "fresh": {
+   "aria": "{l} · {d} since last pass",
+   "label": "Data freshness"
+  },
+  "lang": {
+   "aria": "Language",
+   "label": "Language"
+  },
+  "level": {
+   "1": "Watch",
+   "2": "Advisory",
+   "3": "Warning",
+   "4": "Severe"
+  },
+  "lim": {
+   "cell_sum_ne_aoi": "Summed 0.1° cells differ from the regional value · regional value is aoi_month",
+   "group_sum_rule": "North Gyeongbuk = sum of 11 counties · verdict computed with the same rule (80/20 · n≥10 · baseline 2001–2025)",
+   "hotspots_not_fire_counts": "Satellite fire detections are observed activity, not fire counts · not burned area either",
+   "korea_small_sample": "Small Korean sample · wide uncertainty in validation figures",
+   "n20_bridge_from_2026_11_03": "From 2026-11-03, NOAA-20 (N20) values × bridge ratio (n20_bridge)",
+   "no_day_status": "No daily satellite status in this release · gap days not shown",
+   "nrt_may_change": "NRT values may change with standard processing",
+   "pre2012_is_model_estimate": "Values through 2012-01 are MODIS→VIIRS model (M2V Harmonizer) estimates · value_lo–value_hi comes from a separate quantile model",
+   "reference_is_snpp": "Reference satellite S-NPP (N) · other satellites converted to the S-NPP scale"
+  },
+  "list": {
+   "total": "{n} {u} total"
+  },
+  "locked": {
+   "login": "Sign in as {role}",
+   "title": "{page} is for the {roles} role"
+  },
+  "login": {
+   "_": "Sign in",
+   "done": "Signed in as {role}",
+   "id": "User ID"
+  },
+  "logout": "Sign out",
+  "map": {
+   "attr_gl": "Boundaries Natural Earth · NASA FIRMS|Natural Earth · NASA FIRMS|© Natural Earth",
+   "attr_kr": "Terrain Copernicus GLO-30 · Boundaries © OSM|Copernicus GLO-30 · © OSM|© Copernicus · OSM|© Copernicus·OSM",
+   "attr_kr_full": "Terrain © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA (Mapterhorn) · Boundaries, rivers, roads © OpenStreetMap contributors",
+   "crew": "{n} crew",
+   "detected_at": "Detected {t}",
+   "draw_box": "Drag to draw a rectangle · Esc cancels",
+   "draw_poly": "Tap to place vertices; tap the first point or double-tap to finish · Esc cancels",
+   "fit": "Fit to area",
+   "hs_conf": "Confidence {c}, {d}",
+   "hs_px": "{px} pixel, FRP {frp} MW",
+   "hs_title": "{s} hotspot",
+   "layers": "Layers",
+   "tools": "Map tools",
+   "units_cl": "{n} units ({s}), zoom in to separate",
+   "units_n": "{n} units",
+   "zoom_in": "Zoom in",
+   "zoom_out": "Zoom out"
+  },
+  "model": {
+   "baseline_loglinear": "Baseline · log-linear",
+   "baseline_ratio": "Baseline · region-month ratio",
+   "lgbm": "LightGBM",
+   "m2_noaa20": "NOAA-20 → S-NPP ratio",
+   "noaa21_check": "NOAA-21 check",
+   "raw_modis": "No correction (raw MODIS)"
+  },
+  "nav": {
+   "analysis": {
+    "label": "Comparison",
+    "short": "Compare"
+   },
+   "cmd": {
+    "label": "Command Stats",
+    "short": "Stats"
+   },
+   "home": {
+    "label": "Overview",
+    "short": "Overview"
+   },
+   "lab": {
+    "label": "Forecast",
+    "short": "Forecast"
+   },
+   "land": {
+    "label": "Burned Area",
+    "short": "Burned"
+   },
+   "ops": {
+    "label": "Alerts & Dispatch",
+    "short": "Alerts"
+   }
+  },
+  "page": {
+   "analysis": "Comparison",
+   "cmd": "Command Stats",
+   "home": "Overview",
+   "lab": "Forecast",
+   "land": "Burned Area",
+   "ops": "Alerts & Dispatch"
+  },
+  "pass": {
+   "approx": "about {h}:00",
+   "next_a": "Next",
+   "next_b": "pass",
+   "next_sat": "Next pass",
+   "now": "Now {t}",
+   "title": "{sat} pass at {t}",
+   "word": "pass"
+  },
+  "person": {
+   "aria": "Sign in · language · time",
+   "title": "Settings"
+  },
+  "risk": {
+   "1": "Low",
+   "2": "Moderate",
+   "3": "High",
+   "4": "Very high"
+  },
+  "role": {
+   "commander": {
+    "desc": "Command Stats — monthly detections and time-of-day patterns against last year",
+    "label": "Commander",
+    "short": "Commander"
+   },
+   "firefighter": {
+    "desc": "Alerts & Dispatch — assign standby engines and crews and update on-scene status",
+    "label": "Fire incident command",
+    "short": "Incident"
+   },
+   "land": {
+    "desc": "Burned Area — review burned area and parcels, set field checks and recovery order",
+    "label": "Land management",
+    "short": "Land"
+   },
+   "responder": {
+    "desc": "Alerts & Dispatch — review satellite alerts, set the level and request dispatch",
+    "label": "Early warning & response",
+    "short": "Response"
+   },
+   "scientist": {
+    "desc": "Forecast — 30-day outlook and hindcast error",
+    "label": "Scientist",
+    "short": "Scientist"
+   }
+  },
+  "st": {
+   "low_sample": "Low sample",
+   "missing": "Missing",
+   "missing_days_n": "{n} missing days",
+   "nrt": "NRT",
+   "ok": "OK",
+   "out_of_range": "Out of range",
+   "partial": "In progress",
+   "partial_d": "In progress · {n} d"
+  },
+  "st_t": {
+   "low_sample": "Too few past records · verdict withheld",
+   "missing": "Too little satellite data (not zero)",
+   "nrt": "Near-real-time product · may change in standard processing",
+   "ok": "Normal",
+   "out_of_range": "Outside the data range",
+   "partial": "Month in progress"
+  },
+  "status": {
+   "ack": "Acknowledged",
+   "contained": "Contained",
+   "dispatched": "Dispatched",
+   "new": "New",
+   "onscene": "On scene",
+   "out": "Mop-up done",
+   "resolved": "Closed"
+  },
+  "top": {
+   "anom": {
+    "_": "This month",
+    "short": "Month"
+   },
+   "live": "Live",
+   "live_title": "Satellite feed live",
+   "nav": "Screens",
+   "next": "Next pass",
+   "rh": "RH",
+   "risk": {
+    "_": "Fire danger index",
+    "short": "Danger"
+   },
+   "sit": "Situation"
+  },
+  "ui": {
+   "list": "List",
+   "period": "Period",
+   "period_next": "Next period",
+   "period_prev": "Previous period",
+   "sheet_grip": "Resize list",
+   "stages": "Progress",
+   "view": "View"
+  },
+  "unit": {
+   "c": "{n}℃",
+   "case": "items",
+   "ha": "{n} ha",
+   "hour_s": "h",
+   "k": "{n} K",
+   "km": "{n} km",
+   "km2": "{n} km²",
+   "min_s": "min",
+   "modis_raw": "MODIS raw detections",
+   "ms": "{n} m/s",
+   "mw": "{n} MW",
+   "pct": "{n}%",
+   "ratio": "{n}×",
+   "snpp_equiv": "Fire detections, VIIRS (S-NPP) basis",
+   "viirs_raw": "VIIRS raw detections"
+  },
+  "unit_status": {
+   "enroute": "En route",
+   "onscene": "On scene",
+   "return": "Returning",
+   "standby": "Standby"
+  },
+  "unit_type": {
+   "command": "Command vehicle",
+   "crew": "Hand crew",
+   "engine": "Engine",
+   "heli": "Helicopter",
+   "tanker": "Water tender"
+  },
+  "verdict": {
+   "above": "Above usual",
+   "below": "Below usual",
+   "similar": "Near usual",
+   "uncertain": "Withheld"
+  },
+  "view": {
+   "raw_modis": "Raw MODIS",
+   "raw_viirs": "Raw VIIRS",
+   "value": "Detections"
+  },
+  "vmetric": {
+   "bias_ratio": "Bias (predicted ÷ observed)",
+   "mae_month_total": "Mean abs. error, monthly total",
+   "rank_corr_month": "Monthly rank correlation",
+   "ratio": "Ratio",
+   "ratio_dev_from_1": "Deviation from 1"
+  },
+  "vsrc": {
+   "modis_m2v": "Estimate · MODIS→VIIRS",
+   "modis_m2v_terra": "Estimate · MODIS Terra",
+   "n20_bridge": "Observed · NOAA-20 converted",
+   "n21_bridge": "Substitute · NOAA-21",
+   "raw": "Raw",
+   "snpp_observed": "Observed · S-NPP"
+  },
+  "who": {
+   "aria": "Account · {role}",
+   "clock": "Clock",
+   "clock_local": "Local",
+   "role": "Role",
+   "switch": "Switch role",
+   "time": "Time",
+   "title": "Account",
+   "wx": "Weather",
+   "wx_v": "{st} {t}℃, RH {rh}%, {wind}"
+  }
+ }
+}

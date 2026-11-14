@@ -1,0 +1,175 @@
+{
+ "land": {
+  "at": {
+   "burn_extent": "소실 범위",
+   "district_names": "시군 이름·강조",
+   "hotspots": "핫스팟"
+  },
+  "detail": {
+   "view_parcels": "필지 {n}개 보기"
+  },
+  "export_parcels": {
+   "burned_area_ha": "소실 면적(ha)",
+   "damage": "피해 정도",
+   "estimate": "추정치",
+   "fire_id": "불 ID",
+   "method": "산정 방법",
+   "satellite_burn_extent_x": "위성 소실 범위 × 필지 중첩 · 면적 추정"
+  },
+  "g": {
+   "confirm_recovery_plan": "복구 계획 확정",
+   "farmland": "농경지",
+   "field_check": "현장 확인",
+   "forest": "산림",
+   "grassland": "초지",
+   "in_recovery": "복구 중",
+   "low": "경미",
+   "moderate": "중간",
+   "national_forest": "국유림",
+   "past_fires": "과거 산불",
+   "pending": "산정 대기",
+   "private_forest": "사유림",
+   "public_forest": "공유림",
+   "recovery_plan": "복구 계획",
+   "request_field_check": "현장 확인 요청",
+   "severe": "심함",
+   "start_recovery": "복구 착수",
+   "urban": "시가지"
+  },
+  "head": {
+   "name": "피해 면적",
+   "scope": "경북 북부, 진화 끝난 불"
+  },
+  "hero": {
+   "pitches": "축구장 {n}개 넓이"
+  },
+  "jimok": {
+   "field": "전",
+   "forest": "임야",
+   "paddy": "답",
+   "site": "대"
+  },
+  "list": {
+   "none": "{stage} 없음"
+  },
+  "log": {
+   "moved": "{stage} 단계로 넘김",
+   "prio": "{addr} 복구 {n}순위로 지정",
+   "queued": "진화가 끝나 산정 대기에 등록",
+   "queued_no_time": "산정 대기에 등록(진화 시각 기록 없음)",
+   "req": "현장 확인 요청 {n}필지 {ha}(1순위 {p1})",
+   "req_more": "현장 확인 추가 요청 {n}필지",
+   "req_short": "현장 확인 요청 {n}필지",
+   "role": "토지 관리",
+   "system": "시스템"
+  },
+  "lot": {
+   "mtn": "산"
+  },
+  "out": {
+   "to_kor": "대한민국으로",
+   "word": "관할 밖"
+  },
+  "owner": {
+   "national": "국유",
+   "private": "사유",
+   "public": "공유"
+  },
+  "parcels": {
+   "big_n": "면적 큰 필지 {n}곳",
+   "big_sum": "전체 약 {total}필지 가운데 합 {sum}(전체의 {pct})",
+   "n": "필지 {n}곳",
+   "pick_all_short": "전체 고르기",
+   "pick_one": "{addr} 고르기",
+   "picked": "{n}필지 고름"
+  },
+  "pick_place": {
+   "assessment_list": "산정 목록",
+   "back": "돌아가기",
+   "selected_fire_details": "선택한 불 상세"
+  },
+  "place": {
+   "area": "{r} 일원",
+   "길안면 금곡리": "길안면 금곡리",
+   "길안면 묵계리": "길안면 묵계리",
+   "남후면 고하리": "남후면 고하리",
+   "단촌면 구계리": "단촌면 구계리",
+   "석보면 삼의리": "석보면 삼의리",
+   "영덕읍 화수리": "영덕읍 화수리",
+   "옥산면 신계리": "옥산면 신계리",
+   "용궁면 무이리": "용궁면 무이리",
+   "용궁면 향석리": "용궁면 향석리",
+   "일월면 도곡리": "일월면 도곡리",
+   "임하면 고곡리": "임하면 고곡리",
+   "점곡면 사촌리": "점곡면 사촌리",
+   "점곡면 윤암리": "점곡면 윤암리",
+   "지품면 삼화리": "지품면 삼화리",
+   "지품면 오천리": "지품면 오천리",
+   "진보면 부곡리": "진보면 부곡리",
+   "파천면 신기리": "파천면 신기리",
+   "파천면 중평리": "파천면 중평리",
+   "풍천면 갈전리": "풍천면 갈전리",
+   "풍천면 산불": "풍천면 산불",
+   "풍천면 어담리": "풍천면 어담리",
+   "풍천면 인금리": "풍천면 인금리"
+  },
+  "png": {
+   "title": "소실 범위(추정)",
+   "title_fire": "{name} 소실 범위 {ha}(추정)"
+  },
+  "prio": {
+   "n": "{n}순위"
+  },
+  "render_detail": {
+   "no_fire_selected": "고른 불 없음"
+  },
+  "render_list": {
+   "burned": "소실 면적",
+   "new": "새로 들어옴"
+  },
+  "render_pane": {
+   "details": "상세",
+   "list": "목록"
+  },
+  "render_parcels": {
+   "damage": "피해",
+   "field_check_requested": "현장 확인 요청됨",
+   "land_use": "지목",
+   "lot": "지번",
+   "no_parcels": "필지 없음",
+   "owner": "소유",
+   "priority": "우선순위",
+   "recovery": "복구 ",
+   "recovery_priority": "복구 우선순위",
+   "select_all_parcels": "필지 전체 고르기"
+  },
+  "req": {
+   "none": "고른 필지 없음",
+   "none_sub": "필지 표 왼쪽 칸에서 선택",
+   "sent": "현장 확인 요청 보냄",
+   "sent_sub": "{name} {n}필지 {ha}"
+  },
+  "stage_at": {
+   "activity_log": "처리 이력",
+   "area_by_district": "시군별 면적",
+   "area_by_land_cover": "토지 피복별 면적",
+   "burned_area_by_district": "시군별 소실 면적",
+   "burned_area_by_land": "토지 피복별 소실 면적",
+   "burned_area_by_ownership": "소유 구분별 소실 면적",
+   "cause": "원인",
+   "contained": "진화",
+   "detected": "감지",
+   "no_record": "기록 없음",
+   "ownership": "소유 구분",
+   "reconstructed": "과거 재구성",
+   "recovery_stage": "복구 단계"
+  },
+  "sync_key": {
+   "contained_fire": "진화 끝난 불",
+   "hotspot_detections": "핫스팟 감지 위치",
+   "other_burn_extents": "다른 불 소실 범위",
+   "selected_burn_extent_est": "고른 불 소실 범위(추정)",
+   "viirs_pixel_375_m": "VIIRS 화소 375 m"
+  }
+ }
+}

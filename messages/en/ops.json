@@ -1,0 +1,280 @@
+{
+ "ops": {
+  "act": {
+   "ack_alert": "Acknowledge alert"
+  },
+  "act_fire": {
+   "dispatch_request_from_regional": "Dispatch request from regional ops center",
+   "no_standby_units": "No standby units",
+   "recommended_units": "Recommended units"
+  },
+  "act_responder": {
+   "alert_level": "Alert level",
+   "cancel": "Cancel",
+   "channel": "Channel",
+   "check_before_sending": "Check before sending",
+   "confirm_evacuation_notice": "Confirm evacuation notice",
+   "emergency_sms_village_pa": "Emergency SMS · village PA",
+   "local_government_emergency_desk": "Local government emergency desk",
+   "message": "Message",
+   "recipient": "Recipient",
+   "request": "Request",
+   "request_dispatch": "Request dispatch",
+   "request_evacuation_notice": "Request evacuation notice",
+   "review_the_satellite_detection": "Review the satellite detection and accept",
+   "send_request": "Send request",
+   "set": "Set",
+   "set_alert_level": "Set alert level",
+   "target": "Target",
+   "to_the_local_fire": "To the local fire command inbox"
+  },
+  "age": {
+   "closed": "Detected {at}, {end}",
+   "closed_word": "closed",
+   "contained_at": "contained {t}",
+   "elapsed": "{at}, {m} min ago",
+   "elapsed_word": "elapsed"
+  },
+  "asg": {
+   "left": "~{m} min"
+  },
+  "assigned": {
+   "no_units_assigned": "No units assigned",
+   "no_units_assigned_all": "No units assigned (all returned)",
+   "no_units_assigned_before": "No units assigned (before fire dispatch)"
+  },
+  "at": {
+   "yday": "Yesterday {t}"
+  },
+  "boot_once": {
+   "alert_details": "Alert details",
+   "alert_inbox": "Alert inbox",
+   "alert_list": "Alert list",
+   "alert_status": "Alert status",
+   "collapse_inbox": "Collapse inbox",
+   "collapsed_alert_inbox": "Collapsed alert inbox",
+   "details": "Details",
+   "dispatch_summary": "Dispatch summary",
+   "inbox": "Inbox",
+   "more_below": "More below",
+   "situation_map": "Situation map",
+   "view": "View"
+  },
+  "by": {
+   "avl": "Vehicle location (AVL)"
+  },
+  "closed": {
+   "burned": ", est. burned {ha}",
+   "contained": ", contained {t}"
+  },
+  "cmp": {
+   "open": "Open in Comparison",
+   "partial": "Month in progress",
+   "through": "through {d}",
+   "years": " ({n} yrs)"
+  },
+  "contain": {
+   "q": "Mark the {f} fire as contained?",
+   "result": "Open alerts close, units return, burned area assessment queued",
+   "verb": "Contained"
+  },
+  "dur": {
+   "hm": "{h} h {m} min",
+   "m": "{m} min"
+  },
+  "ev": {
+   "first": "First detected {t}"
+  },
+  "evac": {
+   "msg": "[Regional ops center] Wildfire near {f}. Please issue evacuation notices to residents of {v}.",
+   "msg_dir": "[Regional ops center] Wildfire near {f}, expected spread {d}. Please issue evacuation notices to residents of {v}.",
+   "sub": "{n} villages within 2 km, {h} households ({v})"
+  },
+  "ff": {
+   "arrived_n": "{n} on scene",
+   "enroute": "En route"
+  },
+  "grp": {
+   "aria": "{t} {n}"
+  },
+  "head": {
+   "alert_at": "Alert {t}",
+   "name": "Alerts & Dispatch",
+   "scope": "Northern Gyeongbuk, today"
+  },
+  "is_closed": {
+   "active": "In progress",
+   "unhandled": "Open"
+  },
+  "log": {
+   "ack": "Alert acknowledged",
+   "arrived": "On scene · {u} ({n} crew)",
+   "contained": "Contained · mop-up watch",
+   "dispatch_1": "Dispatched · {u} · first ETA {eta} min",
+   "dispatch_n": "Dispatched · {u} +{n} · first ETA {eta} min",
+   "evac": "Evacuation notice requested · {v}, {h} households",
+   "level": "Alert level set · {a} → {b}",
+   "n": "{n}",
+   "onscene": "On-scene report · incident command started",
+   "req": "Dispatch requested · local fire station"
+  },
+  "lv": {
+   "set_at": "Set {t}"
+  },
+  "m3": {
+   "baseline_median": "Baseline median",
+   "day_scaled_median": "Day-scaled median",
+   "diff_from_median": "Diff. from median",
+   "harmonized_index": "Harmonized index",
+   "regional_comparison": "Regional comparison",
+   "same_month_vs_past": "Same month vs. past",
+   "viirs_equivalent_hotspots": "VIIRS-equivalent hotspots",
+   "vs_median": "vs. median",
+   "within_same_month_range": "Within same-month range"
+  },
+  "off": {
+   "aria": "Off map {side}: {what} · tap to show all",
+   "chip": "Off screen {what}",
+   "k": {
+    "dispatched": "Dispatched",
+    "fire": "Fire",
+    "return": "Returning",
+    "standby": "Standby"
+   },
+   "say_fire": "{n} fires",
+   "say_unit": "{n} {k} units"
+  },
+  "out": {
+   "to_kor": "Go to Korea",
+   "word": "Out of jurisdiction"
+  },
+  "page": {
+   "title": "Alerts & Dispatch"
+  },
+  "pick": {
+   "sum": "{n} units, {c} crew, first {eta} min"
+  },
+  "pick_foot": {
+   "dispatch": "Dispatch",
+   "no_units_selected": "No units selected"
+  },
+  "region_card": {
+   "x": "×"
+  },
+  "render_detail": {
+   "activity_log": "Activity log",
+   "by_distance_est_eta": "By distance (est. ETA)",
+   "closed_alert": "Closed alert",
+   "detection_evidence": "Detection evidence",
+   "dispatch_and_scene": "Dispatch and scene",
+   "nearest_standby_units": "Nearest standby units",
+   "no_alert_selected": "No alert selected",
+   "none": ": none",
+   "pixel_size_viirs_375": "Pixel size VIIRS 375 m vs MODIS 1 km",
+   "response_actions": "Response actions",
+   "satellite_first_not_yet": "Satellite first, not yet confirmed by ops center",
+   "sent_to_land_management": "Sent to land management for burned area assessment",
+   "time_since_detection": "Time since detection"
+  },
+  "render_rail": {
+   "expand_alert_inbox": "Expand alert inbox"
+  },
+  "res": {
+   "dist": "{km} km, {n} crew",
+   "less": "Nearest {n} only",
+   "more": "Show {n} more",
+   "pick": "Select {u}",
+   "rec_sub": "{n} standby, by distance (road-adjusted ETA)"
+  },
+  "row": {
+   "assigned_units": "Assigned units",
+   "detections": "Detections ",
+   "none": "None",
+   "units": "Units ",
+   "unread": "Unread",
+   "x": ""
+  },
+  "sel_alert": {
+   "evacuation_villages": "Evacuation villages",
+   "hotspots": "Hotspots",
+   "on_scene": "On scene",
+   "routes": "Routes",
+   "spread_1_2_3": "Spread 1·2·3 h",
+   "spread_forecast": "Spread forecast",
+   "today_last_3_days": "Today, last 3 days",
+   "units": "Units",
+   "wind": "Wind"
+  },
+  "sen": {
+   "cluster_movement": "Cluster movement",
+   "confidence": "Confidence",
+   "excluded": "Excluded",
+   "intense_burning": "Intense burning",
+   "matched": "Matched",
+   "matches_emergency_call_location": "Matches emergency call location",
+   "max_frp": "Max FRP",
+   "moderate": "Moderate",
+   "no_data": "No data",
+   "none": "None",
+   "offshore": " · Offshore ",
+   "report": "Report",
+   "satellite_first": "Satellite first",
+   "spread_direction": "Spread direction",
+   "static_sources": "Static sources "
+  },
+  "sheet": {
+   "grip": "Alert list height · now {stop} · tap or arrow keys to change",
+   "stop_full": "full",
+   "stop_half": "half",
+   "stop_peek": "collapsed"
+  },
+  "step": {
+   "ack": "Ack"
+  },
+  "stepper": {
+   "response_stage": "Response stage"
+  },
+  "swath": {
+   "inside": "In swath, {s}",
+   "next": " pass in {d}"
+  },
+  "sync": {
+   "bottom": "bottom",
+   "left": "left",
+   "right": "right",
+   "top": "top"
+  },
+  "tab": {
+   "closed": "Closed"
+  },
+  "tab_of": {
+   "acknowledge": "Acknowledge",
+   "new": "New",
+   "on_scene": "On scene"
+  },
+  "toast": {
+   "contained_sub": "Queued for burned area assessment, units returning",
+   "dispatch": "{n} units dispatched",
+   "dispatch_sub": "Routes shown on map",
+   "evac": "Evacuation notice request sent",
+   "evac_sub": "{n} villages, {h} households, to local government",
+   "level": "Alert level {lv} set",
+   "no_alert": "No alert for this fire ({st})",
+   "req": "Dispatch request sent",
+   "req_sub": "Local fire command inbox"
+  },
+  "unit": {
+   "crew": "{n} crew",
+   "min": "min",
+   "pts": "pts"
+  },
+  "vil": {
+   "homes": "{v} {n} hh",
+   "homes_n": "{n} households",
+   "sum": "{n} villages, {h} hh"
+  },
+  "wind": {
+   "station": "{s} station"
+  }
+ }
+}

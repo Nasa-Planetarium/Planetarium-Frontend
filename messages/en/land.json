@@ -1,0 +1,175 @@
+{
+ "land": {
+  "at": {
+   "burn_extent": "Burn extent",
+   "district_names": "District names",
+   "hotspots": "Hotspots"
+  },
+  "detail": {
+   "view_parcels": "View {n} parcels"
+  },
+  "export_parcels": {
+   "burned_area_ha": "Burned area (ha)",
+   "damage": "Damage",
+   "estimate": "Estimate",
+   "fire_id": "Fire ID",
+   "method": "Method",
+   "satellite_burn_extent_x": "Satellite burn extent x parcel overlay, area estimate"
+  },
+  "g": {
+   "confirm_recovery_plan": "Confirm recovery plan",
+   "farmland": "Farmland",
+   "field_check": "Field check",
+   "forest": "Forest",
+   "grassland": "Grassland",
+   "in_recovery": "In recovery",
+   "low": "Low",
+   "moderate": "Moderate",
+   "national_forest": "National forest",
+   "past_fires": "Past fires",
+   "pending": "Pending",
+   "private_forest": "Private forest",
+   "public_forest": "Public forest",
+   "recovery_plan": "Planning",
+   "request_field_check": "Request field check",
+   "severe": "Severe",
+   "start_recovery": "Start recovery",
+   "urban": "Urban"
+  },
+  "head": {
+   "name": "Burned Area",
+   "scope": "Northern Gyeongbuk, contained fires"
+  },
+  "hero": {
+   "pitches": "About {n} football pitches"
+  },
+  "jimok": {
+   "field": "Dry field",
+   "forest": "Forest",
+   "paddy": "Paddy",
+   "site": "Building site"
+  },
+  "list": {
+   "none": "{stage}: none"
+  },
+  "log": {
+   "moved": "Moved to {stage}",
+   "prio": "{addr} set to recovery priority {n}",
+   "queued": "Contained, queued for assessment",
+   "queued_no_time": "Queued for assessment (no containment time)",
+   "req": "Field check requested: {n} parcels, {ha} (priority 1: {p1})",
+   "req_more": "Additional field check: {n} parcels",
+   "req_short": "Field check requested: {n} parcels",
+   "role": "Land management",
+   "system": "System"
+  },
+  "lot": {
+   "mtn": "San"
+  },
+  "out": {
+   "to_kor": "Go to Korea",
+   "word": "Out of jurisdiction"
+  },
+  "owner": {
+   "national": "National",
+   "private": "Private",
+   "public": "Public"
+  },
+  "parcels": {
+   "big_n": "Largest {n} parcels",
+   "big_sum": "Of about {total} parcels, these total {sum} ({pct} of all)",
+   "n": "{n} parcels",
+   "pick_all_short": "Select all",
+   "pick_one": "Select {addr}",
+   "picked": "{n} selected"
+  },
+  "pick_place": {
+   "assessment_list": "Assessment list",
+   "back": "Back",
+   "selected_fire_details": "Selected fire details"
+  },
+  "place": {
+   "area": "{r} area",
+   "길안면 금곡리": "Gilan-myeon Geumgok-ri",
+   "길안면 묵계리": "Gilan-myeon Mukgye-ri",
+   "남후면 고하리": "Namhu-myeon Goha-ri",
+   "단촌면 구계리": "Danchon-myeon Gugye-ri",
+   "석보면 삼의리": "Seokbo-myeon Samui-ri",
+   "영덕읍 화수리": "Yeongdeok-eup Hwasu-ri",
+   "옥산면 신계리": "Oksan-myeon Singye-ri",
+   "용궁면 무이리": "Yonggung-myeon Mui-ri",
+   "용궁면 향석리": "Yonggung-myeon Hyangseok-ri",
+   "일월면 도곡리": "Irwol-myeon Dogok-ri",
+   "임하면 고곡리": "Imha-myeon Gogok-ri",
+   "점곡면 사촌리": "Jeomgok-myeon Sachon-ri",
+   "점곡면 윤암리": "Jeomgok-myeon Yunam-ri",
+   "지품면 삼화리": "Jipum-myeon Samhwa-ri",
+   "지품면 오천리": "Jipum-myeon Ocheon-ri",
+   "진보면 부곡리": "Jinbo-myeon Bugok-ri",
+   "파천면 신기리": "Pacheon-myeon Singi-ri",
+   "파천면 중평리": "Pacheon-myeon Jungpyeong-ri",
+   "풍천면 갈전리": "Pungcheon-myeon Galjeon-ri",
+   "풍천면 산불": "Pungcheon-myeon fire",
+   "풍천면 어담리": "Pungcheon-myeon Eodam-ri",
+   "풍천면 인금리": "Pungcheon-myeon Ingeum-ri"
+  },
+  "png": {
+   "title": "Burned extent (est.)",
+   "title_fire": "{name} burned extent {ha} (est.)"
+  },
+  "prio": {
+   "n": "P{n}"
+  },
+  "render_detail": {
+   "no_fire_selected": "No fire selected"
+  },
+  "render_list": {
+   "burned": "Burned",
+   "new": "New"
+  },
+  "render_pane": {
+   "details": "Details",
+   "list": "List"
+  },
+  "render_parcels": {
+   "damage": "Damage",
+   "field_check_requested": "Field check requested",
+   "land_use": "Land use",
+   "lot": "Lot",
+   "no_parcels": "No parcels",
+   "owner": "Owner",
+   "priority": "priority",
+   "recovery": "Recovery ",
+   "recovery_priority": "Recovery priority",
+   "select_all_parcels": "Select all parcels"
+  },
+  "req": {
+   "none": "No parcels selected",
+   "none_sub": "Select in the first column of the parcel table",
+   "sent": "Field check requested",
+   "sent_sub": "{name} · {n} parcels · {ha}"
+  },
+  "stage_at": {
+   "activity_log": "Activity log",
+   "area_by_district": "Area by district",
+   "area_by_land_cover": "Area by land cover",
+   "burned_area_by_district": "Burned area by district",
+   "burned_area_by_land": "Burned area by land cover",
+   "burned_area_by_ownership": "Burned area by ownership",
+   "cause": "Cause",
+   "contained": "Contained",
+   "detected": "Detected",
+   "no_record": "No record",
+   "ownership": "Ownership",
+   "reconstructed": "Reconstructed",
+   "recovery_stage": "Recovery stage"
+  },
+  "sync_key": {
+   "contained_fire": "Contained fire",
+   "hotspot_detections": "Hotspot detections",
+   "other_burn_extents": "Other burn extents",
+   "selected_burn_extent_est": "Selected burn extent (est.)",
+   "viirs_pixel_375_m": "VIIRS pixel 375 m"
+  }
+ }
+}

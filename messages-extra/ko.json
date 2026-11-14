@@ -1,0 +1,10 @@
+{
+ "_note": "목업 사전에 아직 없는 키만 둔다. 목업에 같은 키가 생기면 목업 값이 이긴다(src/shared/i18n/messages.ts). 쓰이는 키는 README 「사전」 절 참고.",
+ "shell": {
+  "nav": {
+   "calendar": { "label": "캘린더", "short": "캘린더" },
+   "method": { "label": "방법·검증", "short": "방법" }
+  },
+  "page": { "calendar": "캘린더", "method": "방법·검증" }
+ }
+}

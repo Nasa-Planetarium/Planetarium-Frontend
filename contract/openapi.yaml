@@ -1,0 +1,1560 @@
+openapi: 3.1.0
+info:
+  title: EMBERLINE API
+  version: 1.0.0-draft.1
+  summary: VIIRS(S-NPP) 기준 화재 감지량 — 모델 release 를 읽어 지도·캘린더·예년 비교·CSV 를 낸다
+  description: |
+    계약 정본(contract-first, arch2 S8 권장 · critique D1 해소). 작성 2026-11-14.
+
+    정본 순서 (00-decisions A2 · arch2 X9):
+    1. 모델팀 확정본 `docs/api_contract.md` (아직 없음 — 오면 그쪽 열 이름이 이긴다)
+    2. 모델팀 초안 `product/backend-handoff.md` (경로·파라미터 이름·코드값·열 이름)
+    3. release `data-v1-m2v-2026-11-14` 실사실 (`data/release-inspect/INSPECT.md` 가 잰 것)
+    4. 이 파일 (경로 모양 = arch2 `/api/v1` 자원 명사, 응답 본문 = API-v3 + release)
+
+    읽는 법
+    - 정본 경로는 `/api/v1/...`. 핸드오프 8경로와 확장 2경로는 각 operation 의 `x-handoff-alias` 에 원래 경로·파라미터 이름을 적었다.
+      별칭은 `/api/<핸드오프 경로>` 로 서비스하고 본문은 정본과 같다(헤더 `Link: <정본>; rel="canonical"` 만 더함, `Deprecation` 없음 — arch2 S5).
+    - 응답 필드 이름 = 핸드오프 열 이름(snake_case). release 에서 이름이 다른 열은 `x-release-column` 에 적었다(적재기가 번역).
+    - 숫자는 파일 값 그대로 낸다(A1 「모델 따른다」). verdict·percentile 을 다시 계산하지 않는다.
+    - `x-status: assumed` = release 에 없어서 가정으로 둔 모양. `x-status: release-absent` = 이 release 로는 503.
+    - 예시 숫자는 release 실값(aibox 시제품 서버가 release 를 읽어 2026-11-14 19:12 KST 에 낸 응답에서 옮김). 점(`/hotspots`)·위성 상태는 release 에 없어 가짜 예시이며 그렇게 표시했다.
+
+    알려진 결함·열린 것: `contract/ASSUMPTIONS.md`, `CONFLICTS.md`. 대응표: `contract/MAPPING.md`.
+  license:
+    name: 내부 초안 (Team Planetarium)
+    identifier: LicenseRef-Planetarium-Internal
+  x-data-release: data-v1-m2v-2026-11-14
+  x-method-version: v1-m2v-2026-11-14
+servers:
+  - url: /api/v1
+    description: 정본. 핸드오프 별칭은 /api/<경로> (각 operation 의 x-handoff-alias)
+tags:
+  - name: catalog
+    description: 지역(AOI) 목록·경계
+  - name: harmonized
+    description: aoi_month · aoi_month_compare (지역×월, 캘린더·비교)
+  - name: observation
+    description: 점·칸·임의 영역 합계
+  - name: provenance
+    description: 방법·판·위성 상태
+  - name: external
+    description: FIRMS 대리
+x-header-sets:
+  cached: &cached
+    ETag:
+      $ref: '#/components/headers/ETag'
+    Cache-Control:
+      $ref: '#/components/headers/CacheControlData'
+    X-Method-Version:
+      $ref: '#/components/headers/XMethodVersion'
+    X-Data-Version:
+      $ref: '#/components/headers/XDataVersion'
+    Vary:
+      $ref: '#/components/headers/Vary'
+paths:
+  /aois:
+    get:
+      tags: [catalog]
+      operationId: listAois
+      summary: 지역 목록
+      description: |
+        `hidden=true` 행(예 `CONT_Seven_seas__open_ocean`, adm1 54개, country 8개)은 기본 숨김.
+        경계는 목록에 싣지 않고 `/aois/{aoiId}/boundary` 로 받는다(`include_geometry` 는 별칭에서만).
+      x-handoff-alias:
+        path: /aoi
+        served_at: /api/aoi
+        params:
+          level: level
+          parent_id: parent_id
+          q: q
+          include_geometry: "(별칭 전용) true 면 각 항목에 geometry. parent_id 없이 true 면 400 invalid_param"
+        alias_only_params: [include_geometry]
+      parameters:
+        - $ref: '#/components/parameters/Level'
+        - $ref: '#/components/parameters/ParentId'
+        - $ref: '#/components/parameters/Q'
+        - $ref: '#/components/parameters/IncludeHidden'
+        - $ref: '#/components/parameters/ListLimit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: 지역 목록
+          headers: *cached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AoiList'
+              examples:
+                kr_sido:
+                  summary: GET /aois?level=kr_sido (release 실값, 1개만)
+                  value:
+                    method_version: v1-m2v-2026-11-14
+                    unit: VIIRS(S-NPP) 기준 화재 감지량
+                    count: 17
+                    next_cursor: null
+                    aois:
+                      - aoi_id: SIDO_11
+                        name_ko: 서울특별시
+                        name_en: null
+                        level: kr_sido
+                        parent_id: KR
+                        n_cells: 15
+                        hidden: false
+                        has_data: true
+                        first_month: '2000-11'
+                        last_month: '2026-11'
+                        bbox: [126.765, 37.43, 127.184, 37.701]
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /aois/{aoiId}:
+    get:
+      tags: [catalog]
+      operationId: getAoi
+      summary: 지역 하나
+      x-handoff-alias: null
+      parameters:
+        - $ref: '#/components/parameters/AoiIdPath'
+      responses:
+        '200':
+          description: 지역
+          headers: *cached
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Aoi'
+                  - type: object
+                    required: [method_version]
+                    properties:
+                      method_version:
+                        $ref: '#/components/schemas/MethodVersion'
+              examples:
+                kr:
+                  summary: GET /aois/KR (release 실값)
+                  value:
+                    aoi_id: KR
+                    name_ko: 대한민국
+                    name_en: null
+                    level: country
+                    parent_id: CONT_Asia
+                    n_cells: 1123
+                    hidden: false
+                    has_data: true
+                    first_month: '2000-11'
+                    last_month: '2026-11'
+                    bbox: [124.614, 33.198, 130.921, 38.624]
+                    method_version: v1-m2v-2026-11-14
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /aois/{aoiId}/boundary:
+    get:
+      tags: [catalog]
+      operationId: getAoiBoundary
+      summary: 지역 경계 (GeoJSON Feature)
+      description: |
+        release `aoi_boundaries.geojson` 피처 5,038개. 경계 없는 AOI 13개(`WORLD`, `CONT_*` 8개, `ADM1_BRI-00`·`BRT-00`·`CNM-00`·`SPI-00`)는 404 `unknown_aoi` 가 아니라 200 + `geometry: null`.
+      x-handoff-alias:
+        path: /aoi
+        served_at: /api/aoi
+        params:
+          include_geometry: "true → 목록 항목마다 geometry (정본은 이 하위 자원)"
+      parameters:
+        - $ref: '#/components/parameters/AoiIdPath'
+      responses:
+        '200':
+          description: 경계
+          headers: *cached
+          content:
+            application/geo+json:
+              schema:
+                $ref: '#/components/schemas/BoundaryFeature'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /aois/{aoiId}/calendar:
+    get:
+      tags: [harmonized]
+      operationId: getCalendar
+      summary: 연×월 캘린더 (aoi_month + aoi_month_compare)
+      description: |
+        요청한 해의 1–12월을 모두 준다. 파일에 행이 없는 달(2000-11 이전, 2026-11 이후)은 `status: out_of_range`, 값 null.
+        결측 달(release: 2001-06 전 AOI 5,051행)은 `status: missing`, `value: null` — 0 으로 칠하지 않는다.
+        CSV 는 `Accept: text/csv` 또는 `format=csv` (핸드오프 `/export.csv?type=calendar`).
+      x-handoff-alias:
+        path: /calendar
+        served_at: /api/calendar
+        params:
+          aoi_id: "path {aoiId}"
+          start_year: start_year
+          end_year: end_year
+        csv_alias:
+          path: /export.csv
+          served_at: /api/export.csv
+          params:
+            type: calendar
+            aoi_id: "path {aoiId}"
+            start_year: start_year
+            end_year: end_year
+      parameters:
+        - $ref: '#/components/parameters/AoiIdPath'
+        - $ref: '#/components/parameters/StartYear'
+        - $ref: '#/components/parameters/EndYear'
+        - $ref: '#/components/parameters/Format'
+      responses:
+        '200':
+          description: 캘린더
+          headers: *cached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Calendar'
+              examples:
+                kr_2025_03:
+                  summary: GET /aois/KR/calendar?start_year=2025&end_year=2025 (release 실값, 3월만 남김)
+                  value:
+                    aoi_id: KR
+                    method_version: v1-m2v-2026-11-14
+                    unit: VIIRS(S-NPP) 기준 화재 감지량
+                    start_year: 2025
+                    end_year: 2025
+                    event_columns: []
+                    months:
+                      - year: 2025
+                        month: 3
+                        value: 2764.0
+                        value_lo: 2764.0
+                        value_hi: 2764.0
+                        raw_modis: 772
+                        raw_viirs: 2764
+                        value_source: snpp_observed
+                        data_source: SP
+                        status: ok
+                        n_cells: 1123
+                        verdict: above
+                        percentile: 100.0
+                        ratio_to_median: 10.924901185770752
+                        low_sample: false
+                        missing_dates: []
+                        days_covered: null
+                kr_2001_06_missing:
+                  summary: KR 2001-06 결측 달 (release 실값 — value null, percentile 은 파일의 0.0 그대로)
+                  value:
+                    aoi_id: KR
+                    method_version: v1-m2v-2026-11-14
+                    unit: VIIRS(S-NPP) 기준 화재 감지량
+                    start_year: 2001
+                    end_year: 2001
+                    event_columns: []
+                    months:
+                      - year: 2001
+                        month: 6
+                        value: null
+                        value_lo: null
+                        value_hi: null
+                        raw_modis: 11
+                        raw_viirs: null
+                        value_source: modis_m2v_terra
+                        data_source: SP
+                        status: missing
+                        n_cells: 1123
+                        verdict: uncertain
+                        percentile: 0.0
+                        ratio_to_median: null
+                        low_sample: false
+                        missing_dates: []
+                        days_covered: null
+            text/csv:
+              schema:
+                type: string
+                x-csv-columns: [aoi_id, year, month, value, value_lo, value_hi, raw_modis, raw_viirs, value_source, data_source, status, verdict, percentile, ratio_to_median, n_cells, missing_dates, method_version]
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '406':
+          $ref: '#/components/responses/NotAcceptable'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /aois/{aoiId}/months/{yearMonth}/comparison:
+    get:
+      tags: [harmonized]
+      operationId: getComparison
+      summary: 그 달 예년 대비 상세
+      description: |
+        `value`~`verdict` 8개와 `low_sample` = `aoi_month_compare` 행 그대로. 판정을 다시 하지 않는다.
+        release 에서 `low_sample=true` 인데 `verdict=above` 인 행 5,250개(팀 `analysis.py`: low_sample 이어도 값≥3 → above),
+        그 중 `percentile<80` 인데 above 2개(`ADM1_AZE-1699` 2022-11, `ADM1_IRL-5572` 2011-03) — 파일 값 그대로 낸다.
+      x-handoff-alias:
+        path: /compare
+        served_at: /api/compare
+        params:
+          aoi_id: "path {aoiId}"
+          year: "path {yearMonth} 의 YYYY"
+          month: "path {yearMonth} 의 MM (1–12, 앞 0 없이도 받음)"
+      parameters:
+        - $ref: '#/components/parameters/AoiIdPath'
+        - name: yearMonth
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/YearMonth'
+          example: '2025-03'
+      responses:
+        '200':
+          description: 비교
+          headers: *cached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comparison'
+              examples:
+                sido47_2025_03:
+                  summary: GET /aois/SIDO_47/months/2025-03/comparison (release 실값, baseline 2개만)
+                  value:
+                    aoi_id: SIDO_47
+                    year: 2025
+                    month: 3
+                    unit: VIIRS(S-NPP) 기준 화재 감지량
+                    value: 2352.951315802467
+                    baseline_median: 21.559882271010604
+                    baseline_p25: 16.036174767574185
+                    baseline_p75: 25.85789001970508
+                    percentile: 100.0
+                    ratio_to_median: 109.13562913867312
+                    n_baseline_years: 24
+                    verdict: above
+                    status: ok
+                    value_source: snpp_observed
+                    value_lo: 2352.951315802467
+                    value_hi: 2352.951315802467
+                    low_sample: false
+                    baseline:
+                      - {year: 2001, value: 40.23266474696909, status: ok, value_source: modis_m2v_terra, used: true}
+                      - {year: 2002, value: 23.550687716947095, status: ok, value_source: modis_m2v_terra, used: true}
+                    rule:
+                      id: pct-80-20/n10/ok-only
+                      above_if_percentile_ge: 80
+                      below_if_percentile_le: 20
+                      uncertain_if_years_lt: 10
+                    method_version: v1-m2v-2026-11-14
+                low_sample_above:
+                  summary: low_sample=true 인데 above (release 실값 — 파일 그대로)
+                  value:
+                    aoi_id: ADM1_AZE-1699
+                    year: 2022
+                    month: 11
+                    unit: VIIRS(S-NPP) 기준 화재 감지량
+                    value: 3.118005613289087
+                    baseline_median: 0.5370512356455552
+                    baseline_p25: 0.10152890663579717
+                    baseline_p75: 0.8580233503968905
+                    percentile: 79.16666666666666
+                    ratio_to_median: 5.805787988814755
+                    n_baseline_years: 24
+                    verdict: above
+                    status: ok
+                    value_source: snpp_observed
+                    value_lo: 3.118005613289087
+                    value_hi: 3.118005613289087
+                    low_sample: true
+                    baseline: []
+                    rule: {id: pct-80-20/n10/ok-only}
+                    method_version: v1-m2v-2026-11-14
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /aois/{aoiId}/summary:
+    get:
+      tags: [harmonized, observation]
+      operationId: getAoiSummary
+      summary: 지역의 기간별 합계
+      description: |
+        `freq=month` 이고 달 전체가 기간 안이면 `aoi_month` 행 그대로(`basis: aoi_month`).
+        그 밖(일 단위, 달을 자르는 기간)은 `harmonized_hotspots` 기준 점 합(`basis: hotspots`) — release 에 점 파일이 없어 지금은 503 `data_not_loaded`.
+        지역 합계는 `aoi_month` 만 쓴다: `/cells` 를 잘라 더한 값과 다르다(면적 무게 소속 — R13: KR VIIRS 기간 +11.8 %, MODIS 기간 +57.1 %).
+      x-handoff-alias:
+        path: /summary
+        served_at: /api/summary
+        params:
+          aoi_id: "path {aoiId}"
+          start: start
+          end: end
+          freq: freq
+        csv_alias:
+          path: /export.csv
+          served_at: /api/export.csv
+          params: {type: summary}
+      parameters:
+        - $ref: '#/components/parameters/AoiIdPath'
+        - $ref: '#/components/parameters/Start'
+        - $ref: '#/components/parameters/End'
+        - $ref: '#/components/parameters/Freq'
+        - $ref: '#/components/parameters/Format'
+      responses:
+        '200':
+          $ref: '#/components/responses/SummaryOk'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /summaries:
+    get:
+      tags: [observation]
+      operationId: getBboxSummary
+      summary: bbox 기간별 합계 (점 재집계)
+      x-status: release-absent
+      x-handoff-alias:
+        path: /summary
+        served_at: /api/summary
+        params:
+          bbox: bbox
+          start: start
+          end: end
+          freq: freq
+      parameters:
+        - $ref: '#/components/parameters/BboxRequired'
+        - $ref: '#/components/parameters/Start'
+        - $ref: '#/components/parameters/End'
+        - $ref: '#/components/parameters/Freq'
+        - $ref: '#/components/parameters/Format'
+      responses:
+        '200':
+          $ref: '#/components/responses/SummaryOk'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /summary-queries:
+    post:
+      tags: [observation]
+      operationId: querySummaryByPolygon
+      summary: polygon 기간별 합계 (점 재집계, 큰 polygon 은 본문으로)
+      description: 검색 자원(arch2 S6). 본문 ≤ 256 KB, 넘으면 413. 꼭짓점 > 5,000 또는 링 > 50 이면 400 `polygon_too_complex`.
+      x-status: release-absent
+      x-handoff-alias:
+        path: /summary
+        served_at: /api/summary
+        params:
+          polygon: "body.polygon (별칭 GET 은 쿼리 문자열, URL 8 KB 안에서)"
+          start: body.start
+          end: body.end
+          freq: body.freq
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SummaryQuery'
+      responses:
+        '200':
+          $ref: '#/components/responses/SummaryOk'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /hotspots:
+    get:
+      tags: [observation]
+      operationId: listHotspots
+      summary: 통합 핫스팟 점
+      description: |
+        `harmonized_hotspots/` 는 release 에 없다(R2) → 지금은 503 `data_not_loaded`.
+        합계는 `is_reference=true` 점만(`reference_sum`, `limit` 와 무관). `layer=all` 은 지도 표시용.
+        날짜는 `date_local`(현지 태양시) 기준.
+      x-status: release-absent
+      x-handoff-alias:
+        path: /hotspots
+        served_at: /api/hotspots
+        params:
+          bbox: bbox
+          aoi_id: aoi_id
+          start: start
+          end: end
+          layer: layer
+          limit: limit
+        csv_alias:
+          path: /export.csv
+          served_at: /api/export.csv
+          params: {type: hotspots}
+      parameters:
+        - $ref: '#/components/parameters/Bbox'
+        - $ref: '#/components/parameters/AoiIdQuery'
+        - $ref: '#/components/parameters/Start'
+        - $ref: '#/components/parameters/End'
+        - name: layer
+          in: query
+          schema:
+            type: string
+            enum: [reference, all]
+            default: reference
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10000
+            default: 1000
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Format'
+      responses:
+        '200':
+          description: 점 목록
+          headers: *cached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HotspotList'
+            text/csv:
+              schema:
+                type: string
+                x-csv-columns: [latitude, longitude, acq_datetime_utc, date_local, satellite, instrument, frp, confidence, daynight, cell_id, country, adm1, harmonized_weight, weight_lo, weight_hi, weight_source, is_reference, source, method_version]
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /cells:
+    get:
+      tags: [observation]
+      operationId: listCells
+      summary: 0.1° 칸 × 월 (GeoJSON) — 확장
+      description: |
+        핸드오프에 경로가 없는 확장(지도 격자). 칸 속성 = `harmonized_cell_month` 열.
+        피처가 없는 칸은 0 (`properties.zero_rule`). 그 달이 결측인지는 `properties.month_status`.
+        결측 달(2001-06)에는 칸 행이 있으면서 `value=null` (release 14,502행 — 핸드오프 「행 없으면 0」과 다른 모양, R6).
+        칸 수 > 10,000 이거나 level world·continent 면 400 `range_too_large`(40103).
+        칸 합 ≠ `aoi_month.value` (R13).
+      x-handoff-alias:
+        path: /cells
+        served_at: /api/cells
+        extension: true
+        params:
+          aoi_id: aoi_id
+          bbox: bbox
+          year: "month 의 YYYY"
+          month: "month 의 MM"
+      parameters:
+        - $ref: '#/components/parameters/Bbox'
+        - $ref: '#/components/parameters/AoiIdQuery'
+        - name: month
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/YearMonth'
+          example: '2025-03'
+      responses:
+        '200':
+          description: 칸 FeatureCollection
+          headers: *cached
+          content:
+            application/geo+json:
+              schema:
+                $ref: '#/components/schemas/CellCollection'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /satellite-status:
+    get:
+      tags: [provenance]
+      operationId: getSatelliteStatus
+      summary: 위성별 자료 상태·최신 갱신 시각
+      description: '`satellite_day_status` 는 release 에 없다(R1) → 503. 열 모양은 가정(G1).'
+      x-status: release-absent
+      x-handoff-alias:
+        path: /status
+        served_at: /api/status
+        params:
+          start: start
+          end: end
+      parameters:
+        - name: start
+          in: query
+          schema: {type: string, format: date}
+        - name: end
+          in: query
+          schema: {type: string, format: date}
+      responses:
+        '200':
+          description: 위성 상태
+          headers: *cached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SatelliteStatus'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /methods/current:
+    get:
+      tags: [provenance]
+      operationId: getCurrentMethod
+      summary: 지금 판의 방법 설명 (m2v_meta.json)
+      x-handoff-alias:
+        path: /method
+        served_at: /api/method
+        params: {}
+      responses:
+        '200':
+          $ref: '#/components/responses/MethodOk'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /methods/{methodVersion}:
+    get:
+      tags: [provenance]
+      operationId: getMethod
+      summary: 특정 판의 방법 설명
+      x-handoff-alias: null
+      parameters:
+        - name: methodVersion
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/MethodVersion'
+      responses:
+        '200':
+          $ref: '#/components/responses/MethodOk'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /version:
+    get:
+      tags: [provenance]
+      operationId: getVersion
+      summary: 판·한도 공개 (신규)
+      x-handoff-alias: null
+      responses:
+        '200':
+          description: 판
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Version'
+  /firms/wms-tiles:
+    get:
+      tags: [external]
+      operationId: getFirmsWmsTile
+      summary: FIRMS WMS 대리 (PNG) — 확장
+      description: |
+        `FIRMS_MAP_KEY` 는 서버 환경에만. 응답·로그·오류에 키가 없다(핸드오프 §4.5). 허용 목록 밖 파라미터는 400. 15분 캐시, 상류 예산.
+      x-handoff-alias:
+        path: /firms/wms
+        served_at: /api/firms/wms
+        extension: true
+        params: {layer: layer, bbox: bbox, width: width, height: height, time: time}
+      parameters:
+        - name: layer
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [viirs_noaa20_24h, viirs_noaa21_24h, modis_24h, viirs_noaa20_7d]
+        - $ref: '#/components/parameters/BboxRequired'
+        - name: width
+          in: query
+          required: true
+          schema: {type: integer, minimum: 16, maximum: 2048}
+        - name: height
+          in: query
+          required: true
+          schema: {type: integer, minimum: 16, maximum: 2048}
+        - name: time
+          in: query
+          schema: {type: string}
+      responses:
+        '200':
+          description: 타일
+          content:
+            image/png:
+              schema: {type: string, contentMediaType: image/png}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '502':
+          $ref: '#/components/responses/BadGateway'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+components:
+  headers:
+    ETag:
+      description: 판 + 협상된 미디어 타입 + 정규화한 질의의 해시. If-None-Match 가 같으면 304.
+      schema: {type: string}
+    CacheControlData:
+      description: |
+        데이터 경로 = `public, max-age=0, must-revalidate` (판 교체·롤백이 다음 요청에 바로 보이고 304 로 전송량을 아낌 — arch2 §3.8, critique D6).
+        로그인 경로 `private, no-store`. 오류 `no-store`. 정적 자산만 immutable.
+        시제품 v3 는 완료 달 86400 · nrt/partial 섞임 300 · /aoi·/method 3600 을 낸다(MAPPING §5 — 정본과 다름).
+      schema:
+        type: string
+        examples: ['public, max-age=0, must-revalidate']
+    XMethodVersion:
+      description: 데이터 판(API 판 아님). 본문 method_version 과 같다.
+      required: true
+      schema:
+        $ref: '#/components/schemas/MethodVersion'
+    XDataVersion:
+      description: 적재한 파일 묶음의 식별자(적재 시각 + 해시 앞 12자리). 예 `2026-11-14T10:11:40Z#726b884a5ec1`.
+      schema: {type: string}
+    Vary:
+      schema:
+        type: string
+        const: Accept, Accept-Language
+    RetryAfter:
+      description: 초 단위 정수
+      schema: {type: integer, minimum: 1}
+    CacheControlNoStore:
+      schema:
+        type: string
+        const: no-store
+  parameters:
+    AoiIdPath:
+      name: aoiId
+      in: path
+      required: true
+      description: '`aoi_list.aoi_id`. 핸드오프 쿼리 이름은 `aoi_id`.'
+      schema:
+        $ref: '#/components/schemas/AoiId'
+      examples:
+        korea: {value: KR}
+        gyeongbuk: {value: SIDO_47}
+        andong: {value: SGG_47170}
+    AoiIdQuery:
+      name: aoi_id
+      in: query
+      description: '`bbox` 와 정확히 하나(둘 다·둘 다 없음 → 400 invalid_param). 점은 그 점의 cell_id 가 AOI 칸인지로 거른다(G5).'
+      schema:
+        $ref: '#/components/schemas/AoiId'
+    Bbox:
+      name: bbox
+      in: query
+      description: '서,남,동,북 (WGS84). `aoi_id` 와 정확히 하나.'
+      style: form
+      explode: false
+      schema:
+        $ref: '#/components/schemas/Bbox'
+    BboxRequired:
+      name: bbox
+      in: query
+      required: true
+      description: '서,남,동,북 (WGS84)'
+      style: form
+      explode: false
+      schema:
+        $ref: '#/components/schemas/Bbox'
+    Level:
+      name: level
+      in: query
+      schema:
+        $ref: '#/components/schemas/AoiLevel'
+    ParentId:
+      name: parent_id
+      in: query
+      description: 없는 id 면 404 unknown_aoi
+      schema:
+        $ref: '#/components/schemas/AoiId'
+    Q:
+      name: q
+      in: query
+      description: 이름(name_ko·name_en)·aoi_id 부분 일치, 대소문자 무시
+      schema: {type: string, maxLength: 100}
+    IncludeHidden:
+      name: include_hidden
+      in: query
+      schema: {type: boolean, default: false}
+    ListLimit:
+      name: limit
+      in: query
+      schema: {type: integer, minimum: 1, maximum: 1000, default: 100}
+    Cursor:
+      name: cursor
+      in: query
+      description: 불투명 keyset 커서. 판이 바뀐 커서는 409 cursor_stale.
+      schema: {type: string, maxLength: 512}
+    StartYear:
+      name: start_year
+      in: query
+      description: 기본 = 그 AOI 자료의 첫 해. end_year − start_year ≤ 40.
+      schema: {type: integer, minimum: 2000, maximum: 2100}
+    EndYear:
+      name: end_year
+      in: query
+      description: 기본 = 그 AOI 자료의 끝 해
+      schema: {type: integer, minimum: 2000, maximum: 2100}
+    Start:
+      name: start
+      in: query
+      required: true
+      description: YYYY-MM-DD (date_local 기준). start > end → 400.
+      schema: {type: string, format: date}
+    End:
+      name: end
+      in: query
+      required: true
+      schema: {type: string, format: date}
+    Freq:
+      name: freq
+      in: query
+      description: day 는 ≤ 366일, month 는 ≤ 40년
+      schema:
+        type: string
+        enum: [month, day]
+        default: month
+    Format:
+      name: format
+      in: query
+      description: '브라우저 링크용. csv = `Accept: text/csv` 와 같다. 동기 CSV ≤ 100,000행(넘으면 400 range_too_large 30102).'
+      schema:
+        type: string
+        enum: [json, csv]
+  responses:
+    SummaryOk:
+      description: 기간별 합계
+      headers: *cached
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Summary'
+          examples:
+            kr_2025_q1:
+              summary: GET /aois/KR/summary?start=2025-01-01&end=2025-03-31&freq=month (release 실값, 3월만 남김)
+              value:
+                aoi_id: KR
+                start: '2025-01-01'
+                end: '2025-03-31'
+                freq: month
+                unit: VIIRS(S-NPP) 기준 화재 감지량
+                series:
+                  - date: '2025-03-01'
+                    year: 2025
+                    month: 3
+                    value: 2764.0
+                    value_lo: 2764.0
+                    value_hi: 2764.0
+                    value_source: snpp_observed
+                    data_source: SP
+                    status: ok
+                    missing_dates: []
+                    flags: []
+                    basis: aoi_month
+                total: {value: 2837.0, value_lo: 2837.0, value_hi: 2837.0, n_missing: 0, n_out_of_range: 0}
+                method_version: v1-m2v-2026-11-14
+        text/csv:
+          schema:
+            type: string
+            x-csv-columns: [area, date, value, value_lo, value_hi, value_source, data_source, status, missing_dates, freq, method_version]
+    MethodOk:
+      description: 방법 설명
+      headers: *cached
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Method'
+    NotModified:
+      description: If-None-Match 일치
+    BadRequest:
+      description: 입력 오류 (invalid_param · range_too_large · polygon_too_complex)
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/CacheControlNoStore'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            invalid_param:
+              summary: GET /aois/KR/calendar?start_year=abc (시제품 응답 + 정본 멤버 error_no·instance)
+              value:
+                type: https://emberline.example/errors/invalid_param
+                title: Invalid parameter
+                status: 400
+                code: invalid_param
+                error_no: 10001
+                param: start_year
+                detail: start_year must be an integer
+                instance: /api/v1/aois/KR/calendar
+                request_id: 38ESHBPJ5SNS
+                method_version: v1-m2v-2026-11-14
+    NotFound:
+      description: 없는 aoi_id · 경로
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/CacheControlNoStore'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            unknown_aoi:
+              value:
+                type: https://emberline.example/errors/unknown_aoi
+                title: Unknown area
+                status: 404
+                code: unknown_aoi
+                error_no: 20401
+                param: aoi_id
+                detail: aoi_id NOPE is not in aoi_list
+                instance: /api/v1/aois/NOPE/calendar
+                request_id: 38ESHBPJKXRB
+                method_version: v1-m2v-2026-11-14
+    NotAcceptable:
+      description: 지원 안 하는 Accept
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Conflict:
+      description: cursor_stale (판이 바뀐 커서)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    PayloadTooLarge:
+      description: 본문 > 256 KB
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    TooManyRequests:
+      description: 레이트 리밋
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    BadGateway:
+      description: FIRMS 상류 오류 (본문 버림)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Unavailable:
+      description: |
+        data_not_loaded (판·파일 없음 — 경로 단위) · overloaded · upstream_unavailable.
+        이 release 로는 `/hotspots`·일 단위·bbox·polygon 합계·`/satellite-status` 가 503.
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+        Cache-Control:
+          $ref: '#/components/headers/CacheControlNoStore'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            sds_absent:
+              summary: GET /satellite-status (시제품 응답 + error_no·instance)
+              value:
+                type: https://emberline.example/errors/data_not_loaded
+                title: Model outputs not loaded
+                status: 503
+                code: data_not_loaded
+                error_no: 50501
+                detail: satellite_day_status is not provided yet
+                instance: /api/v1/satellite-status
+                request_id: 38ESHBPH84F9
+                method_version: v1-m2v-2026-11-14
+  schemas:
+    MethodVersion:
+      type: string
+      pattern: '^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$'
+      examples: [v1-m2v-2026-11-14]
+    Unit:
+      type: string
+      const: VIIRS(S-NPP) 기준 화재 감지량
+      description: 「산불 건수」가 아니다(핸드오프 §4.4).
+    AoiId:
+      type: string
+      pattern: '^[A-Za-z0-9_:.\-]{1,64}$'
+      description: |
+        release 실값 모양 — `WORLD`(대문자), `CONT_<영문>`(예 `CONT_Asia`), 나라 `ADM0_<ISO3>`(한국만 예외 `KR`, `ADM0_KOR` 없음),
+        `ADM1_<ISO3>-<n>`, `SIDO_<2자리>`(17개, 강원 51·전북 52), `SGG_<5자리>`(252개, 군위 = `SGG_27720` 부모 SIDO_27).
+        확장 `group:gb-north`(경북 북부 11 시군 — release 에 행 없음, 목업은 11 SGG 합으로 파생).
+      examples: [KR, WORLD, CONT_Asia, ADM0_ARG, ADM1_AFG-1741, SIDO_47, SGG_47170, SGG_27720]
+    AoiLevel:
+      type: string
+      enum: [world, continent, country, adm1, kr_sido, kr_sgg, group]
+      description: |
+        핸드오프 값. release `aoi_list.level` 은 `world/continent/country/adm1/kr/sido/sgg` 이고 적재기가 번역한다.
+        개수(release): adm1 4,524 · sgg 252 · country 248 · sido 17 · continent 8 · world 1 · kr 1. `group` 은 확장.
+      x-release-values:
+        kr: country
+        sido: kr_sido
+        sgg: kr_sgg
+    YearMonth:
+      type: string
+      pattern: '^\d{4}-(0[1-9]|1[0-2])$'
+    Bbox:
+      type: array
+      description: '[서, 남, 동, 북]. 서 < 동, 남 < 북, 경도 ±180, 위도 ±90.'
+      minItems: 4
+      maxItems: 4
+      items: {type: number}
+    ValueSource:
+      type: string
+      enum: [modis_m2v_terra, modis_m2v, snpp_observed, n20_bridge, n21_bridge]
+      description: |
+        값의 출처. 달 단위 경계(release 실측): terra 2000-11~2002-06 · modis_m2v 2002-07~**2012-01** · snpp 2012-02~2026-10 · n20_bridge 2026-11(NOAA-20 × 1.013, 핸드오프 §3).
+        `n21_bridge`(NOAA-20 결측일 × 1.053)는 release 0행이지만 핸드오프 코드값이라 계약에 남긴다.
+        v0 이름(`modis_harmonized`, `noaa20_bridged`, `modis_harmonized_terra_only`)은 적재기만 받고 응답에는 안 나온다.
+      x-release-rows:
+        harmonized_cell_month: {modis_m2v: 25124932, snpp_observed: 22517158, modis_m2v_terra: 3828671, n20_bridge: 91881, n21_bridge: 0}
+        aoi_month: {snpp_observed: 894027, modis_m2v: 580865, modis_m2v_terra: 101020, n20_bridge: 5051, n21_bridge: 0}
+    DataSource:
+      type: string
+      enum: [SP, NRT]
+      description: SP 정식 / NRT 빠른 처리본(release 2026-08~11). 점 파일에서는 열 이름 `source`.
+    MonthStatus:
+      type: string
+      enum: [ok, nrt, partial, missing, out_of_range]
+      description: |
+        파일 값 4종(ok · nrt · partial · missing) + 응답 전용 확장 `out_of_range`(파일에 행이 없는 달·날).
+        `low_sample` 은 status 가 아니라 불린 필드(arch2 X1 — 모델팀 확정 필요). `missing` 이면 value null, 0 으로 칠하지 않는다.
+        release(aoi_month): ok 1,555,708 · nrt 15,153 (2026-08~10) · missing 5,051 (2001-06) · partial 5,051 (2026-11).
+    Verdict:
+      type: string
+      enum: [above, similar, below, uncertain]
+      description: 파일 값 그대로. 기준 분포 = 2001–2025 같은 달·해당 연도 제외·status=ok. 경계 80/20, 비교 연도 < 10 → uncertain.
+    Interval:
+      type: object
+      description: |
+        `value` = VIIRS(S-NPP) 기준 감지량, `value_lo`/`value_hi` = 10–90 % 구간.
+        - 실측 기간은 lo = value = hi.
+        - **value 가 [lo, hi] 밖일 수 있다**: release 칸 표 441,269행(전부 modis_m2v, 점 추정 모델과 구간 모델이 따로 — 추론). 클라이언트는 value 를 구간 안으로 자르지 않는다.
+        - 칸 표의 `modis_m2v_terra` 행은 lo·hi null(3,828,671행, meta `cell_interval` 대로).
+        - status=missing 이면 셋 다 null.
+      properties:
+        value: {type: [number, 'null'], minimum: 0}
+        value_lo: {type: [number, 'null'], minimum: 0}
+        value_hi: {type: [number, 'null'], minimum: 0}
+    Aoi:
+      type: object
+      additionalProperties: false
+      required: [aoi_id, name_ko, name_en, level, parent_id, n_cells, hidden]
+      properties:
+        aoi_id: {$ref: '#/components/schemas/AoiId'}
+        name_ko:
+          type: string
+          x-release-column: name
+          description: release 는 `name` 하나(한국 밖은 영문 이름이 들어 있음, 예 WORLD → "World").
+        name_en:
+          type: [string, 'null']
+          x-release-column: null
+          description: release 에 열이 없어 지금은 항상 null (R3).
+        level: {$ref: '#/components/schemas/AoiLevel'}
+        parent_id:
+          type: [string, 'null']
+          x-release-column: parent_aoi
+        n_cells: {type: integer, minimum: 0}
+        hidden: {type: boolean}
+        has_data: {type: boolean, description: 확장}
+        first_month: {type: [string, 'null'], pattern: '^\d{4}-\d{2}$', description: 확장}
+        last_month: {type: [string, 'null'], pattern: '^\d{4}-\d{2}$', description: 확장}
+        bbox:
+          description: 확장. 경계 없는 AOI 는 null.
+          oneOf:
+            - $ref: '#/components/schemas/Bbox'
+            - type: 'null'
+        geometry:
+          description: 별칭 `/api/aoi?include_geometry=true` 에서만
+          type: [object, 'null']
+        method_version:
+          $ref: '#/components/schemas/MethodVersion'
+          description: 단건(`/aois/{aoiId}`) 응답에만
+    AoiList:
+      type: object
+      additionalProperties: false
+      required: [method_version, count, aois]
+      properties:
+        method_version: {$ref: '#/components/schemas/MethodVersion'}
+        unit: {$ref: '#/components/schemas/Unit'}
+        count: {type: integer, minimum: 0}
+        next_cursor: {type: [string, 'null'], description: 정본 전용(시제품 v3 에는 없음)}
+        aois:
+          type: array
+          items: {$ref: '#/components/schemas/Aoi'}
+    BoundaryFeature:
+      type: object
+      required: [type, geometry, properties]
+      properties:
+        type: {const: Feature}
+        geometry:
+          type: [object, 'null']
+          description: Polygon 또는 MultiPolygon (WGS84). 경계 없는 AOI 13개는 null.
+        properties:
+          type: object
+          required: [aoi_id, method_version]
+          properties:
+            aoi_id: {$ref: '#/components/schemas/AoiId'}
+            method_version: {$ref: '#/components/schemas/MethodVersion'}
+    EventColumns:
+      type: object
+      description: 덩어리 8열 — 확장 선택 열. release 에 없어 지금은 전부 null.
+      properties:
+        n_events_viirs: {type: [integer, 'null']}
+        event_area_max_km2_viirs: {type: [number, 'null']}
+        event_days_max_viirs: {type: [integer, 'null']}
+        event_area_share_max_viirs: {type: [number, 'null']}
+        n_events_modis: {type: [integer, 'null']}
+        event_area_max_km2_modis: {type: [number, 'null']}
+        event_days_max_modis: {type: [integer, 'null']}
+        event_area_share_max_modis: {type: [number, 'null']}
+    CalendarMonth:
+      type: object
+      unevaluatedProperties: false
+      allOf:
+        - $ref: '#/components/schemas/Interval'
+        - $ref: '#/components/schemas/EventColumns'
+      required: [year, month, value, value_lo, value_hi, raw_modis, raw_viirs, value_source, data_source, status, verdict, percentile, ratio_to_median, low_sample]
+      properties:
+        year: {type: integer, minimum: 2000, maximum: 2100}
+        month: {type: integer, minimum: 1, maximum: 12}
+        raw_modis: {type: [integer, 'null'], minimum: 0, description: 원래 MODIS 감지 수(참고)}
+        raw_viirs: {type: [integer, 'null'], minimum: 0, description: 원래 VIIRS 감지 수(참고). MODIS 기간은 null.}
+        value_source: {oneOf: [{$ref: '#/components/schemas/ValueSource'}, {type: 'null'}]}
+        data_source: {oneOf: [{$ref: '#/components/schemas/DataSource'}, {type: 'null'}]}
+        status: {$ref: '#/components/schemas/MonthStatus'}
+        n_cells: {type: [integer, 'null'], minimum: 0}
+        verdict: {oneOf: [{$ref: '#/components/schemas/Verdict'}, {type: 'null'}]}
+        percentile:
+          type: [number, 'null']
+          minimum: 0
+          maximum: 100
+          description: 파일 값 그대로(반올림 안 함). 중간 순위 백분위.
+        ratio_to_median: {type: [number, 'null'], minimum: 0}
+        low_sample:
+          type: [boolean, 'null']
+          description: compare 표의 bool 열(baseline_p75 < 1). true 여도 verdict 가 above 일 수 있다(파일 그대로).
+        missing_dates: {type: array, items: {type: string, format: date}, description: 확장}
+        days_covered: {type: [integer, 'null'], description: 확장}
+    Calendar:
+      type: object
+      additionalProperties: false
+      required: [aoi_id, method_version, unit, start_year, end_year, months]
+      properties:
+        aoi_id: {$ref: '#/components/schemas/AoiId'}
+        method_version: {$ref: '#/components/schemas/MethodVersion'}
+        unit: {$ref: '#/components/schemas/Unit'}
+        start_year: {type: integer}
+        end_year: {type: integer}
+        months:
+          type: array
+          items: {$ref: '#/components/schemas/CalendarMonth'}
+        event_columns:
+          type: array
+          items: {type: string}
+          description: 확장. 값이 있는 덩어리 열 이름
+    BaselineYear:
+      type: object
+      additionalProperties: false
+      required: [year, value, status, used]
+      properties:
+        year: {type: integer}
+        value: {type: [number, 'null']}
+        status: {$ref: '#/components/schemas/MonthStatus'}
+        value_source: {oneOf: [{$ref: '#/components/schemas/ValueSource'}, {type: 'null'}]}
+        used: {type: boolean, description: 기준 분포에 들어갔는지}
+    Comparison:
+      type: object
+      additionalProperties: false
+      required: [aoi_id, year, month, value, baseline_median, baseline_p25, baseline_p75, percentile, ratio_to_median, n_baseline_years, verdict, status, low_sample, method_version]
+      properties:
+        aoi_id: {$ref: '#/components/schemas/AoiId'}
+        year: {type: integer}
+        month: {type: integer, minimum: 1, maximum: 12}
+        unit: {$ref: '#/components/schemas/Unit'}
+        value: {type: [number, 'null'], minimum: 0}
+        baseline_median: {type: [number, 'null'], minimum: 0}
+        baseline_p25: {type: [number, 'null'], minimum: 0}
+        baseline_p75: {type: [number, 'null'], minimum: 0}
+        percentile: {type: [number, 'null'], minimum: 0, maximum: 100}
+        ratio_to_median: {type: [number, 'null'], minimum: 0}
+        n_baseline_years: {type: [integer, 'null'], minimum: 0}
+        verdict: {oneOf: [{$ref: '#/components/schemas/Verdict'}, {type: 'null'}]}
+        status: {$ref: '#/components/schemas/MonthStatus'}
+        value_source: {oneOf: [{$ref: '#/components/schemas/ValueSource'}, {type: 'null'}]}
+        value_lo: {type: [number, 'null']}
+        value_hi: {type: [number, 'null']}
+        low_sample: {type: [boolean, 'null']}
+        baseline:
+          type: array
+          items: {$ref: '#/components/schemas/BaselineYear'}
+          description: 확장. 2001–2025 중 해당 연도 뺀 24개
+        rule:
+          type: object
+          description: 확장. 판정 규칙 설명(파일 판정을 설명할 뿐 다시 계산하지 않는다)
+        derived:
+          type: object
+          description: 확장. release 에 없는 AOI(group:gb-north)를 하위 합으로 만들었을 때만
+        method_version: {$ref: '#/components/schemas/MethodVersion'}
+    SummaryPoint:
+      type: object
+      unevaluatedProperties: false
+      allOf:
+        - $ref: '#/components/schemas/Interval'
+      required: [date, value, value_lo, value_hi, value_source, status]
+      properties:
+        date: {type: string, format: date, description: 일 = 그 날, 월 = 그 달 1일}
+        year: {type: integer, description: 확장(월)}
+        month: {type: integer, description: 확장(월)}
+        value_source: {oneOf: [{$ref: '#/components/schemas/ValueSource'}, {type: 'null'}]}
+        data_source: {oneOf: [{$ref: '#/components/schemas/DataSource'}, {type: 'null'}]}
+        status: {$ref: '#/components/schemas/MonthStatus'}
+        missing_dates: {type: array, items: {type: string, format: date}}
+        flags: {type: array, items: {type: string, enum: [partial_range]}}
+        basis: {type: string, enum: [aoi_month, hotspots]}
+    Summary:
+      type: object
+      additionalProperties: false
+      required: [start, end, freq, series, method_version]
+      properties:
+        aoi_id: {$ref: '#/components/schemas/AoiId'}
+        bbox: {$ref: '#/components/schemas/Bbox'}
+        polygon_hash: {type: string, description: polygon 요청일 때 정규화 geometry 의 sha256 앞 16자}
+        start: {type: string, format: date}
+        end: {type: string, format: date}
+        freq: {type: string, enum: [month, day]}
+        unit: {$ref: '#/components/schemas/Unit'}
+        series:
+          type: array
+          items: {$ref: '#/components/schemas/SummaryPoint'}
+        total:
+          type: object
+          additionalProperties: false
+          properties:
+            value: {type: [number, 'null']}
+            value_lo: {type: [number, 'null']}
+            value_hi: {type: [number, 'null']}
+            n_missing: {type: integer}
+            n_out_of_range: {type: integer}
+        method_version: {$ref: '#/components/schemas/MethodVersion'}
+    SummaryQuery:
+      type: object
+      additionalProperties: false
+      required: [polygon, start, end]
+      properties:
+        polygon:
+          type: object
+          description: GeoJSON Polygon·MultiPolygon(또는 그 Feature). 꼭짓점 ≤ 5,000, 링 ≤ 50, 자기 교차 없음.
+        start: {type: string, format: date}
+        end: {type: string, format: date}
+        freq: {type: string, enum: [month, day], default: month}
+    Hotspot:
+      type: object
+      additionalProperties: false
+      description: 핸드오프 §1-1 열 19개, 같은 순서. release 에 점 파일이 없다(R2). HotspotList 예시는 가짜 생성기 값(API-v3 §3.2).
+      x-status: release-absent
+      required: [latitude, longitude, acq_datetime_utc, date_local, satellite, instrument, frp, confidence, daynight, cell_id, country, adm1, harmonized_weight, weight_lo, weight_hi, weight_source, is_reference, source, method_version]
+      properties:
+        latitude: {type: number, minimum: -90, maximum: 90}
+        longitude: {type: number, minimum: -180, maximum: 180}
+        acq_datetime_utc: {type: string, format: date-time}
+        date_local: {type: string, format: date, description: 현지 태양시 날짜(필터 기준)}
+        satellite: {type: string, enum: [N, N20, N21, Terra, Aqua]}
+        instrument: {type: string, enum: [VIIRS, MODIS]}
+        frp: {type: [number, 'null']}
+        confidence: {type: string, enum: [l, n, h]}
+        daynight: {type: string, enum: [D, N]}
+        cell_id: {$ref: '#/components/schemas/CellId'}
+        country: {type: [string, 'null'], description: ISO3 (가정 G9)}
+        adm1: {type: [string, 'null']}
+        harmonized_weight: {type: number, minimum: 0}
+        weight_lo: {type: [number, 'null'], minimum: 0}
+        weight_hi: {type: [number, 'null'], minimum: 0}
+        weight_source: {$ref: '#/components/schemas/ValueSource'}
+        is_reference: {type: boolean}
+        source: {$ref: '#/components/schemas/DataSource'}
+        method_version: {$ref: '#/components/schemas/MethodVersion'}
+    HotspotList:
+      type: object
+      additionalProperties: false
+      required: [start, end, layer, limit, count, truncated, reference_sum, hotspots, method_version]
+      properties:
+        aoi_id: {$ref: '#/components/schemas/AoiId'}
+        bbox: {$ref: '#/components/schemas/Bbox'}
+        start: {type: string, format: date}
+        end: {type: string, format: date}
+        layer: {type: string, enum: [reference, all]}
+        limit: {type: integer}
+        count: {type: integer}
+        total: {type: integer}
+        truncated: {type: boolean}
+        next_cursor: {type: [string, 'null']}
+        unit: {$ref: '#/components/schemas/Unit'}
+        reference_sum:
+          type: object
+          description: limit 와 무관하게 조건에 맞는 is_reference=true 점 전체 합
+          properties:
+            value: {type: number}
+            value_lo: {type: [number, 'null']}
+            value_hi: {type: [number, 'null']}
+            n_points: {type: integer}
+        hotspots:
+          type: array
+          items: {$ref: '#/components/schemas/Hotspot'}
+        method_version: {$ref: '#/components/schemas/MethodVersion'}
+      examples:
+        - start: '2025-03-22'
+          end: '2025-03-23'
+          aoi_id: SGG_47170
+          layer: reference
+          limit: 1
+          count: 1
+          total: 9
+          truncated: true
+          reference_sum: {value: 9.0, value_lo: 9.0, value_hi: 9.0, n_points: 9}
+          hotspots:
+            - {latitude: 36.6536, longitude: 128.61977, acq_datetime_utc: '2025-03-21T16:43:00Z', date_local: '2025-03-22', satellite: N, instrument: VIIRS, frp: 0.9, confidence: n, daynight: N, cell_id: 4560686, country: KOR, adm1: SIDO_47, harmonized_weight: 1.0, weight_lo: 1.0, weight_hi: 1.0, weight_source: snpp_observed, is_reference: true, source: SP, method_version: v1-m2v-fake-2026-11-14}
+          method_version: v1-m2v-fake-2026-11-14
+    CellId:
+      type: integer
+      minimum: 0
+      description: |
+        `cell_id = (floor(cell_lat×10)+900)×3600 + (floor(cell_lon×10)+1800)`, 칸 중심 = 모서리 + 0.05.
+        release 51,562,642행 전부에서 불일치 0 (INSPECT 가 잼). 예 4549889 → 모서리 (36.3, 128.9).
+    CellProperties:
+      type: object
+      unevaluatedProperties: false
+      allOf:
+        - $ref: '#/components/schemas/Interval'
+        - $ref: '#/components/schemas/EventColumns'
+      required: [cell_id, value, value_lo, value_hi, raw_modis, raw_viirs, value_source, data_source, status]
+      properties:
+        cell_id: {$ref: '#/components/schemas/CellId'}
+        cell_lat: {type: number, description: 칸 중심 위도(정본은 싣는다; 시제품 v3 는 geometry 로만)}
+        cell_lon: {type: number}
+        raw_modis: {type: [integer, 'null'], minimum: 0}
+        raw_viirs: {type: [integer, 'null'], minimum: 0}
+        value_source: {$ref: '#/components/schemas/ValueSource'}
+        data_source: {$ref: '#/components/schemas/DataSource'}
+        status: {$ref: '#/components/schemas/MonthStatus'}
+    CellFeature:
+      type: object
+      additionalProperties: false
+      required: [type, id, geometry, properties]
+      properties:
+        type: {const: Feature}
+        id: {$ref: '#/components/schemas/CellId'}
+        geometry:
+          type: object
+          required: [type, coordinates]
+          properties:
+            type: {const: Polygon}
+            coordinates: {type: array}
+        properties: {$ref: '#/components/schemas/CellProperties'}
+    CellCollection:
+      type: object
+      additionalProperties: false
+      required: [type, properties, features]
+      properties:
+        type: {const: FeatureCollection}
+        properties:
+          type: object
+          additionalProperties: false
+          required: [year, month, unit, month_status, method_version]
+          properties:
+            aoi_id: {$ref: '#/components/schemas/AoiId'}
+            bbox: {$ref: '#/components/schemas/Bbox'}
+            year: {type: integer}
+            month: {type: integer, minimum: 1, maximum: 12}
+            unit: {$ref: '#/components/schemas/Unit'}
+            cell_size_deg: {const: 0.1}
+            n_cells: {type: integer}
+            month_status: {$ref: '#/components/schemas/MonthStatus'}
+            zero_rule: {type: string}
+            method_version: {$ref: '#/components/schemas/MethodVersion'}
+        features:
+          type: array
+          items: {$ref: '#/components/schemas/CellFeature'}
+      examples:
+        - type: FeatureCollection
+          properties: {aoi_id: SGG_47170, year: 2025, month: 3, unit: VIIRS(S-NPP) 기준 화재 감지량, cell_size_deg: 0.1, n_cells: 8, month_status: ok, zero_rule: a cell without a feature is 0 (see month_status for missing), method_version: v1-m2v-2026-11-14}
+          features:
+            - type: Feature
+              id: 4549889
+              geometry: {type: Polygon, coordinates: [[[128.9, 36.3], [129.0, 36.3], [129.0, 36.4], [128.9, 36.4], [128.9, 36.3]]]}
+              properties: {cell_id: 4549889, value: 107.0, value_lo: 107.0, value_hi: 107.0, raw_modis: 29, raw_viirs: 107, value_source: snpp_observed, data_source: SP, status: ok}
+    SatelliteStatus:
+      type: object
+      x-status: assumed
+      description: 열 모양 가정(G1). release 에 파일 없음(R1).
+      required: [start, end, updated_at, satellites, method_version]
+      properties:
+        start: {type: string, format: date}
+        end: {type: string, format: date}
+        updated_at: {type: string, format: date-time}
+        through: {type: string, format: date}
+        satellites:
+          type: array
+          items:
+            type: object
+            required: [satellite]
+            properties:
+              satellite: {type: string, enum: [N, N20, N21, Terra, Aqua]}
+              instrument: {type: string, enum: [VIIRS, MODIS]}
+              first_date: {type: string, format: date}
+              last_date: {type: string, format: date}
+              days: {type: object, additionalProperties: {type: integer}}
+              missing_dates: {type: array, items: {type: string, format: date}}
+              nrt_from: {type: [string, 'null'], format: date}
+        days:
+          type: array
+          items:
+            type: object
+            properties:
+              date: {type: string, format: date}
+              value_source: {$ref: '#/components/schemas/ValueSource'}
+              satellites: {type: array, items: {type: string}}
+              status: {$ref: '#/components/schemas/MonthStatus'}
+              data_source: {oneOf: [{$ref: '#/components/schemas/DataSource'}, {type: 'null'}]}
+        method_version: {$ref: '#/components/schemas/MethodVersion'}
+    Method:
+      type: object
+      required: [method_version, unit, meta]
+      properties:
+        method_version: {$ref: '#/components/schemas/MethodVersion'}
+        unit: {$ref: '#/components/schemas/Unit'}
+        unit_code: {const: snpp_equiv_hotspots}
+        meta:
+          type: object
+          description: m2v_meta.json 그대로(키 자유, method_version 만 필수 — G11). release meta 의 `regional_only` 문구는 파일 내용과 다르다(R12).
+          required: [method_version]
+        value_sources: {type: array}
+        statuses: {type: array, items: {type: string}}
+        verdict_rule: {type: object}
+        rules: {type: array}
+        sources:
+          type: array
+          description: 출처 표시(FIRMS 인정 문구·경계 CC BY)
+          items: {type: object}
+        data_version: {type: string}
+        files: {type: object}
+        ingest:
+          type: object
+          properties:
+            loaded_at: {type: string}
+            aliases_used: {type: array, items: {type: string}}
+            warnings: {type: array, items: {type: string}}
+    Version:
+      type: object
+      required: [api_version, method_version, data_version, limits]
+      properties:
+        api_version: {const: v1}
+        method_version: {$ref: '#/components/schemas/MethodVersion'}
+        data_version: {type: string}
+        release: {type: string, examples: [data-v1-m2v-2026-11-14]}
+        limits:
+          type: object
+          properties:
+            hotspots_days_reference: {type: integer, examples: [92]}
+            hotspots_days_all: {type: integer, examples: [31]}
+            hotspots_limit_max: {type: integer, examples: [10000]}
+            summary_day_days: {type: integer, examples: [366]}
+            summary_month_years: {type: integer, examples: [40]}
+            calendar_years: {type: integer, examples: [40]}
+            polygon_vertices: {type: integer, examples: [5000]}
+            cells_max: {type: integer, examples: [10000]}
+            csv_rows: {type: integer, examples: [100000]}
+    ErrorCode:
+      type: string
+      description: 문자열 code (프런트 분기용). 여러 번호가 같은 code 를 공유한다.
+      enum: [invalid_param, method_not_allowed, not_acceptable, range_too_large, rate_limited, not_found, unknown_aoi, polygon_too_complex, cursor_stale, release_hash_mismatch, conflict, data_not_loaded, upstream_error, upstream_unavailable, unauthorized, forbidden, csrf_rejected, login_failed, internal, overloaded]
+    ErrorNo:
+      type: integer
+      description: |
+        `DSSNN` — D 대역(1 공통 · 2 catalog · 3 harmonized · 4 observation · 5 ingest·provenance · 6 external · 7 identity · 8 reporting · 9 내부),
+        SS 종류(00 형식 · 01 범위·비용 · 02 상태·충돌 · 03 인증·한도 · 04 없음 · 05 저장소·상류 · 09 내부), NN 일련번호.
+        번호 재사용 금지. 표는 `x-error-catalog` (arch2 ARCHITECTURE §3.9).
+      minimum: 10000
+      maximum: 99999
+      x-error-catalog:
+        - {'no': 10001, name: INVALID_PARAM, code: invalid_param, http: 400}
+        - {'no': 10002, name: METHOD_NOT_ALLOWED, code: method_not_allowed, http: 405}
+        - {'no': 10003, name: NOT_ACCEPTABLE, code: not_acceptable, http: 406}
+        - {'no': 10101, name: QUERY_TOO_LONG, code: range_too_large, http: 400}
+        - {'no': 10102, name: BODY_TOO_LARGE, code: range_too_large, http: 413}
+        - {'no': 10301, name: RATE_LIMITED, code: rate_limited, http: 429}
+        - {'no': 10401, name: ROUTE_NOT_FOUND, code: not_found, http: 404}
+        - {'no': 20401, name: UNKNOWN_AOI, code: unknown_aoi, http: 404}
+        - {'no': 30101, name: CALENDAR_RANGE_TOO_LARGE, code: range_too_large, http: 400}
+        - {'no': 30102, name: CSV_ROWS_TOO_MANY, code: range_too_large, http: 400}
+        - {'no': 40001, name: INVALID_GEOMETRY, code: invalid_param, http: 400}
+        - {'no': 40101, name: OBSERVATION_RANGE_TOO_LARGE, code: range_too_large, http: 400}
+        - {'no': 40102, name: POLYGON_TOO_COMPLEX, code: polygon_too_complex, http: 400}
+        - {'no': 40103, name: CELLS_TOO_MANY, code: range_too_large, http: 400}
+        - {'no': 40201, name: CURSOR_STALE, code: cursor_stale, http: 409}
+        - {'no': 50001, name: RELEASE_INVALID, code: invalid_param, http: null, cli_exit: 3}
+        - {'no': 50002, name: RELEASE_HASH_MISMATCH, code: release_hash_mismatch, http: null, cli_exit: 4}
+        - {'no': 50003, name: RELEASE_KEY_INVALID, code: invalid_param, http: null, cli_exit: 3}
+        - {'no': 50201, name: RELEASE_STATE_CONFLICT, code: conflict, http: 409, cli_exit: 5}
+        - {'no': 50501, name: DATA_NOT_LOADED, code: data_not_loaded, http: 503}
+        - {'no': 60501, name: UPSTREAM_ERROR, code: upstream_error, http: 502}
+        - {'no': 60502, name: UPSTREAM_UNAVAILABLE, code: upstream_unavailable, http: 503}
+        - {'no': 70301, name: UNAUTHORIZED, code: unauthorized, http: 401}
+        - {'no': 70302, name: FORBIDDEN, code: forbidden, http: 403}
+        - {'no': 70303, name: CSRF_REJECTED, code: csrf_rejected, http: 403}
+        - {'no': 70304, name: LOGIN_FAILED, code: login_failed, http: 401}
+        - {'no': 80401, name: NOT_FOUND, code: not_found, http: 404}
+        - {'no': 80201, name: IDEMPOTENCY_CONFLICT, code: conflict, http: 409}
+        - {'no': 80202, name: PRECONDITION_FAILED, code: conflict, http: 412}
+        - {'no': 90901, name: INTERNAL, code: internal, http: 500}
+        - {'no': 90902, name: OVERLOADED, code: overloaded, http: 503}
+    Problem:
+      type: object
+      description: RFC 9457 problem+json. detail 에 경로·스택·키·SQL 을 넣지 않는다. 500 은 request_id 만.
+      required: [type, title, status, code, error_no, request_id]
+      properties:
+        type: {type: string, format: uri, description: '${emberline.errors.type-base}/<code>'}
+        title: {type: string, description: ko/en (Accept-Language)}
+        status: {type: integer, minimum: 400, maximum: 599}
+        detail: {type: string}
+        instance: {type: string, description: 요청 경로(쿼리 제외)}
+        code: {$ref: '#/components/schemas/ErrorCode'}
+        error_no: {$ref: '#/components/schemas/ErrorNo'}
+        param: {type: string, description: 어느 파라미터인지(입력 오류)}
+        request_id: {type: string}
+        method_version: {$ref: '#/components/schemas/MethodVersion'}
+        errors:
+          type: array
+          description: 검증 오류 여럿
+          items:
+            type: object
+            properties:
+              param: {type: string}
+              detail: {type: string}

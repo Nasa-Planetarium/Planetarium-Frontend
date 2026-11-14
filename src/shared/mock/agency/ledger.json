@@ -1,0 +1,840 @@
+{
+ "_source": "planetarium-mockup/data.js EM.bundle.internal.ledger (목 · 데모 데이터, 실제 통계·인물 아님)",
+ "today": "2026-11-11",
+ "now": "14:20",
+ "season": "가을철 산불조심기간(11.1–12.15)",
+ "aoi": {
+  "candidate": {
+   "id": "gb-north",
+   "label": "경북 북부",
+   "short": "경북 북부",
+   "status": "지원 권역",
+   "note": "경북 북부 11개 시군"
+  },
+  "alternatives": [
+   {
+    "id": "gw-east",
+    "label": "강원 동해안",
+    "status": "준비 중",
+    "supported": false,
+    "reason": "자료 정비 중인 권역입니다"
+   }
+  ],
+  "partner_note": ""
+ },
+ "bounds": {
+  "west": 128.05,
+  "east": 129.55,
+  "south": 36.15,
+  "north": 37.05
+ },
+ "regions": [
+  {
+   "id": "yeongju",
+   "name": "영주시",
+   "lat": 36.83,
+   "lon": 128.6,
+   "w": 0.6
+  },
+  {
+   "id": "bonghwa",
+   "name": "봉화군",
+   "lat": 36.92,
+   "lon": 128.92,
+   "w": 0.7
+  },
+  {
+   "id": "uljin",
+   "name": "울진군",
+   "lat": 36.93,
+   "lon": 129.33,
+   "w": 0.6
+  },
+  {
+   "id": "yecheon",
+   "name": "예천군",
+   "lat": 36.66,
+   "lon": 128.42,
+   "w": 0.8
+  },
+  {
+   "id": "andong",
+   "name": "안동시",
+   "lat": 36.6,
+   "lon": 128.78,
+   "w": 1.3
+  },
+  {
+   "id": "yeongyang",
+   "name": "영양군",
+   "lat": 36.69,
+   "lon": 129.12,
+   "w": 0.6
+  },
+  {
+   "id": "sangju",
+   "name": "상주시",
+   "lat": 36.4,
+   "lon": 128.17,
+   "w": 1
+  },
+  {
+   "id": "uiseong",
+   "name": "의성군",
+   "lat": 36.35,
+   "lon": 128.66,
+   "w": 1.2
+  },
+  {
+   "id": "cheongsong",
+   "name": "청송군",
+   "lat": 36.4,
+   "lon": 129.06,
+   "w": 0.8
+  },
+  {
+   "id": "yeongdeok",
+   "name": "영덕군",
+   "lat": 36.45,
+   "lon": 129.33,
+   "w": 0.7
+  },
+  {
+   "id": "gunwi",
+   "name": "군위군",
+   "lat": 36.21,
+   "lon": 128.58,
+   "w": 0.5
+  }
+ ],
+ "coast": [
+  [
+   37.05,
+   129.43
+  ],
+  [
+   36.99,
+   129.41
+  ],
+  [
+   36.9,
+   129.44
+  ],
+  [
+   36.8,
+   129.45
+  ],
+  [
+   36.68,
+   129.46
+  ],
+  [
+   36.58,
+   129.43
+  ],
+  [
+   36.5,
+   129.41
+  ],
+  [
+   36.42,
+   129.39
+  ],
+  [
+   36.33,
+   129.37
+  ],
+  [
+   36.24,
+   129.37
+  ],
+  [
+   36.15,
+   129.39
+  ]
+ ],
+ "rivers": [
+  {
+   "name": "낙동강",
+   "pts": [
+    [
+     37.05,
+     129.06
+    ],
+    [
+     36.95,
+     128.98
+    ],
+    [
+     36.86,
+     128.89
+    ],
+    [
+     36.7,
+     128.86
+    ],
+    [
+     36.6,
+     128.82
+    ],
+    [
+     36.565,
+     128.73
+    ],
+    [
+     36.6,
+     128.55
+    ],
+    [
+     36.58,
+     128.42
+    ],
+    [
+     36.53,
+     128.3
+    ],
+    [
+     36.42,
+     128.26
+    ],
+    [
+     36.3,
+     128.3
+    ],
+    [
+     36.15,
+     128.34
+    ]
+   ]
+  },
+  {
+   "name": "반변천",
+   "pts": [
+    [
+     36.8,
+     129.13
+    ],
+    [
+     36.67,
+     129.1
+    ],
+    [
+     36.6,
+     129
+    ],
+    [
+     36.55,
+     128.88
+    ],
+    [
+     36.56,
+     128.76
+    ]
+   ]
+  },
+  {
+   "name": "위천",
+   "pts": [
+    [
+     36.42,
+     128.98
+    ],
+    [
+     36.37,
+     128.85
+    ],
+    [
+     36.33,
+     128.7
+    ],
+    [
+     36.27,
+     128.52
+    ],
+    [
+     36.2,
+     128.38
+    ]
+   ]
+  },
+  {
+   "name": "내성천",
+   "pts": [
+    [
+     36.95,
+     128.78
+    ],
+    [
+     36.85,
+     128.65
+    ],
+    [
+     36.72,
+     128.55
+    ],
+    [
+     36.62,
+     128.38
+    ],
+    [
+     36.58,
+     128.32
+    ]
+   ]
+  }
+ ],
+ "roads": [
+  {
+   "name": "중앙고속도로",
+   "pts": [
+    [
+     37.05,
+     128.44
+    ],
+    [
+     36.92,
+     128.55
+    ],
+    [
+     36.81,
+     128.6
+    ],
+    [
+     36.66,
+     128.66
+    ],
+    [
+     36.57,
+     128.69
+    ],
+    [
+     36.45,
+     128.69
+    ],
+    [
+     36.36,
+     128.68
+    ],
+    [
+     36.24,
+     128.57
+    ],
+    [
+     36.15,
+     128.55
+    ]
+   ]
+  },
+  {
+   "name": "서산영덕고속도로",
+   "pts": [
+    [
+     36.42,
+     128.05
+    ],
+    [
+     36.41,
+     128.17
+    ],
+    [
+     36.38,
+     128.45
+    ],
+    [
+     36.37,
+     128.7
+    ],
+    [
+     36.4,
+     128.9
+    ],
+    [
+     36.43,
+     129.05
+    ],
+    [
+     36.42,
+     129.2
+    ],
+    [
+     36.42,
+     129.37
+    ]
+   ]
+  },
+  {
+   "name": "국도 34호",
+   "pts": [
+    [
+     36.565,
+     128.73
+    ],
+    [
+     36.52,
+     128.9
+    ],
+    [
+     36.47,
+     128.98
+    ],
+    [
+     36.43,
+     129.06
+    ]
+   ]
+  }
+ ],
+ "weather": {
+  "station": "안동",
+  "temp_c": 13.2,
+  "rh": 28,
+  "effective_rh": 31,
+  "wind": "북서 5.4 m/s",
+  "wind_deg": 315,
+  "wind_ms": 5.4
+ },
+ "risk_index": {
+  "value": 78,
+  "label": "높음",
+  "basis": "산불위험지수(0–100) · 안동 관측소 기준"
+ },
+ "fire_records_meta": {
+  "label": "산불 사건 기록",
+  "coverage": {
+   "start": "2020-01-01",
+   "end": "2026-11-11"
+  },
+  "coverage_label": "기록 기간 2020-01-01 – 2026-11-11",
+  "note": "사건 기록은 핫스팟과 단위가 달라 나란히 참고합니다",
+  "data_mode": "example"
+ },
+ "fires": [
+  {
+   "id": "F-261111-03",
+   "name": "안동시 길안면 묵계리",
+   "region": "andong",
+   "lat": 36.468,
+   "lon": 128.935,
+   "detected_at": "2026-11-11 13:52",
+   "status": "new",
+   "level": 4,
+   "viirs": 20,
+   "modis": 3,
+   "frp_max": 132.5,
+   "spread": "남동",
+   "reported": false,
+   "cause": "미상(조사 전)",
+   "kind": "wildfire",
+   "burned_ha": null,
+   "current": true
+  },
+  {
+   "id": "F-261111-02",
+   "name": "의성군 점곡면 윤암리",
+   "region": "uiseong",
+   "lat": 36.405,
+   "lon": 128.818,
+   "detected_at": "2026-11-11 11:20",
+   "status": "dispatched",
+   "level": 2,
+   "viirs": 6,
+   "modis": 1,
+   "frp_max": 31.2,
+   "spread": "동",
+   "reported": true,
+   "cause": "입산자 실화 추정",
+   "kind": "wildfire",
+   "burned_ha": null,
+   "current": true
+  },
+  {
+   "id": "F-261111-01",
+   "name": "청송군 파천면 신기리",
+   "region": "cheongsong",
+   "lat": 36.452,
+   "lon": 129.021,
+   "detected_at": "2026-11-11 09:05",
+   "contained_at": "2026-11-11 12:40",
+   "status": "contained",
+   "level": 2,
+   "viirs": 9,
+   "modis": 2,
+   "frp_max": 44.8,
+   "spread": "-",
+   "reported": true,
+   "cause": "쓰레기 소각 추정",
+   "kind": "wildfire",
+   "burned_ha": 4.8,
+   "current": true,
+   "landcover": {
+    "forest": 3.9,
+    "farm": 0.6,
+    "grass": 0.3,
+    "urban": 0
+   },
+   "ownership": {
+    "national": 0,
+    "public": 1.2,
+    "private": 3.6
+   }
+  },
+  {
+   "id": "F-261110-02",
+   "name": "영덕군 지품면 삼화리",
+   "region": "yeongdeok",
+   "lat": 36.442,
+   "lon": 129.268,
+   "detected_at": "2026-11-10 15:31",
+   "contained_at": "2026-11-10 21:10",
+   "status": "out",
+   "level": 3,
+   "viirs": 21,
+   "modis": 5,
+   "frp_max": 112.6,
+   "spread": "-",
+   "reported": true,
+   "cause": "전기 설비 추정",
+   "kind": "wildfire",
+   "burned_ha": 12.6,
+   "current": false,
+   "landcover": {
+    "forest": 11.2,
+    "farm": 0.9,
+    "grass": 0.5,
+    "urban": 0
+   },
+   "ownership": {
+    "national": 6.1,
+    "public": 1.4,
+    "private": 5.1
+   }
+  },
+  {
+   "id": "F-261110-01",
+   "name": "예천군 용궁면 무이리",
+   "region": "yecheon",
+   "lat": 36.603,
+   "lon": 128.298,
+   "detected_at": "2026-11-10 10:12",
+   "status": "resolved",
+   "level": 1,
+   "viirs": 2,
+   "modis": 0,
+   "frp_max": 6.1,
+   "spread": "-",
+   "reported": false,
+   "cause": "영농부산물 소각(위성만 감지)",
+   "kind": "agri",
+   "burned_ha": 0.3,
+   "current": false,
+   "landcover": {
+    "forest": 0,
+    "farm": 0.3,
+    "grass": 0,
+    "urban": 0
+   },
+   "ownership": {
+    "national": 0,
+    "public": 0,
+    "private": 0.3
+   }
+  },
+  {
+   "id": "F-261108-01",
+   "name": "영양군 일월면 도곡리",
+   "region": "yeongyang",
+   "lat": 36.728,
+   "lon": 129.088,
+   "detected_at": "2026-11-08 16:44",
+   "contained_at": "2026-11-08 19:02",
+   "status": "out",
+   "level": 2,
+   "viirs": 5,
+   "modis": 1,
+   "frp_max": 22,
+   "spread": "-",
+   "reported": true,
+   "cause": "논두렁 소각 확산",
+   "kind": "wildfire",
+   "burned_ha": 2.1,
+   "current": false,
+   "landcover": {
+    "forest": 1.4,
+    "farm": 0.6,
+    "grass": 0.1,
+    "urban": 0
+   },
+   "ownership": {
+    "national": 0,
+    "public": 0.3,
+    "private": 1.8
+   }
+  },
+  {
+   "id": "H-2503-UI",
+   "name": "의성·안동 대형산불",
+   "region": "uiseong",
+   "lat": 36.38,
+   "lon": 128.78,
+   "detected_at": "2025-03-22 11:25",
+   "contained_at": "2025-03-30 17:00",
+   "status": "out",
+   "level": 4,
+   "viirs": 480,
+   "modis": 154,
+   "frp_max": 1880,
+   "spread": "-",
+   "reported": true,
+   "cause": "성묘객 실화 추정",
+   "kind": "wildfire",
+   "burned_ha": 45200,
+   "current": false,
+   "historical": true,
+   "landcover": {
+    "forest": 39100,
+    "farm": 3600,
+    "grass": 1800,
+    "urban": 700
+   },
+   "ownership": {
+    "national": 9800,
+    "public": 6100,
+    "private": 29300
+   },
+   "by_region": {
+    "uiseong": 15200,
+    "andong": 13900,
+    "cheongsong": 8600,
+    "yeongyang": 3900,
+    "yeongdeok": 3600
+   }
+  },
+  {
+   "id": "H-2004-AD",
+   "name": "안동 풍천면 산불",
+   "region": "andong",
+   "lat": 36.57,
+   "lon": 128.55,
+   "detected_at": "2020-04-24 15:39",
+   "contained_at": "2020-04-26 14:30",
+   "status": "out",
+   "level": 4,
+   "viirs": 26,
+   "modis": 8,
+   "frp_max": 640,
+   "spread": "-",
+   "reported": true,
+   "cause": "실화 추정",
+   "kind": "wildfire",
+   "burned_ha": 1900,
+   "current": false,
+   "historical": true,
+   "landcover": {
+    "forest": 1700,
+    "farm": 140,
+    "grass": 50,
+    "urban": 10
+   },
+   "ownership": {
+    "national": 120,
+    "public": 260,
+    "private": 1520
+   }
+  }
+ ],
+ "units": [
+  {
+   "id": "U-01",
+   "type": "engine",
+   "name": "펌프차 A-1 · 관할 안전센터 A",
+   "org": "관할 소방서",
+   "lat": 36.452,
+   "lon": 128.886,
+   "status": "standby",
+   "crew": 3
+  },
+  {
+   "id": "U-02",
+   "type": "tanker",
+   "name": "물탱크차 B-1 · 관할 소방서 본서",
+   "org": "관할 소방서",
+   "lat": 36.566,
+   "lon": 128.722,
+   "status": "standby",
+   "crew": 2
+  },
+  {
+   "id": "U-03",
+   "type": "engine",
+   "name": "산불진화차 C-1 · 관할 안전센터 C",
+   "org": "관할 소방서",
+   "lat": 36.548,
+   "lon": 128.884,
+   "status": "standby",
+   "crew": 3
+  },
+  {
+   "id": "U-04",
+   "type": "engine",
+   "name": "펌프차 D-1 · 인접 지역대 D",
+   "org": "인접 소방서",
+   "lat": 36.401,
+   "lon": 128.812,
+   "status": "onscene",
+   "crew": 3,
+   "fire_id": "F-261111-02"
+  },
+  {
+   "id": "U-05",
+   "type": "heli",
+   "name": "산림헬기 H-1 (대형)",
+   "org": "산림항공 관리소",
+   "lat": 36.585,
+   "lon": 128.552,
+   "status": "standby",
+   "crew": 4
+  },
+  {
+   "id": "U-06",
+   "type": "crew",
+   "name": "산불 특수진화대 2팀",
+   "org": "산림 당국",
+   "lat": 36.574,
+   "lon": 128.716,
+   "status": "standby",
+   "crew": 10
+  },
+  {
+   "id": "U-07",
+   "type": "engine",
+   "name": "펌프차 E-1 · 인접 안전센터 E",
+   "org": "인접 소방서",
+   "lat": 36.531,
+   "lon": 129.056,
+   "status": "return",
+   "crew": 3,
+   "fire_id": "F-261111-01"
+  },
+  {
+   "id": "U-08",
+   "type": "crew",
+   "name": "의용소방대 A",
+   "org": "관할 소방서",
+   "lat": 36.462,
+   "lon": 128.91,
+   "status": "standby",
+   "crew": 8
+  },
+  {
+   "id": "U-09",
+   "type": "command",
+   "name": "현장지휘차 K-1",
+   "org": "관할 소방서",
+   "lat": 36.568,
+   "lon": 128.731,
+   "status": "standby",
+   "crew": 2
+  }
+ ],
+ "alerts": [
+  {
+   "id": "A-0413",
+   "fire_id": "F-261111-03",
+   "at": "14:20",
+   "level": 4,
+   "viirs": 20,
+   "modis": 3,
+   "frp_max": 132.5,
+   "title": "관측 점 6개 늘어 확산 감지",
+   "body": "직전 통과보다 군집 면적 1.8배(VIIRS 14 → 20). 북서풍 5.4 m/s 기준으로 남동쪽 길안천 쪽 확산 추정. 반경 2 km 안 마을 2곳.",
+   "status": "new",
+   "targets": [
+    "responder",
+    "firefighter"
+   ]
+  },
+  {
+   "id": "A-0412",
+   "fire_id": "F-261111-03",
+   "at": "13:54",
+   "level": 3,
+   "viirs": 14,
+   "modis": 3,
+   "frp_max": 86.4,
+   "title": "신규 핫스팟 군집 감지",
+   "body": "VIIRS 14, MODIS 3, 열 세기(FRP) 최대 86.4 MW. 119 신고 접수 전 위성 선감지.",
+   "status": "new",
+   "targets": [
+    "responder",
+    "firefighter"
+   ]
+  },
+  {
+   "id": "A-0409",
+   "fire_id": "F-261111-02",
+   "at": "11:22",
+   "level": 2,
+   "title": "119 신고와 일치한 핫스팟",
+   "body": "119 신고(11:18)와 위치 일치. 인접 지역대 펌프차 현장 도착.",
+   "status": "dispatched",
+   "targets": [
+    "responder",
+    "firefighter"
+   ]
+  },
+  {
+   "id": "A-0405",
+   "fire_id": "F-261111-01",
+   "at": "09:07",
+   "level": 2,
+   "title": "핫스팟 감지",
+   "body": "12:40 진화 완료. 피해 면적 산정 대기열로 넘김.",
+   "status": "resolved",
+   "targets": [
+    "responder",
+    "firefighter",
+    "land"
+   ]
+  },
+  {
+   "id": "A-0398",
+   "fire_id": "F-261110-01",
+   "at": "어제 10:14",
+   "level": 1,
+   "title": "영농 소각 추정 소규모 열원",
+   "body": "신고 없음. 농경지 위 단발성 핫스팟 2개.",
+   "status": "resolved",
+   "targets": [
+    "responder"
+   ]
+  }
+ ],
+ "simulation": [],
+ "accounts": {
+  "responder": {
+   "name": "정하늘",
+   "org": "광역 상황실",
+   "title": "조기경보 담당"
+  },
+  "firefighter": {
+   "name": "오태준",
+   "org": "관할 소방서",
+   "title": "현장대응단 지휘"
+  },
+  "land": {
+   "name": "한지우",
+   "org": "광역 산림 부서",
+   "title": "산림 토지관리"
+  },
+  "commander": {
+   "name": "강도윤",
+   "org": "통합 지휘팀",
+   "title": "상황 지휘"
+  },
+  "scientist": {
+   "name": "서민재",
+   "org": "원격탐사 연구팀",
+   "title": "원격탐사 연구원"
+  }
+ }
+}

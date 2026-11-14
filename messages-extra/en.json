@@ -1,0 +1,10 @@
+{
+ "_note": "Keys the mockup dictionary does not have yet. Mockup values win when the same key appears (src/shared/i18n/messages.ts).",
+ "shell": {
+  "nav": {
+   "calendar": { "label": "Calendar", "short": "Calendar" },
+   "method": { "label": "Method & validation", "short": "Method" }
+  },
+  "page": { "calendar": "Calendar", "method": "Method & validation" }
+ }
+}
