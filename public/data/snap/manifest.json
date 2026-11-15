@@ -2,8 +2,8 @@
  "source": "../snap11",
  "files": {
   "korea.json": {
-   "bytes": 2843298,
-   "sha256": "548e3c9aa0aa64eb450b101d30948939c6ab817ed5b573102cfce337967087f8"
+   "bytes": 2939937,
+   "sha256": "b19aac1bf7e3bb565b40acd7bc59fde9ced50880aa32d4dea3a9d4c1a095dfc7"
   },
   "countries.json": {
    "bytes": 518081,

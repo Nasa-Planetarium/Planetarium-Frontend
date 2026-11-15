@@ -170,7 +170,7 @@
    "release": "Data release",
    "value": "To date (value)",
    "verdict": "Verdict",
-   "verdict_t": "Always undecided for the month in progress (percentile and ratio are month-to-date, not used)"
+   "verdict_t": "Verdict always withheld for the month in progress (percentile and ratio are month-to-date, not used)"
   }
  }
 }

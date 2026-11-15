@@ -37,7 +37,7 @@
   "ui": {
    "2": "2×",
    "00": ":00",
-   "0_is_0_missing_is_an_empty_h": "0 is 0; missing is an empty hatched cell with a reason; MODIS 0 before 2012 is on hold",
+   "0_is_0_missing_is_an_empty_h": "0 is 0; missing is an empty hatched cell with a reason; MODIS 0 before 2012 gets verdict withheld",
    "0_no_detections": "0 = no detections",
    "0_records": "0 records",
    "119_call_match": "119 call match",
@@ -239,7 +239,7 @@
    "now2": "Now",
    "observed": "Observed",
    "off_axis": "Off axis",
-   "on_hold_modis_0": "On hold (MODIS 0) ",
+   "on_hold_modis_0": "Verdict withheld (MODIS 0) ",
    "on_scene_report": " (on-scene report)",
    "one_side_missing": "One side missing",
    "onward": " onward",
