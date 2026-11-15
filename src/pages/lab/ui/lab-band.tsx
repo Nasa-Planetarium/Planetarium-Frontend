@@ -472,6 +472,8 @@ function Hind(c: LabCtx) {
   const mx = Math.max(mae, mae0) * 1.08 || 1;
   const Wd = (v: number) => `${((v / mx) * 100).toFixed(1)}%`;
   const hit = R.filter((r) => r.hit).length;
+  /* 구간 위로 벗어난 달 중 실측이 가장 큰 달 — 고른 지역 뒷검증 값에서 고른다(고정 사례 달 아님) */
+  const bigMiss = R.filter((r) => !r.hit && r.actual > r.hi80).reduce<(typeof R)[number] | null>((m, r) => (!m || r.actual > m.actual ? r : m), null);
   return (
     <>
       <SumList
@@ -479,7 +481,7 @@ function Hind(c: LabCtx) {
           [T_("lab.ui.vs_climatology"), dpct == null ? "–" : <><span className={cx("num")}>{dpct.toFixed(0)}%</span> {better ? T_("lab.ui.lower") : T_("lab.ui.higher")}</>],
           [T_("lab.ui.80_interval_hit_rate"), <><span className={cx("num")}>{(cov * 100).toFixed(1)}%</span>{T_("lab.ui.target_80")}</>],
           [T_("lab.ui.sample"), <><span className={cx("num")}>{n}</span>{T_("lab.ui.months")} <span className={cx("num")}>2012–2025</span></>],
-          [T_("lab.g6.lim"), T_("lab.g6.lim_t")],
+          [T_("lab.g6.lim"), bigMiss ? T_("lab.g6.lim_t", { m: F.ymS(bigMiss.ym) }) : T_("lab.g6.lim_none")],
         ]}
       />
       <div className={cx("lb-pfmae")} role="img" aria-label={`${T_("lab.g6.mae_log")} ${mae.toFixed(3)} / ${mae0.toFixed(3)}`}>

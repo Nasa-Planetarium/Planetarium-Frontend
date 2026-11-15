@@ -73,12 +73,12 @@ function AnalysisScreen() {
   const byId = useMemo(() => new Map((aq.data ?? []).map((a) => [a.aoi_id, a] as const)), [aq.data]);
   const has = useCallback((id: string) => byId.has(id), [byId]);
 
-  /* 지역: 주소 aoi(모양·목록 확인) → 다른 나라 화면이면 그 나라 단위 → 기본(경북 북부 묶음, 없으면 경북) */
+  /* 지역: 주소 aoi(모양·목록 확인) → 지금 나라 단위(한국 = KR, 다른 나라와 같은 규칙) → 없으면 옛 기본(경북 북부 묶음·경북) */
   const urlAoi = sp.get("aoi");
   const aoi = useMemo(() => {
     if (!aq.data) return null;
     if (urlAoi && AOI_OK(urlAoi) && has(urlAoi) && !(KOR && /^ADM0_/.test(urlAoi))) return urlAoi;
-    if (!KOR && has(aoiOfIso3(iso3))) return aoiOfIso3(iso3);
+    if (has(aoiOfIso3(iso3))) return aoiOfIso3(iso3);
     return defaultAoi(has);
   }, [aq.data, urlAoi, has, KOR, iso3]);
   const rec: AoiRec | null = aoi ? (byId.get(aoi) ?? null) : null;
@@ -275,8 +275,9 @@ function S1({ x, KOR, yr, setYr, inScope, iso3 }: { x: Ctx; KOR: boolean; yr: nu
   };
   const pickMonth = (mm: number) => x.writeQ({ ym: ymIso(y, mm), step: null });
 
-  /* 지역 단추: 한국 = 경북 북부 묶음(있으면) · 경북 · 한국 + 지금 고른 다른 지역 · 다른 나라 = 그 나라 단위 */
-  const ids: string[] = KOR ? KOR_AOIS.filter(has) : [aoiOfIso3(iso3)];
+  /* 지역 단추: 지금 나라 단위 + 지금 고른 다른 지역(한국도 다른 나라와 같다 — 고정 사례 지역 단추 없음). 나라 단위가 목록에 없으면 옛 한국 단추 */
+  const own = aoiOfIso3(iso3);
+  const ids: string[] = has(own) ? [own] : KOR ? KOR_AOIS.filter(has) : [own];
   if (aoi && aoi !== "WORLD" && !ids.includes(aoi)) ids.push(aoi);
   /* 전 세계(WORLD) — 목록에 행이 있을 때만(실서버 있음 · 목 스냅숏 없음) */
   if (has("WORLD")) ids.push("WORLD");
