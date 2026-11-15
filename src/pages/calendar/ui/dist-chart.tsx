@@ -5,12 +5,14 @@ import { useLocale } from "next-intl";
 import { useT } from "@/shared/i18n";
 import { displayInterval, hasSpread } from "@/shared/lib/display";
 import { fmtAxis, fmtNum, ticks } from "../model/calendar";
+import { BarPaintDefs, topRoundPath } from "@/shared/ui";
 import { C, Tx } from "./cal-svg";
 import { cx } from "./cx";
 
 /**
  * 같은 달 연도별 막대(목업 EM.charts.dist). release 값을 그대로 그린다 — 다시 계산하지 않는다.
  * 띠 = 기준 p25–p75 · 점선 = 중앙값 · 수염 = 화면 구간 displayInterval(value, value_lo, value_hi)(F16 — 값까지 넓힘) · 결측 = 바닥의 낮은 빗금 칸.
+ * 모양(2026-11-15): 기준 연도 = 위 주황 갈색 → 아래 어두운 갈색 세로 그라데이션 · 분석 연도 = 노랑 → 주황 → 분홍빛 빨강 + 은은한 빛 · 윗모서리만 둥글게.
  */
 export interface DistItem {
   year: number;
@@ -53,6 +55,9 @@ export function DistChart(o: {
   const MH = Math.min(22, H - pt - pb);
   const evI = d.findIndex((x) => x.state === "evaluated");
   const f = (v: number) => fmtNum(lang, v);
+  const gB = `${hid}b`;
+  const gE = `${hid}e`;
+  const gG = `${hid}g`;
 
   const bars = d.map((x, i) => {
     const bx = X(i) + Math.max(1, bw * 0.16);
@@ -62,7 +67,7 @@ export function DistChart(o: {
     const btn = o.onBar ? { role: "button", tabIndex: ev ? 0 : -1, style: { cursor: "pointer" }, onClick: () => o.onBar?.(x.year) } : {};
     if (x.value == null) {
       return (
-        <rect key={x.year} className={cx("ds-b")} data-y={x.year} x={bx} y={Y(0) - MH} width={w} height={MH} rx={2} fill={`url(#${hid})`} fillOpacity={ev ? undefined : 0.8} stroke={ev ? C.viirs : undefined} strokeWidth={ev ? 1.5 : undefined} {...btn}>
+        <rect key={x.year} className={cx("ds-b")} data-y={x.year} x={bx} y={Y(0) - MH} width={w} height={MH} rx={2} fill={`url(#${hid})`} fillOpacity={ev ? undefined : 0.8} stroke={ev ? C.ybEvalInk : undefined} strokeWidth={ev ? 1.5 : undefined} {...btn}>
           <title>{tt + t("shell.chart.missing_cell")}</title>
         </rect>
       );
@@ -70,10 +75,10 @@ export function DistChart(o: {
     const h = Math.max(x.value === 0 ? 0 : 1.5, Y(0) - Y(x.value));
     return (
       <g key={x.year}>
-        <rect className={cx("ds-b")} data-y={x.year} x={bx} y={Y(0) - h} width={w} height={h} rx={2} fill={ev ? C.viirs : C.base} stroke={ev && x.partial ? C.ink : undefined} strokeWidth={ev && x.partial ? 1.4 : undefined} strokeDasharray={ev && x.partial ? "3 2" : undefined} {...btn}>
+        <path className={cx("ds-b")} data-y={x.year} d={topRoundPath(bx, Y(0) - h, w, h)} fill={`url(#${ev ? gE : gB})`} filter={ev && h > 0 ? `url(#${gG})` : undefined} stroke={ev && x.partial ? C.ink : undefined} strokeWidth={ev && x.partial ? 1.4 : undefined} strokeDasharray={ev && x.partial ? "3 2" : undefined} {...btn}>
           <title>{`${tt}${f(x.value)} ${o.unit}`}</title>
-        </rect>
-        {x.value === 0 ? <Tx x={bx + w / 2} y={Y(0) - 3} s="0" anchor="middle" fill={ev ? C.viirs : C.muted} /> : null}
+        </path>
+        {x.value === 0 ? <Tx x={bx + w / 2} y={Y(0) - 3} s="0" anchor="middle" fill={ev ? C.ybEvalInk : C.muted} /> : null}
         {hasSpread(ivs[i])
           ? ((iv) => {
               const cw = Math.max(2, w * 0.25);
@@ -128,6 +133,7 @@ export function DistChart(o: {
           <rect width="5" height="5" fill={C.hatchBg} />
           <line x1="0" y1="0" x2="0" y2="5" stroke={C.dim} strokeWidth="1.6" />
         </pattern>
+        <BarPaintDefs id={hid} />
       </defs>
       {tk.ticks.map((v) => (
         <g key={v}>
@@ -151,9 +157,9 @@ export function DistChart(o: {
           <Tx x={pl} y={12} s={`— ${t("shell.chart.median", { n: f(Math.round(o.median * 10) / 10) })}`} fill={C.ink} />
         </g>
       ) : null}
-      {ev && ev.value ? <Tx x={X(evI) + bw / 2} y={Math.max(11, Y(ev.value) - 6)} s={f(ev.value)} anchor={evI > n - 3 ? "end" : "middle"} weight="600" fill={C.viirs} /> : null}
+      {ev && ev.value ? <Tx x={X(evI) + bw / 2} y={Math.max(11, Y(ev.value) - 6)} s={f(ev.value)} anchor={evI > n - 3 ? "end" : "middle"} weight="700" fill={C.ybEvalInk} cls="ds-ev-v" /> : null}
       {d.map((x, i) =>
-        i === evI || tick.has(i) ? <Tx key={`t${x.year}`} x={X(i) + bw / 2} y={H - 7} s={i === evI ? x.year : `'${String(x.year).slice(2)}`} anchor="middle" weight={i === evI ? "600" : undefined} fill={i === evI ? C.viirs : C.muted} /> : null,
+        i === evI || tick.has(i) ? <Tx key={`t${x.year}`} x={X(i) + bw / 2} y={H - 7} s={i === evI ? x.year : `'${String(x.year).slice(2)}`} anchor="middle" weight={i === evI ? "700" : undefined} fill={i === evI ? C.ybEvalInk : C.muted} cls={i === evI ? "ds-ev-y" : undefined} /> : null,
       )}
     </svg>
   );
