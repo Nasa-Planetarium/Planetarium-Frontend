@@ -73,8 +73,9 @@
   /* ── 글자 ── */
   /* r8 관제 콘솔(DIRECTION-R8 §2.1): 세리프 폐기, 산세리프 한 벌. 값 칸(숫자·시각·좌표·코드)만 Plex Mono — 한글은 Plex Sans KR 로 떨어진다.
      --font-head·--font-mark 는 옛 이름(별칭, 새 코드 사용 금지) */
-  --font-body:"IBM Plex Sans KR","IBM Plex Sans","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
-  --font-data:"IBM Plex Mono","IBM Plex Sans KR",ui-monospace,monospace;
+  /* 모두 Pretendard(프런트 UI/UX 2026-11-15) — 실제 값은 theme.css */
+  --font-body:"Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --font-data:"Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   --fw-regular:400; --fw-medium:500; --fw-strong:600; --fw-bold:700; --fw-heavy:800;
   /* ── 간격(4 격자, 모든 기기 같음) + 의도적 미세값 둘 ── */
   --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px; --sp-7:32px; --sp-8:48px;
@@ -101,8 +102,14 @@
   --fs-1:11px; --fs-2:12px; --fs-3:13px; --fs-body:14px; --fs-4:15px; --fs-mark:15px; --lh-body:1.55;
   /* r6 목록 주 행(경보 목록 제목 · 수신함 제목 · 표 본문). --text-3 은 출처·축 눈금에만(TOKENS.md §r6). 기기군 블록이 기기 단으로 덮는다(r7) */
   --fs-row:15px; --row-ink:var(--text-1); --row-ink-2:var(--text-2);
-  --gutter:16px; --gap-panel:0px; --pad-panel:16px; --hinge-gap:0px;
-  --r-s:4px; --r-m:6px; --r-l:0px; --r-sheet:12px;
+  /* 카드(벤토) 배치(프런트 UI/UX 2026-11-15): 패널 = 둥근 카드(--r-l 16) · 카드 사이 틈(--gap-panel 12). 모든 화면 공통 */
+  /* 재생 조작 포인트 그라데이션(프런트 UI/UX 2026-11-15): 주황 → 산호까지만(분홍 없음) · 은은한 산호 빛 */
+  --flame-a:#ffa04a; --flame-b:#ff6b5e;
+  --grad-flame:linear-gradient(135deg,var(--flame-a) 0%,var(--flame-b) 100%);
+  --grad-flame-x:linear-gradient(90deg,var(--flame-a) 0%,var(--flame-b) 100%);
+  --glow-flame:0 4px 14px rgb(255 107 94 / .35),0 1px 3px rgb(255 160 74 / .4);
+  --gutter:16px; --gap-panel:12px; --pad-panel:16px; --hinge-gap:0px;
+  --r-s:4px; --r-m:6px; --r-l:16px; --r-sheet:12px;
   --hit:24px; --ctl-h:40px; --ctl-h-sm:32px; --chip-h:26px; --row-h:40px; --ring-w:2px;
   /* 플렉스데이 KB 대응(2026-11-13 r3, TOKENS.md §플렉스데이 KB 대응): 표 행 40(R40 40~48) · 머리·필터 컨트롤 40 · 패널·표 안 작은 컨트롤 32(R46 한 줄 같은 높이) · 상태 낱말 높이 24 · 확인 대화상자 480 */
   --badge-h:var(--sp-6); --modal-w:480px; --modal-w-wide:760px;
@@ -154,4 +161,4 @@ html[data-device="foldable"]{
 @media (horizontal-viewport-segments:2){html[data-device="foldable"]{--hinge-gap:calc(env(viewport-segment-left 1 0, 0px) - env(viewport-segment-right 0 0, 0px) + 24px)}}
 
 /* 다국어 글꼴 토큰(GLOBAL §1.8): 영어는 라틴 Plex Sans 를 앞에 */
-:root:lang(en){--font-body:"IBM Plex Sans","IBM Plex Sans KR",system-ui,sans-serif}
+:root:lang(en){--font-body:"Pretendard Variable",Pretendard,system-ui,sans-serif}

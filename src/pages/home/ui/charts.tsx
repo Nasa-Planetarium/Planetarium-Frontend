@@ -5,9 +5,9 @@ import { eraPlace, FIRST_YEAR, niceMax, SATS, type Cell, type Sensor } from "../
 import { cx } from "./cx";
 import type { Fmt, Tok } from "./use-ui";
 
-/* 목업 charts.js 의 SVG 차트를 React 로(색은 토큰 값을 속성으로 — PNG 내보내기에서도 같은 색). 글자 = Plex Mono(숫자) · 한글은 본문 서체 */
-const MONO = "IBM Plex Mono, IBM Plex Sans KR, monospace";
-const SANS = "IBM Plex Sans KR, Malgun Gothic, sans-serif";
+/* 목업 charts.js 의 SVG 차트를 React 로(색은 토큰 값을 속성으로 — PNG 내보내기에서도 같은 색). 글자 = Pretendard(숫자·한글 모두) */
+const MONO = "Pretendard Variable, Pretendard, Malgun Gothic, sans-serif";
+const SANS = "Pretendard Variable, Pretendard, Malgun Gothic, sans-serif";
 const KO = /[가-힣]/;
 function Tx({ x, y, children, fill, anchor }: { x: number | string; y: number | string; children: ReactNode; fill: string; anchor?: "start" | "middle" | "end" }) {
   const ko = KO.test(String(children));

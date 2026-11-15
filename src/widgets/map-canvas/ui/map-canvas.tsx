@@ -1163,10 +1163,10 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
             }
           });
         x.fillStyle = T("text-1");
-        x.font = "600 13px 'IBM Plex Sans KR', sans-serif";
+        x.font = "600 13px 'Pretendard Variable', Pretendard, sans-serif";
         x.fillText(title || "Emberline", 14, h + 27);
         x.fillStyle = T("text-2");
-        x.font = "12px 'IBM Plex Sans KR', sans-serif";
+        x.font = "12px 'Pretendard Variable', Pretendard, sans-serif";
         const at = attrEl.current?.textContent ?? "";
         const stamp = new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC · " + at;
         x.fillText(stamp, Math.max(14, w - 14 - x.measureText(stamp).width), h + 27);
