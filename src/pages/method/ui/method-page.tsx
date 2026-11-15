@@ -497,7 +497,15 @@ function SecStatus(c: Ctx) {
           {T("ui.range")} 2000-11 – 2026-11 · {nf(inR.length)} {T("ui.months")}
         </p>
       </Panel>
-      <Panel title={T("p.vs_aoi")} n={vsRows.length}>
+      <Panel
+        title={
+          <>
+            {T("p.vs_aoi")}
+            {files.satellite_day_status ? <SatCsv c={c} /> : null}
+          </>
+        }
+        n={vsRows.length}
+      >
         <Table heads={[[T("t.value")], [T("t.period")]]} rows={vsRows} />
         {files.satellite_day_status ? <SatBlock c={c} /> : null}
       </Panel>
@@ -734,7 +742,7 @@ function SatBlock({ c }: { c: Ctx }) {
         <None c={c} k="ui.not_provided" />
       ) : (
         <Table
-          heads={[[<span key="s" className={cx("mt-sath")}>{V("sat_title")}<SatCsv c={c} first={spans[0]?.first ?? null} through={q.data?.through ?? null} /></span>], [<span key="p" title={`UTC · ${q.data?.through ?? "–"}`}>{T("t.period")} <span className={cx("mt-dim")}>UTC</span></span>], [V("st.low"), 1], [V("st.missing"), 1]]}
+          heads={[[V("sat_title")], [<span key="p" title={`UTC · ${q.data?.through ?? "–"}`}>{T("t.period")} <span className={cx("mt-dim")}>UTC</span></span>], [V("st.low"), 1], [V("st.missing"), 1]]}
           rows={spans.map((r) => (
             <tr key={r.satellite} data-sat={r.satellite}>
               <td className={cx("nw")}>{r.satellite}</td>
@@ -752,7 +760,12 @@ function SatBlock({ c }: { c: Ctx }) {
 }
 
 /** 위성 × 달 상태 CSV(JSON 행 그대로 · 날 = UTC) */
-function SatCsv({ c, first, through }: { c: Ctx; first: string | null; through: string | null }) {
+function SatCsv({ c }: { c: Ctx }) {
+  const q = useQuery(satMonthsQuery(c.M.method_version ?? null));
+  const spans = satSpans(q.data?.months);
+  const first = spans[0]?.first ?? null;
+  const through = q.data?.through ?? null;
+  if (!q.data || !spans.length) return null;
   return (
     <CsvButton
       kind="satellite-status"
