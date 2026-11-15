@@ -27,6 +27,17 @@
    tokens.css(생성물)는 --strip-h:0 이고 층 밖 규칙이라, 같은 선택자를 그 뒤·층 밖에 둬서 덮는다. --top 이 두 줄 높이를 따라간다 */
 html[data-device="phone"] { --strip-h: calc(var(--hit) + var(--hair)); }
 
+/* 지도 가독성(프런트 UI/UX, 2026-11-15): 검정 바탕이라 지도가 떴는지 알기 어려워 바다 = 밝은 파랑(#B4DEF6), 육지 = 연한 초록빛 흰색(#F5FEF4)으로.
+   tokens.css(생성물)는 고치지 않고 같은 이름을 그 뒤·층 밖에서 덮는다. 모든 MapLibre 지도(공통 지도·캘린더 점 지도·전 세계 재생)가 이 값을 읽는다.
+   땅이 밝아져서 지도 위 글자는 어둡게, 글자 테두리(halo)는 흰색으로 뒤집는다. 값은 MapLibre 가 읽을 수 있게 hex/rgba 만 */
+:root {
+  --map-void: #0d3b66; --map-bg: #12497d; --map-mask: #0a2540;
+  --map-sea: #B4DEF6; --map-land: #F5FEF4;
+  --map-shade-dark: #8c9aa8; --map-shade-light: #ffffff; --map-shade-accent: #dfe7ee;
+  --map-water: #4f9be0; --map-water-label: #1d5f9e; --map-road: #b9c0c8; --map-boundary: #8b97a5;
+  --map-label: #273444; --map-label-hi: #0b1724; --map-halo: #ffffff; --map-grid: rgba(255,255,255,.10);
+}
+
 /* 움직임 줄이기: 전역. 살아 있는 상태 표시(맥동)도 멈춘다 */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }

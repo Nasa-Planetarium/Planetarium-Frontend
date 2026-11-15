@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Crosshair, Layers as LayersIc, LocateFixed, Minus, Pentagon, Plus, Square } from "lucide-react";
 import { useT } from "@/shared/i18n";
 import { useDevice } from "@/shared/lib/use-device";
+import { MapLoading } from "@/shared/ui";
 import { adm1RegionsQuery, demManifestQuery, linesQuery } from "../api/basemap";
 import { aoiBounds, aoiGeometry, checkPoint, clusterUnits, curve, fireMarkOf, heatGain, hotWeight, isClosedFire, maskPolygon, niceScale, pixelSquare, placeLabels, tickLabel, tickStep, type Box, type LabelItem } from "../lib/geo";
 import { buildStyle, demLayer, LAYER_IDS, type Tok } from "../lib/style";
@@ -1253,6 +1254,7 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
       data-aoi={aoi ? JSON.stringify(aoi) : ""}
     >
       <div ref={glEl} className={s.gl} />
+      <MapLoading show={!ready} />
       {ticks ? (
         <svg className={s.mticks} aria-hidden="true" viewBox={`0 0 ${ticks.W} ${ticks.H}`}>
           {ticks.ln.map((l, i) => (

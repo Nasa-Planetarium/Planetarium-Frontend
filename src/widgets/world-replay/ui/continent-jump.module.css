@@ -1,0 +1,7 @@
+/* 대륙 바로 가기 단추 줄(프런트 UI/UX, 2026-11-15) — 전 세계 지도 아래쪽에 한 줄로 고정(가운데 정렬, 좁으면 줄바꿈).
+   누른 대륙 단추는 검게(aria-pressed). 색은 토큰만(대륙 점 색은 단추 안 작은 동그라미에만) */
+.bar{position:absolute;left:0;right:0;bottom:0;z-index:4;display:flex;flex-wrap:wrap;justify-content:center;gap:var(--sp-2);padding:var(--sp-4) var(--sp-3) var(--sp-2);background:linear-gradient(to top,color-mix(in srgb,var(--map-void) 55%,transparent),transparent);pointer-events:none}
+.btn{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border:0;border-radius:999px;background:color-mix(in srgb,var(--map-land) 94%,transparent);color:var(--map-label-hi);font:var(--fw-medium) var(--fs-1) var(--font-body);box-shadow:0 1px 3px rgba(0,0,0,.28);white-space:nowrap;pointer-events:auto}
+.btn:hover{background:var(--map-land)}
+.btn[aria-pressed="true"]{background:var(--map-label-hi);color:var(--map-land)}
+.dot{width:12px;height:12px;border-radius:50%;flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}
