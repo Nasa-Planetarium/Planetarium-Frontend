@@ -521,28 +521,14 @@ export function WorldReplay(o: WorldReplayProps) {
         <MapLoading show={!map} />
         {map ? <MapKey level="L1" win={ymWord(lang, ...ymOfIndex(i))} lift={barH} fmt={(n) => fmtNum(lang, n)} /> : null}
         {map ? (
-          <>
-            {/* 지도 위 안내: 지금 달 · 그 달 합계(왼쪽 위) · 색 범례(오른쪽 위) */}
-            <div className={hud.now} data-testid="wf-hud-month" aria-hidden="true">
-              <b className={hud.ym}>{ymS(i)}</b>
-              <span className={hud.tot}>
-                {T("total")}
-                <b>{isError ? "–" : tot == null ? "–" : fmtCompact(lang, tot)}</b>
-              </span>
-            </div>
-            <div className={hud.leg} aria-hidden="true">
-              <div className={hud.ramp}>
-                {Array.from({ length: 9 }, (_, k) => (
-                  <i key={k} style={{ background: o.ramp(0.18 + 0.82 * (k / 8)) }} />
-                ))}
-              </div>
-              <div className={hud.ticks}>
-                {["1", "10", "100", "1k", "10k"].map((x) => (
-                  <span key={x}>{x}</span>
-                ))}
-              </div>
-            </div>
-          </>
+          /* 지도 위 안내: 지금 달 · 그 달 합계(왼쪽 위). 색 범례는 공통 MapKey 가 맡는다 */
+          <div className={hud.now} data-testid="wf-hud-month" aria-hidden="true">
+            <b className={hud.ym}>{ymS(i)}</b>
+            <span className={hud.tot}>
+              {T("total")}
+              <b>{isError ? "–" : tot == null ? "–" : fmtCompact(lang, tot)}</b>
+            </span>
+          </div>
         ) : null}
         {map ? (
           <div className={cj.bar} role="group" aria-label={lang === "ko" ? "대륙으로 이동" : "Jump to continent"}>
