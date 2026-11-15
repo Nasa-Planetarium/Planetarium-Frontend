@@ -6,7 +6,7 @@ import { expect, test } from "@playwright/test";
  *       잠긴 화면 목업 문구 + 돌아갈 곳 · 새 역할 탭 반짝 · 계정 창 다음 위성 칸 · 내려받기 토스트(PNG 크기 · CSV n행 + 복사) ·
  *       폰 경보·출동 지도 「다음 위성」 줄.
  */
-const role = (r: string | null) => (r ? `localStorage.setItem("em.lang","ko");localStorage.setItem("em.role","${r}")` : `localStorage.setItem("em.lang","ko");localStorage.removeItem("em.role")`);
+const role = (r: string | null) => (r ? `localStorage.setItem("em.lang","ko");sessionStorage.setItem("em.role","${r}")` : `localStorage.setItem("em.lang","ko");sessionStorage.removeItem("em.role")`);
 
 test("종: 긴급대응 미확인 2(심각 포함) → 서랍 행에 불 이름 → 모두 읽음이면 배지 없음", async ({ page }, info) => {
   test.skip(info.project.name === "phone", "폰 종 위치가 다르다");
@@ -43,7 +43,7 @@ test("새 역할 탭 반짝: 로그인하면 역할 탭에 data-fresh(목업 .tt
     if (sessionStorage.getItem("r2a.once")) return;
     sessionStorage.setItem("r2a.once", "1");
     localStorage.setItem("em.lang", "ko");
-    localStorage.removeItem("em.role");
+    sessionStorage.removeItem("em.role");
   });
   await page.goto("/ko/calendar/");
   await page.locator("#loginBtn").click();

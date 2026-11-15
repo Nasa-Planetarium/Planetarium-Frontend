@@ -8,7 +8,7 @@ import { expect, test } from "@playwright/test";
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem("em.lang", "ko");
-    localStorage.setItem("em.role", "responder");
+    sessionStorage.setItem("em.role", "responder");
   });
 });
 
