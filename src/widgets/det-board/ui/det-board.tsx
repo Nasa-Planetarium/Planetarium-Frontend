@@ -123,7 +123,6 @@ export function DetBoard({ page, iso3, info, cx, testId, regions, renderMap }: {
       <header className={cx("pghd")}>
         <div className={cx("ph-1")}>
           <h1>{t(`${page}.head.name`)}</h1>
-          <span className={cx("ph-scope")}>{countryName(info, lang, iso3)}</span>
         </div>
         <div className={cx("cntbar")} role="group" aria-label={t("shell.counts.aria")}>
           {counts.map((c) => (

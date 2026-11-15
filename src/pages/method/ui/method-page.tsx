@@ -120,7 +120,6 @@ function MethodScreen() {
         <header className={cx("pghd mt-head")}>
           <div className={cx("ph-1")}>
             <h1 tabIndex={-1}>{W("page.method")}</h1>
-            <span className={cx("ph-scope")}>{[M?.method_version ?? "–", M?.data_version ?? "–"].join(" · ")}</span>
           </div>
           <div data-cnt="">
             <div className={cx("cntbar")} role="group" aria-label={W("counts.aria")}>

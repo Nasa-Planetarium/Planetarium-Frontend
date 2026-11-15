@@ -19,15 +19,12 @@ import {
   bandsOf,
   calInput,
   counts,
-  FIRST,
   inRange,
   iso3OfAoi,
-  LAST,
   lastMonth,
   MODES,
   monthIndex,
   nameEn,
-  srcScope,
   VIEWS,
   ymIso,
   ymOfIndex,
@@ -146,7 +143,6 @@ function CalendarScreen() {
   const grid = useMemo(() => calInput(cal, view), [cal, view]);
   const n = useMemo(() => counts(cal, view), [cal, view]);
   const bands = useMemo(() => bandsOf(cal, view), [cal, view]);
-  const scope = useMemo(() => srcScope(cal), [cal]);
 
   /* 이름 */
   const aoiName = useCallback(
@@ -198,21 +194,6 @@ function CalendarScreen() {
         <header className={cx("pghd")}>
           <div className={cx("ph-1")}>
             <h1>{pageName}</h1>
-            <span className={cx("ph-scope")}>
-              <span lang={nameKo(aoi) ? "ko" : undefined}>{aoiName(aoi)}</span> · <span className={cx("num")}>{`${ymIso(FIRST[0], FIRST[1])} – ${ymIso(LAST[0], LAST[1])}`}</span>
-              {scope ? (
-                <span className={cx("cl-src")}>
-                  <span className={cx("cl-srci")}>
-                    <i className={cx("cl-vsw")} data-b="a" aria-hidden="true" />
-                    <span className={cx("num")}>{t("calendar.ui.scope_modis", { a: scope.modisFrom, b: scope.modisTo })}</span>
-                  </span>
-                  <span className={cx("cl-srci")}>
-                    <i className={cx("cl-vsw")} data-b="b" aria-hidden="true" />
-                    <span className={cx("num")}>{t("calendar.ui.scope_viirs", { a: scope.viirsFrom })}</span>
-                  </span>
-                </span>
-              ) : null}
-            </span>
             <div className={cx("ph-tools")}>
               <button
                 type="button"
