@@ -1,6 +1,7 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
+import { BarPaintDefs } from "@/shared/ui";
 import { ticks } from "../model/cmd";
 import { cx } from "./cx";
 
@@ -153,8 +154,12 @@ export function LineChart({ series, width: W, height: H, endW, marker, label, ax
 export function Bars({ items, width: W, rowH, labelW, max, label, fmt, onPick }: { items: { id: string; label: string; value: number; color: string; out: boolean; note?: string }[]; width: number; rowH: number; labelW: number; max: number; label: string; fmt: (v: number, it: { out: boolean }) => string; onPick?: (id: string) => void }) {
   const pr = 64;
   const H = items.length * rowH + 6;
+  const pid = `rb${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
   return (
     <svg viewBox={`0 0 ${W} ${H}`} style={{ fontVariantNumeric: "tabular-nums" }} role="img" aria-label={label}>
+      <defs>
+        <BarPaintDefs id={pid} />
+      </defs>
       {items.map((it, i) => {
         const y = i * rowH + 4;
         const w = Math.max(1.5, (it.value / max) * (W - labelW - pr));
@@ -164,7 +169,7 @@ export function Bars({ items, width: W, rowH, labelW, max, label, fmt, onPick }:
               {it.label}
             </text>
             <rect x={labelW} y={y + 5} width={W - labelW - pr} height={rowH - 12} rx="1" fill={C.line} fillOpacity=".5" />
-            <rect x={labelW} y={y + 5} width={w.toFixed(1)} height={rowH - 12} rx="1" fill={it.color} style={it.value && onPick ? { cursor: "pointer" } : undefined} onClick={it.value && onPick ? () => onPick(it.id) : undefined}>
+            <rect x={labelW} y={y + 5} width={w.toFixed(1)} height={rowH - 12} rx="2" fill={it.value ? `url(#${pid}bx)` : it.color} fillOpacity={it.out ? 0.45 : undefined} style={it.value && onPick ? { cursor: "pointer" } : undefined} onClick={it.value && onPick ? () => onPick(it.id) : undefined}>
               <title>{`${it.label} ${fmt(it.value, it)}`}</title>
             </rect>
             <text x={labelW + w + 6} y={y + rowH / 2 + 3.5} fill={C.muted} fontSize="11" className={KO.test(fmt(it.value, it)) ? cx("t-ko") : undefined}>

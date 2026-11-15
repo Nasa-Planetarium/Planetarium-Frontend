@@ -3,6 +3,7 @@
 import { useId } from "react";
 import { useLocale } from "next-intl";
 import { downloadBlob } from "@/shared/ui/download";
+import { BarPaintDefs, topRoundPath } from "@/shared/ui";
 import { CELL_OPACITY, DOT_EDGE_TOKEN, DOT_TOKEN, F, RMAX, RMIN, stepOfCell, stepVar } from "@/shared/lib/display";
 import { cellFrame, ringsPath, type LandPart } from "../model/cell-frame";
 import { fmtAxis, fmtVal, niceMax } from "../model/core";
@@ -48,27 +49,38 @@ export function Track(o: { from: string; to: string; label: string; spans: (Regi
 }
 
 /** 막대 그림(⑤): 진행 중인 달은 점선 테두리 막대(채움 없음) */
-export function Bars(o: { items: { key: string; label: string; value: number | null; partial?: boolean; title: string }[]; width: number; height: number; label: string; ticks?: number; allLabels?: boolean }) {
+/**
+ * 날짜 범위 추이 막대(일별·월별). 모양은 캘린더 「같은 달 연도별」과 같다(shared/ui/bar-paint):
+ * 보통 막대 = 주황 갈색 → 어두운 갈색 · 분석 달(hi) 막대 = 노랑 → 주황 → 분홍빛 빨강 + 은은한 빛 · hiValue 막대 위 값 · 결측(null) = 바닥 빗금 · 진행 중(partial) = 점선 테두리(그대로).
+ */
+export function Bars(o: { items: { key: string; label: string; value: number | null; partial?: boolean; title: string }[]; width: number; height: number; label: string; ticks?: number; allLabels?: boolean; hi?: (key: string) => boolean; hiValue?: string | null }) {
   const lang = useLocale();
+  const pid = `tb${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
   const Wd = o.width;
   const H = o.height;
   const pl = 44;
   const pr = 10;
-  const pt = 12;
+  const pt = 20;
   const pb = 24;
   const n = o.items.length || 1;
   const mx = niceMax(Math.max(1, ...o.items.map((d) => d.value ?? 0)));
   const bw = (Wd - pl - pr) / n;
   const X = (i: number) => pl + i * bw;
   const Y = (v: number) => pt + (1 - v / mx) * (H - pt - pb);
+  const MH = Math.min(12, H - pt - pb);
   const every = Math.max(1, Math.ceil(n / (o.ticks ?? 8)));
+  const hiI = o.hiValue ? o.items.findIndex((d) => d.key === o.hiValue) : -1;
+  const hv = hiI >= 0 ? (o.items[hiI]?.value ?? null) : null;
   return (
     <svg viewBox={`0 0 ${Wd} ${H}`} role="img" aria-label={o.label} className={cx("an-bars")}>
+      <defs>
+        <BarPaintDefs id={pid} />
+      </defs>
       {[0, 0.5, 1].map((f) => {
         const y = Y(mx * f);
         return (
           <g key={f}>
-            <line x1={pl} x2={Wd - pr} y1={y} y2={y} stroke={f ? C.line : C.line2} />
+            <line x1={pl} x2={Wd - pr} y1={y} y2={y} stroke={f ? C.line : C.line2} strokeDasharray={f ? "2 3" : undefined} />
             <Tx x={pl - 6} y={y + 3.5} s={fmtAxis(lang, mx * f, 1000)} anchor="end" fill={C.dim} />
           </g>
         );
@@ -79,21 +91,31 @@ export function Bars(o: { items: { key: string; label: string; value: number | n
         const w = Math.max(1, bw * 0.76);
         const y = Y(v);
         const h = Math.max(0, Y(0) - y);
+        const hi = !!o.hi?.(d.key);
         return (
-          <g key={d.key}>
-            {d.partial ? (
+          <g key={d.key} data-hi={hi ? "1" : undefined}>
+            {d.value == null ? (
+              <rect x={x} y={Y(0) - MH} width={w} height={MH} fill={`url(#${pid}h)`} fillOpacity={0.8}>
+                <title>{d.title}</title>
+              </rect>
+            ) : d.partial ? (
               <rect x={x} y={y} width={w} height={h} fill="none" stroke="var(--data-harm)" strokeDasharray="3 2">
                 <title>{d.title}</title>
               </rect>
             ) : (
-              <rect x={x} y={y} width={w} height={h} fill="var(--data-base)">
+              <path d={topRoundPath(x, y, w, h, Math.min(3, w / 3))} fill={`url(#${pid}${hi ? "e" : "b"})`} filter={hi && h > 0 ? `url(#${pid}g)` : undefined}>
                 <title>{d.title}</title>
-              </rect>
+              </path>
             )}
             {d.label && (o.allLabels || i % every === 0) ? <Tx x={X(i) + bw / 2} y={H - 8} s={d.label} anchor="middle" fill={C.dim} /> : null}
           </g>
         );
       })}
+      {hv != null ? (
+        <text x={X(hiI) + bw / 2} y={Math.max(12, Y(hv) - 6)} textAnchor={hiI > n - 3 ? "end" : hiI < 2 ? "start" : "middle"} className={cx("an-ev-v")}>
+          {fmtVal(lang, hv)}
+        </text>
+      ) : null}
     </svg>
   );
 }
@@ -198,7 +220,7 @@ export function Lines(o: { series: { name: string; color: string; values: Pt[]; 
       </defs>
       {[0, 0.25, 0.5, 0.75, 1].map((f) => (
         <g key={f}>
-          <line x1={pl} x2={W - pr} y1={Y(mx * f)} y2={Y(mx * f)} stroke={f ? C.line : C.line2} />
+          <line x1={pl} x2={W - pr} y1={Y(mx * f)} y2={Y(mx * f)} stroke={f ? C.line : C.line2} strokeDasharray={f ? "2 3" : undefined} />
           <Tx x={pl - 6} y={Y(mx * f) + 3.5} s={fmtAxis(lang, mx * f, 1000)} anchor="end" fill={C.dim} />
         </g>
       ))}
