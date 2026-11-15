@@ -41,6 +41,14 @@ const RECENT = 12 * 60;
 const PX_DEG = 512 / 360;
 type Pop = { lng: number; lat: number; kind: "pt" | "cell"; i: number } | null;
 
+/* 날짜 변경선을 넘는 경도 범위(예: 미국 172 → 293, 러시아 19 → 190)를 지도에 맞는 −180 ~ 180 안으로 — 더 넓은 쪽을 남긴다.
+   (QA 2026-11-15: 미국을 고르면 아시아·러시아 쪽이 보이던 것. 이 지도는 세계 복사본을 그리지 않아 180 밖은 빈 곳) */
+function fitLon(w: number, e: number): [number, number] {
+  if (e > 180) return e - 180 > 180 - w ? [Math.max(-180, w - 360), e - 360] : [w, 180];
+  if (w < -180) return -180 - w > e + 180 ? [w + 360, Math.min(180, e + 360)] : [-180, e];
+  return [w, e];
+}
+
 function boundsOf(pts: number[][], pad: number): [[number, number], [number, number]] | null {
   let w = 999;
   let s = 999;
@@ -53,9 +61,20 @@ function boundsOf(pts: number[][], pad: number): [[number, number], [number, num
     n = Math.max(n, y as number);
   });
   if (w > e) return null;
+  /* 경도 폭이 반 바퀴를 넘으면 날짜 변경선을 넘는 것으로 보고 서경을 +360 해서 다시 잰다(알류샨 열도 + 미국 본토 → 172 ~ 294) */
+  if (e - w > 180) {
+    w = 999;
+    e = -999;
+    pts.forEach(([x]) => {
+      const xx = (x as number) < 0 ? (x as number) + 360 : (x as number);
+      w = Math.min(w, xx);
+      e = Math.max(e, xx);
+    });
+  }
+  const [fw, fe] = fitLon(w - pad, e + pad);
   return [
-    [w - pad, s - pad],
-    [e + pad, n + pad],
+    [fw, s - pad],
+    [fe, n + pad],
   ];
 }
 
@@ -83,6 +102,17 @@ export function DotMap(o: DotMapProps) {
     const kPts = k ? k.lo.map((x, i) => [x, k.la[i] as number]) : [];
     return boundsOf(outPts.length ? outPts : cellPts.length ? cellPts : kPts, o.size * 0.6) ?? [[124, 33], [131, 39]];
   }, [o.focus, o.outlines, o.cells, o.size, k]);
+
+  /* 맞춘 범위가 늦게 바뀌면(나라 윤곽·칸이 지도보다 늦게 도착) 다시 맞춘다 — 사용자가 지도를 움직이기 전까지만.
+     (QA 2026-11-15: 전 세계에서 미국을 고른 뒤 지역 캘린더로 가면 아시아 등 엉뚱한 곳이 보이던 것) */
+  const touched = useRef(false);
+  const fitKey = JSON.stringify(fit);
+  useEffect(() => {
+    if (!map || touched.current) return;
+    map.fitBounds(fit, { padding: 16, duration: 0 });
+    // fit 은 fitKey 로 비교(배열 정체성 말고 값)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, fitKey]);
 
   /* 작은 섬(몰디브·세이셸처럼 맞춘 범위에 비해 윤곽이 몇 화소도 안 되는 고리) — 윤곽 선만으로는 안 보여 고리 가운데에 빈 원 표시 */
   const islands = useMemo(() => {
@@ -145,6 +175,10 @@ export function DotMap(o: DotMapProps) {
       m.touchZoomRotate.disableRotation();
       m.on("load", () => setMap(m));
       m.on("move", () => setFrame((n) => n + 1));
+      /* 사용자가 직접 움직이면(끌기·확대 — originalEvent 있음) 그 뒤로는 자동으로 다시 맞추지 않는다 */
+      m.on("movestart", (e) => {
+        if ((e as { originalEvent?: unknown }).originalEvent) touched.current = true;
+      });
       ro = new ResizeObserver(() => m.resize());
       ro.observe(host.current);
     });

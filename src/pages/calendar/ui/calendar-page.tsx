@@ -47,7 +47,8 @@ import { WorldReplay } from "./world-replay";
  * ① 연소 활동 캘린더(로그인 전 기본 화면) — 원천: 목업 pages/calendar.js · calendar.css · calendar-dots.js · worldgrid.js(g6 확정본).
  * 데이터: 계약 /api/v1 만(aois · calendar · comparison · cells · hotspots · boundary · methods/current) + 정적 world-1deg(전 세계 재생).
  * 구성: H 화면 머리(지역 고르기 · 보기 4 · 모드 2) · K 상태 개수 띠 · C 연×월 캘린더 + value_source 띠 · D 선택 달 상세 · M 그 달 점(원) 지도 · W 전 세계 1° 재생.
- * 주소: ?aoi=<aoi_id>&ym=YYYY-MM&view=…&mode=world (기본값은 주소에 쓰지 않는다 — 사용자가 바꿀 때만).
+ * 주소: ?aoi=<aoi_id>&ym=YYYY-MM&view=…&mode=world|cal (기본값은 주소에 쓰지 않는다 — 사용자가 바꿀 때만).
+ * 모드 기본값: 주소에 aoi 가 없으면 전 세계 재생, 있으면 지역 캘린더. 모드 단추를 누르면 mode 를 주소에 적는다.
  */
 export function CalendarPage() {
   return (
@@ -89,7 +90,8 @@ function CalendarScreen() {
   }, [aq.data, urlAoi, byId, iso3]);
 
   const view: CalView = isView(sp.get("view")) ? (sp.get("view") as CalView) : "value";
-  const mode: Mode = isMode(sp.get("mode")) ? (sp.get("mode") as Mode) : "cal";
+  /* 첫 화면 = 전 세계 재생(QA 2026-11-15: 세계 캘린더가 먼저 보이고 지역으로 이동). 주소에 지역(aoi)이 있으면 지역 캘린더(다른 화면에서 넘어온 링크) */
+  const mode: Mode = isMode(sp.get("mode")) ? (sp.get("mode") as Mode) : sp.get("aoi") ? "cal" : "world";
   const ymQ = /^\d{4}-\d{2}$/.test(sp.get("ym") ?? "") ? (sp.get("ym") as string) : null;
   const [only, setOnly] = useState<CountKey | null>(null);
 
@@ -125,7 +127,7 @@ function CalendarScreen() {
     setOnly(null);
     writeQ({ view: v === "value" ? null : v });
   };
-  const setMode = (md: Mode) => writeQ({ mode: md === "cal" ? null : md });
+  const setMode = (md: Mode) => writeQ({ mode: md });
   const selectMonth = useCallback(
     (yy: number, mm: number) => {
       if (inRange(yy, mm)) writeQ({ ym: ymIso(yy, mm) });
@@ -283,7 +285,7 @@ function CalendarScreen() {
                   partialLine={(o) => t("calendar.ui.partial_line", o)}
                   onCountry={(i3, i) => {
                     const [yy, mm] = ymOfIndex(i);
-                    setAoi(aoiOfIso3(i3), { mode: null, ym: ymIso(yy, mm) });
+                    setAoi(aoiOfIso3(i3), { mode: "cal", ym: ymIso(yy, mm) });
                   }}
                 />
               </div>

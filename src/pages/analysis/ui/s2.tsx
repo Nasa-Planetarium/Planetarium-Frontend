@@ -104,6 +104,8 @@ export function S2({ x }: { x: Ctx }) {
           </div>
         ) : (
           <>
+            {/* 칸 지도를 맨 위에(QA 2026-11-15: 지역을 정해 비교 분석하면 지도를 먼저 보여 준다) */}
+            <CellPanel x={x} />
             <div className={cx("an-grid")}>
               <div className={cx("an-gl")}>
                 <CalPanel x={x} onPick={pick} />
@@ -132,7 +134,6 @@ export function S2({ x }: { x: Ctx }) {
             <Trend x={x} />
             <StepChart x={x} />
             <RegimePanel x={x} />
-            <CellPanel x={x} />
             <div className={cx("an-srcfoot")}>
               <p className={cx("an-src1")}>
                 <span>
