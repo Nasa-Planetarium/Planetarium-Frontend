@@ -1,4 +1,4 @@
-import { hexRgb } from "../map-color";
+import { hexRgb } from "./map-color";
 
 /**
  * 어두운 셸 위 연속 램프(캘린더 연×월 칸 · 분석 달력 · 지휘 통계 · 상황판 달력) — --h0..--h6 을 정해진 위치에(목업 charts.ramp).

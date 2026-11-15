@@ -11,5 +11,7 @@ export { fitLon, boundsOf, boxBounds, lonInFit, FIT_PADDING, FIT_MAX_ZOOM } from
 export type { LL } from "./fit";
 export { islandMarkers, ISLAND_MIN_PX, ISLAND_MERGE_PX } from "./island";
 export { shellRamp, SHELL_RAMP_AT } from "./shell-ramp";
+export { hexRgb, luminance, contrast, over, MAP_RAMP, SHELL_RAMP, contTok } from "./map-color";
+export type { Rgb } from "./map-color";
 export { LEVEL_KEY, KEY_LEVEL, STATUS_KEY, TAIL_KEY } from "./copy";
 export type { MapStatusKind } from "./copy";

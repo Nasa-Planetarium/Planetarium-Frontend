@@ -34,7 +34,7 @@ html[data-device="phone"] { --strip-h: calc(var(--hit) + var(--hair)); }
   --map-sea: #B4DEF6; --map-land: #F5FEF4;
   --map-water: #4f9be0; --map-water-label: #1d5f9e;
   --map-label: #273444; --map-label-hi: #0b1724; --map-halo: #ffffff;
-  /* 밝은 바탕 세부(F14, 2026-11-15 — 측정 C1–C4·H1–H6·M1–M5·B1–B14·LF-1–5·L1–L10 에 맞춰). 대비는 src/shared/lib/map-color.test.ts 가 이 파일을 읽어 잰다.
+  /* 밝은 바탕 세부(F14, 2026-11-15 — 측정 C1–C4·H1–H6·M1–M5·B1–B14·LF-1–5·L1–L10 에 맞춰). 대비는 src/shared/lib/display/map-color.test.ts 가 이 파일을 읽어 잰다.
      지도 칸 바탕·불러오는 중 덮개 = 바다색(남색 #0d3b66 이 밝은 지도로 바뀔 때 번쩍이던 것). 가림 = 바다 쪽 옅은 청회 — 가린 이웃 땅이 바다보다 밝게 남는다 */
   --map-void: #B4DEF6; --map-bg: #B4DEF6; --map-mask: #b4cfdf;
   /* 음영: 땅이 거의 흰색이라 밝은 쪽(#fff)은 효과가 작다 → 그림자를 옅은 따뜻한 회녹으로 낮춰 땅이 탁해지지 않게(#4 의 땅 색은 그대로) */

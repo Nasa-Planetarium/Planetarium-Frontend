@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { contrast, over } from "../map-color";
+import { contrast, over } from "./map-color";
 import { areaOf, boundsOf, boxBounds, boxHits, CELLS1_MIN_AREA, density, fitLon, islandMarkers, levelOf, lonInFit, pointBoxes, POINTS_MAX_AREA, radiusExpr, radiusPx, radiusStops, RMAX, RMIN, splitLon, STEP_TOKENS, stepOf, stepOfCell, STEPS, tileKey, tilesOf, type Box, type Level } from "./index";
 
 /** 표시 규칙서(2026-11-15) R1–R10 경계값 고정 */

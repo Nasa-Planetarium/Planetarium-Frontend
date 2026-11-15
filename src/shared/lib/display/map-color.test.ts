@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { contrast, luminance, hexRgb, over } from "./map-color";
 
 /* base.css 의 밝은 지도 토큰을 읽어 대비를 잰다(F14). 값을 바꾸면 이 시험이 같이 본다 */
-const css = readFileSync(path.resolve(__dirname, "../../app/styles/base.css"), "utf8");
+const css = readFileSync(path.resolve(__dirname, "../../../app/styles/base.css"), "utf8");
 const tok = (n: string) => {
   const m = new RegExp(`--${n}:[ ]*(#[0-9a-fA-F]{3,8})[;\n ]`).exec(css);
   if (!m) throw new Error(`base.css 에 --${n} 없음`);
