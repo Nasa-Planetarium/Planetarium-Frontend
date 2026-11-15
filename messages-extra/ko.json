@@ -1,5 +1,8 @@
 {
  "_note": "목업 사전에 아직 없는 키만 둔다. 목업에 같은 키가 생기면 목업 값이 이긴다(src/shared/i18n/messages.ts). 쓰이는 키는 README 「사전」 절 참고.",
+ "analysis": {
+  "qx": { "aria": "나라·기간 바꾸기", "country": "나라", "all": "전체 (모든 나라)", "year": "연도", "month": "월", "month_n": "{m}월", "apply": "적용", "export": "데이터 내보내기" }
+ },
  "shell": {
   "err": { "range_too_large": "범위가 넓어 한 번에 받을 수 없음(서버 100 제곱도 이하) — 지역을 좁혀 주세요", "rate_limited": "요청이 많음 — 잠시 뒤 다시 시도" },
   "det": { "partial": "점 일부만 받음(조각 {n}/{m}) — 서버 요청 한도" },
