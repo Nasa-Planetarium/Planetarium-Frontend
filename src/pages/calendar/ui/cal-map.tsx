@@ -13,6 +13,7 @@ import type { CalView, CellProps } from "../model/calendar";
 import { caseFor, cellCase, fmtNum, fmtVal, iso3OfAoi, monthIndex, ymIso, ymWord } from "../model/calendar";
 import { unitWord } from "./cal-grid";
 import { cx } from "./cx";
+import { displayInterval, hasSpread } from "@/shared/lib/interval";
 import { DotMap, type DotCell } from "./dot-map";
 import { WorldReplay } from "./world-replay";
 
@@ -126,6 +127,8 @@ export function CalMap(o: { aoi: string; aois?: CoarseAoi[] | null; y: number; m
       (src?.cells ?? []).flatMap(({ lat, lon, p }) => {
         const k = cellCase(p, o.view, o.y, o.m);
         if (k.value == null || k.value <= 0) return [];
+        /* 구간 표시는 F16 규칙 하나(PR #18 displayInterval) */
+        const iv = displayInterval(k.value, k.lo, k.hi);
         return [
           {
             lon,
@@ -133,7 +136,7 @@ export function CalMap(o: { aoi: string; aois?: CoarseAoi[] | null; y: number; m
             value: k.value,
             io: k.io,
             valueText: fmtVal(lang, k.value),
-            extra: [unit, k.lo != null && k.hi != null && k.lo !== k.hi ? `${t("calendar.k.interval")} ${fmtVal(lang, k.lo)} – ${fmtVal(lang, k.hi)}` : "", k.io ? t("calendar.flag.interval_out") : "", k.status && k.status !== "ok" ? t(`shell.st.${k.status}`) : ""]
+            extra: [unit, hasSpread(iv) ? `${t("calendar.k.interval")} ${fmtVal(lang, iv.lo)} – ${fmtVal(lang, iv.hi)}` : "", k.io ? t("calendar.flag.interval_out") : "", k.status && k.status !== "ok" ? t(`shell.st.${k.status}`) : ""]
               .filter(Boolean)
               .join(" · "),
           },

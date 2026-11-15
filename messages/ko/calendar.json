@@ -41,7 +41,7 @@
    "zoom_out": "축소"
   },
   "flag": {
-   "interval_out": "구간 밖 · 구간 버림"
+   "interval_out": "구간 밖 · 값까지 넓힘"
   },
   "k": {
    "interval": "구간",

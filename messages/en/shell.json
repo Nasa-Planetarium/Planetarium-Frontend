@@ -59,10 +59,10 @@
     "why": "Raw VIIRS starts 2012-02"
    },
    "interval_out": {
-    "how": "Interval is not recomputed (E3)",
-    "opinion": "Read the value without an interval",
-    "what": "Value kept · interval dropped · flagged",
-    "why": "Value lies outside value_lo–value_hi"
+    "how": "Interval = min–max of value, value_lo, value_hi (F16)",
+    "opinion": "Read the value with the widened interval",
+    "what": "Value kept · interval widened · flagged",
+    "why": "Value (mean model) lies outside value_lo–value_hi (q10·q90 model)"
    },
    "low_sample": {
     "how": "Above usual only when value ≥ 3",
@@ -248,7 +248,7 @@
    "low_sample": "Low sample"
   },
   "flag_t": {
-   "interval_out": "Value lies outside value_lo–value_hi, so no interval is shown",
+   "interval_out": "Value lies outside value_lo–value_hi, so the interval is widened to the value",
    "low_sample": "Too few past records"
   },
   "fresh": {
