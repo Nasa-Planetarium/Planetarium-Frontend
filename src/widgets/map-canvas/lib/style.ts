@@ -92,7 +92,7 @@ export function buildStyle(T: Tok, iso3: string, worldUrl: string): StyleSpecifi
 }
 
 /**
- * 지형 음영(DEM 목록이 있을 때만) — bg 바로 위. DEM 은 z11(512px)까지라 z13 넘게 확대하면 늘린 타일 이음매가 보여 음영을 옅게 한다(목업 hs)
+ * 지형 음영(DEM 목록이 있을 때만) — bg 바로 위. DEM 은 목록 maxzoom(지금 z10, 512px)까지라 z13 넘게 확대하면 늘린 타일 이음매가 보여 음영을 옅게 한다(목업 hs)
  * 목록 경로는 사이트 뿌리 기준이라 앞에 origin 을 붙인다.
  */
 export function demLayer(T: Tok, dem: DemManifest, origin: string) {

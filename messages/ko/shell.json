@@ -292,7 +292,7 @@
   "map": {
    "attr_gl": "경계 Natural Earth · NASA FIRMS|Natural Earth · NASA FIRMS|© Natural Earth",
    "attr_kr": "지형 Copernicus GLO-30 · 경계 © OSM|Copernicus GLO-30 · © OSM|© Copernicus · OSM|© Copernicus·OSM",
-   "attr_kr_full": "지형 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA (Mapterhorn) · 경계·하천·도로 © OpenStreetMap contributors",
+   "attr_kr_full": "지형 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA (GLO-30, 한국 전역) · 경계·하천·도로 © OpenStreetMap contributors",
    "crew": "{n}명",
    "detected_at": "{t} 감지",
    "draw_box": "끌어서 사각형 영역을 그립니다 · Esc 취소",

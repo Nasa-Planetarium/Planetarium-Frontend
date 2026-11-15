@@ -22,7 +22,7 @@ const aoiOf = async (page: Page) => JSON.parse((await page.locator('[data-testid
 test("바탕 층 · 그리기 도구 · 좌표 창", async ({ page }, info) => {
   const map = await open(page);
   const ids = ((await map.getAttribute("data-layers")) ?? "").split(",");
-  for (const id of ["bg", "world-mask", "mask", "reg-hi", "rivers", "roads", "reg-line", "reg-hi-line", "burn-fill", "heat", "hotdot", "hotpx", "hotpx-modis", "aoi-fill", "aoi-line", "route-glow", "route-dash", "draft-fill", "draft-line", "draft-pt"]) expect(ids).toContain(id);
+  for (const id of ["bg", "land-world", "land", "world-mask", "mask", "reg-hi", "rivers", "roads", "reg-line", "reg-hi-line", "burn-fill", "heat", "hotdot", "hotpx", "hotpx-modis", "aoi-fill", "aoi-line", "route-glow", "route-dash", "draft-fill", "draft-line", "draft-pt"]) expect(ids).toContain(id);
   // 음영 층은 DEM 목록(W0 public/dem/manifest.json)이 있을 때만 — 없으면 출처 줄이 지형을 적지 않는다(틀린 출처 고침)
   const demOn = (await map.getAttribute("data-dem")) === "1";
   await expect.poll(async () => ((await map.getAttribute("data-layers")) ?? "").split(",").includes("hs")).toBe(demOn);

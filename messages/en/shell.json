@@ -292,7 +292,7 @@
   "map": {
    "attr_gl": "Boundaries Natural Earth · NASA FIRMS|Natural Earth · NASA FIRMS|© Natural Earth",
    "attr_kr": "Terrain Copernicus GLO-30 · Boundaries © OSM|Copernicus GLO-30 · © OSM|© Copernicus · OSM|© Copernicus·OSM",
-   "attr_kr_full": "Terrain © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA (Mapterhorn) · Boundaries, rivers, roads © OpenStreetMap contributors",
+   "attr_kr_full": "Terrain © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA (GLO-30, all of Korea) · Boundaries, rivers, roads © OpenStreetMap contributors",
    "crew": "{n} crew",
    "detected_at": "Detected {t}",
    "draw_box": "Drag to draw a rectangle · Esc cancels",
