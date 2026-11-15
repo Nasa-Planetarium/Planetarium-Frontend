@@ -1,224 +1,197 @@
-# EMBERLINE 프런트 (Next.js)
+# 📋 About EMBERLINE
 
-연소 활동 캘린더가 앞에 선 산불 관제 웹. 목업(`planetarium-mockup`)을 Next.js 로 새로 짓는다.
-이 저장소는 **골격과 공통 층**까지다 — 화면 8개는 제목만 있는 빈 껍데기이고, 화면 담당이 채운다(소유 폴더는 [OWNERS.md](OWNERS.md)).
+## 1. Overview
 
-- 화면 정본 = 목업. **디자인은 목업 그대로**: shadcn/ui·Radix 는 동작·접근성 원소로만 쓰고, 겉모양은 목업 CSS 를 토큰·Tailwind 로 옮긴다. shadcn 기본 둥근 모서리·그림자·색이 화면에 보이면 결함이다.
-- 결정 원장: `planetarium-spec/00-decisions.md` (A–G). 설계: `planetarium-spec/architecture/frontend-design.md`. 계약: `contract/openapi.yaml`(사본, 원본 `planetarium-spec/contract`).
-- 이 소스는 프런트 팀에 **소스로 전달**한다(결정 G3). 원격 저장소 = `Nasa-Planetarium/Planetarium-Frontend`(GitHub) — `main` 개발, `release` 로 머지하면 배포(아래 「배포」).
+- **Project name:** EMBERLINE
+- **One-liner:** A visual dashboard and data service for people who track heat sources (fires) around the world.
+- **Live site:** https://nasa-planetarium.github.io/
+- **Development period:** 2026.11.14 – 2026.11.15
+- **Team / Event:** Team Planetarium · NASA Space Apps Challenge 2026 Seoul — *Harmonization of MODIS and VIIRS Hot Spots*
 
-## 팀 안내 (저장소 처음 README 에서 옮김)
+EMBERLINE combines two NASA satellite fire records — MODIS (since 2000) and VIIRS (since 2012) — into **one consistent monthly series** (measured on the VIIRS S-NPP scale), so you can see where, when, and how much the world is burning across more than twenty years.
 
-Team Planetarium · NASA Space Apps 2026 Seoul — 챌린지: Harmonization of MODIS and VIIRS Hot Spots.
-MODIS(2000~)와 VIIRS(2012~) 위성 화재 감지를 하나의 기준(VIIRS S-NPP 기준 감지량)으로 통합한 데이터를 지도·캘린더·그래프로 보여 준다.
+---
+
+## 2. Key Features
+
+- **🗓️ Burning Activity Calendar (global playback)** — Press play and every month since 2001 sweeps across the world map, so global fire activity is visible at a glance.
+- **🌍 Country focus & dot map** — Click any country to open its own calendar. Fires are drawn as dots: big, long-lasting fires and small, short ones are easy to tell apart. Click a dot to see that cell's location and value.
+- **📊 Year × Month calendar** — A grid of every year and month, with the monthly summary, the same month across years, and the fire events behind the numbers.
+- **⚖️ Comparison (put a month in context)** — Pick any month and instantly see its value, its ratio to the usual year (median), and its percentile. Daily trends and a chart across the satellite switch compare raw counts with our harmonized series.
+- **⬇️ Export data** — Download the same numbers you see on screen as a CSV file.
+- **🔬 Method & Validation** — Explains how we harmonized MODIS and VIIRS and how well the result holds up.
+- **🔐 Role-based screens after sign-in** — Public pages are open to everyone. After signing in, each role gets its own screens:
+  - Early warning & response → Overview, Alerts & Dispatch
+  - Fire incident command → Alerts & Dispatch (assigning engines and crews)
+  - Land management → Burned Area review
+  - Commander → Command Stats
+  - Scientist → Forecast (Lab)
+- **🌐 Korean / English** — Every screen works in both `/ko` and `/en`.
+- **📱 Works on any device** — Layout adapts to web, tablet, foldable, and phone.
+- **🧭 Honest data display** — Missing months are shown in grey (never as 0), months still being counted say "in progress", and 2000–2012 values are marked as "estimates" with their range.
+
+---
+
+## 3. Tech Stack
+
+| Area | What we used |
+|---|---|
+| **Framework** | Next.js 16 (App Router, static export) + React 19 |
+| **Language** | TypeScript 5.9 |
+| **State / Data** | TanStack Query (server data & caching) · openapi-fetch (typed API client from `openapi.yaml`) · MSW (mock API while the backend was not ready) |
+| **Styling** | Tailwind CSS 4 + design tokens copied from the mockup · shadcn/ui & Radix UI (only for behavior and accessibility) · lucide-react icons |
+| **Map** | MapLibre GL |
+| **i18n** | next-intl (`/ko`, `/en`) |
+| **Quality** | ESLint · Steiger (FSD architecture check) · Vitest · Playwright (e2e) |
+| **Deployment** | GitHub Actions → Cloudflare Pages (+ Pages Functions as the API proxy) |
+
+### Why we chose them
+
+- **Next.js + static export** — The whole site is built into plain files, so it is fast, cheap to host, and easy to roll back. Pages for `/ko` and `/en` are created ahead of time.
+- **TypeScript + openapi-fetch** — API types are generated from the shared contract (`openapi.yaml`). If the backend changes a field, the code shows an error before anyone sees a broken screen.
+- **TanStack Query instead of a global store** — Almost all our state is "data from the server". TanStack Query handles caching, loading, and errors for that, so we didn't need an extra store like Zustand or Redux.
+- **MSW (mock API)** — In a two-day hackathon, frontend and backend were built at the same time. MSW let the screens run on real snapshot data first, and switching to the real backend is just one environment variable.
+- **Tailwind CSS + design tokens** — The mockup's colors and spacing were copied as tokens, so the screens look exactly like the design. shadcn/Radix gave us accessible buttons, menus, and dialogs without changing the look.
+- **MapLibre GL** — An open-source map library that can draw thousands of fire dots smoothly on a world map.
+- **Cloudflare Pages + GitHub Actions** — Merging into `release` deploys automatically. Pages Functions safely forward `/api/v1` calls to the backend without exposing secret keys or cookies.
+
+---
+
+# 👩‍💻 Meet the Frontend Developer — Yunju Sung
+
+Hi, I'm Yunju Sung, a planner working in the AX (AI Transformation) field.
+In my day job, I work as a consultant who helps move work that people do by hand over to AI.
+
+But in this project, I took on the role of frontend developer! I recently learned vibe coding, and I wanted a chance to show what I can do — that's why I applied to this hackathon.
+I'm grateful to Team Planetarium for welcoming me despite all of this, and I gave it my best to fulfill the frontend role.
+
+---
+
+# 💭 Hackathon Retrospective
+
+When designing EMBERLINE, we needed to show a world map, so I chose a **dashboard layout** that uses as much of the screen as possible. That part went smoothly. My first real question as the frontend developer was: *"How do I make this huge global map readable at a single glance?"* There were far more heat sources than I expected, so I thought hard about how to show them all clearly. In the end, I chose a **dot map** — it was the most intuitive way to show the difference between strong, long-burning fires and small, short-lived ones.
+
+After that, I built the screen frames and layout around one question: *"How can we show the information different users care about in the most accessible way?"* So — what do you think? Are the screens and buttons intuitive!?
+
+During the hackathon, I realized that **everything changes**. These days, the way we work is changing, and so is everything else. Especially while merging different datasets, I learned that a change doesn't happen just once — it can happen again and again. So we shouldn't be afraid of change. And beyond handling a single conversion, we should have the consideration to expect that more conversions will follow. Maybe the fact that I, a planner, could take on frontend development — even for just two days — is itself a sign of adapting to change!
+
+---
+
+*👇 Below are the rules I followed while working on the frontend.*
+
+---
+
+# 🔥 EMBERLINE Frontend (Next.js)
+
+## What this repository is
+
+This is the web app for EMBERLINE, a wildfire monitoring site whose main screen is the **Burning Activity Calendar**. We rebuilt the design mockup (`planetarium-mockup`) with Next.js. There are 8 screens: Calendar, Analysis, Method, Home, Ops, Land, Command, and Lab.
+
+**The rules in plain words:**
+
+- **Look exactly like the mockup.** The mockup is the "answer sheet". We borrow shadcn/ui and Radix only for how buttons and menus *work* — never for how they *look*. If a default rounded corner, shadow, or color from shadcn shows up on screen, that's a bug.
+- **Follow the shared documents.** Decisions, design, and the API contract (`contract/openapi.yaml`) are written down, and we follow them instead of guessing.
+- **Never push straight to `main`.** Make a branch → open a PR → get a review → merge.
+
+## How the team fits together
 
 ```
-[모델 Planetarium-AI]  →  [백엔드 Planetarium-Backend (Spring)]  →  [프런트엔드 (이 저장소)]
- 데이터·예측 결과            파라미터를 정제해 API로 제공              화면 표시
+[Model: Planetarium-AI]  →  [Backend: Planetarium-Backend (Spring)]  →  [Frontend (this repo)]
+ data & predictions           cleans the data and serves it as an API     shows it on screen
 ```
 
-- 프런트엔드는 정제된 데이터의 API만 부른다. 모델 쪽 내부 API는 직접 부르지 않는다.
-  데이터·API 규칙: [Planetarium-AI/docs/api_contract.md](https://github.com/Nasa-Planetarium/Planetarium-AI/blob/main/docs/api_contract.md), [backend-handoff.md](https://github.com/Nasa-Planetarium/Planetarium-AI/blob/main/docs/backend-handoff.md)
-- 화면 표시 규칙: 「산불 건수」가 아니라 **「위성 화재 감지량 (VIIRS 기준)」** · 2000-11 ~ 2012-01 값은 **「추정값」** 으로 범위(`value_lo`~`value_hi`)와 함께 · `status = missing` 인 달은 회색(0 으로 칠하지 않기), `partial` 은 「집계 중」 · residual 값은 따로 그리지 않기 · 확산 가능성 지도엔 필수 안내 문구 · 비밀 키(`FIRMS_MAP_KEY` 등)는 프런트 코드에 넣지 않기 · NASA FIRMS 인정 문구와 경계 데이터 출처(CC BY) 표기.
-- 작업 방법: `main` 에 직접 push 하지 않는다 — 가지 → PR → 리뷰 → 머지. 배포는 `main` 이 아니라 `release` 머지 때다(아래 「배포」).
+The frontend only talks to the backend's cleaned-up API. It never calls the model's internal API directly.
 
-## 실행
+## How we show data honestly
 
-Node ≥ 22.18, pnpm 10.34.9(`packageManager` 고정 — pnpm 이 없으면 `corepack enable` 이 이 판을 받아 준다).
+- Say **"satellite fire detections (VIIRS-based)"**, not "number of wildfires" — a satellite dot isn't the same as one fire.
+- Values from **Nov 2000 – Jan 2012** are labeled **"estimate"** and shown with their range (`value_lo`–`value_hi`).
+- A month with **no data (`missing`) is grey**, never painted as 0. A month still being counted (`partial`) says **"in progress"**.
+- We don't draw `residual` values.
+- The spread-risk map always shows its required notice.
+- **No secret keys** (like `FIRMS_MAP_KEY`) in frontend code.
+- We credit **NASA FIRMS** and the boundary data source (CC BY).
+- The screen **never recalculates** verdicts, percentiles, or status — it shows the released values as they are.
+
+## How to run it
+
+You need Node 22.18 or newer and pnpm.
 
 ```bash
-corepack enable                     # 처음 한 번(pnpm 이 이미 있으면 생략)
-pnpm install --frozen-lockfile      # lock 그대로. 「Ignored build scripts: @parcel/watcher, @swc/core」 안내는 무시해도 된다(미리 빌드된 바이너리를 씀)
-cp .env.example .env.local          # 필요하면 값 바꾸기(아래 「목 ↔ 실제 교체」)
-pnpm dev                            # http://localhost:8797/ko/calendar/
-pnpm build                          # 정적 내보내기 → out/ (환경변수 없으면 MSW 모드 — 운영 빌드는 아래 「배포」)
-node scripts/serve-out.mjs          # out/ 을 127.0.0.1:8797 에서 확인
+corepack enable                  # first time only
+pnpm install --frozen-lockfile   # install exactly the locked versions
+pnpm dev                         # open http://localhost:8797/ko/calendar/
 ```
 
-검사 — 커밋 전에 전부 통과해야 한다:
+Before every commit, all checks must pass:
 
 ```bash
-pnpm check            # typecheck · eslint · steiger · check:isolation · check:leaks · vitest
-pnpm exec playwright install chromium   # 처음 한 번 — e2e 용 브라우저 받기
-pnpm build && pnpm e2e                  # Playwright(out/ 을 띄워 연다). 이미 받아 둔 다른 판 chromium 을 쓰려면 PW_CHROMIUM=<실행 파일>
-node scripts/check-isolation.mjs --self-test   # 격리 검사기가 실제로 위반을 잡는지(가짜 위반 3개)
-node scripts/check-public-leaks.mjs --self-test   # 공개 저장소 검사기가 실제로 잡고·거르는지
-node scripts/check-pages-out.mjs --mode http   # 빌드 결과가 Pages 한도 안인지 + 빌드에 박힌 데이터 모드(배포 전 문, CI 도 돈다)
+pnpm check                       # types, lint, architecture, isolation, leak check, unit tests
+pnpm build && pnpm e2e           # build the site and test it in a real browser
 ```
 
-### 공개 저장소 검사(check:leaks)
+## Keeping the public repo safe
 
-이 저장소는 공개다. `pnpm check`(CI 도)는 `scripts/check-public-leaks.mjs` 로 추적되는 파일 전부에서
-내부망 주소(192.168.x.x) · 개인 홈 경로(`/home/<사용자>`) · 팀 시험 서버 호스트 이름 · 내부 포트(18000–19999 번)를 찾고, 하나라도 있으면 멈춘다.
+This repository is public. An automatic check (`check:leaks`) stops everything if it finds internal network addresses, personal home folders, our test server's name, or internal ports.
 
-- 문서·주석에는 「팀 시험 서버」 같은 일반 낱말, 예시 주소는 `http://localhost:8080` 이나 `<API_ORIGIN>` 을 쓴다.
-- 동작에 필요한 값은 코드에 박지 않고 환경 변수로 받는다 — 실서버 출처는 Pages Functions 의 `API_ORIGIN`(Pages 프로젝트 환경 변수 · `functions/api/[[path]].ts`),
-  가져오기 스크립트의 원천 폴더는 `SNAP_DIR` · `OUTLOOK_FILE` · `META_FILE`(`import:snapshot`) · `MOCKUP_DIR`(`import:i18n`).
-  가져오기 보고(`public/data/snap/manifest.json` · `messages/_import-report.json`)에는 저장소 기준 상대 경로만 적힌다.
-- 정말 공개돼도 되는 값이면 `scripts/public-leaks-allow.txt` 에 이유와 함께 넣는다.
-- 2026-11-15 이전 커밋 이력에는 옛 값이 남아 있다(이력은 다시 쓰지 않았다).
+- In docs, we write general words like "team test server" and example addresses like `http://localhost:8080`.
+- Real values go into **environment variables**, never into code.
 
-## 배포 (Cloudflare Pages · GitHub Actions)
+## How deployment works
 
 ```
-기능 가지 ──PR──▶ main ──PR(머지)──▶ release ──push──▶ deploy.yml ──▶ Cloudflare Pages(운영)
-                  │                      │
-                  └─ ci.yml              └─ ci.yml
+feature branch ──PR──▶ main ──PR──▶ release ──▶ auto deploy ──▶ Cloudflare Pages
 ```
 
-- **main** = 개발. PR·main·release 에 올라온 커밋마다 `.github/workflows/ci.yml` 이 돈다:
-  `pnpm install --frozen-lockfile` → 정적 검사(typecheck · eslint · steiger · check:isolation) → http 빌드 + `check-pages-out`.
-  **테스트(vitest · e2e)는 CI 에서 돌리지 않는다 — 올리기 전에 로컬에서 `pnpm test` 와 `pnpm build && pnpm e2e` 를 돌린다.**
-- **release 로 머지 = 배포.** `.github/workflows/deploy.yml` 이 정적 검사 → http 빌드 → `check-pages-out --mode http` →
-  `cloudflare/wrangler-action`(wrangler 4.155.0)로 `pages deploy out --branch=main` 을 한다. 수동 실행(Actions › deploy › Run workflow)도 **release 가지에서만** 배포한다.
-  배포는 한 번에 하나(`concurrency: deploy-production`), GitHub 환경 `production` 에 기록된다.
-- 배포 빌드는 **실서버 모드로 고정**(`NEXT_PUBLIC_DATA_MODE=http`, `NEXT_PUBLIC_API_BASE=/api/v1`). 값을 환경변수로 주고, `check-pages-out` 이
-  결과물 청크에 박힌 값을 다시 읽어 `http` 가 아니면 배포 전에 멈춘다. 기관 연동·로그인은 아직 목 어댑터(`mock`, 기본값) 그대로다.
-- 액션은 커밋 SHA 로 고정했다(뒤 주석이 태그). wrangler 는 저장소 의존성에 넣지 않았다 — 배포 액션이 그 판을 러너 안에서만 설치한다.
+- **`main` = development.** Every PR and push runs CI (type check, lint, architecture check, build).
+- **Merging into `release` = deploying.** GitHub Actions builds the site and uploads it to Cloudflare Pages.
+- The live site **always uses the real backend**. If the build accidentally uses mock data, the deploy stops.
+- `/api/v1/*` requests go through a small proxy (Pages Functions). It only allows reading (`GET`/`HEAD`) and **never forwards cookies or login tokens**.
+- **Something broke?** Roll back to the previous version in the Cloudflare dashboard, then `git revert` on `release` so the next deploy doesn't bring the bug back.
 
-### 무엇이 어디로 가나
-
-| 경로 | 누가 응답 | 캐시(`public/_headers`) |
-|---|---|---|
-| `/_next/static/*` | 정적(해시 이름) | 1년 immutable |
-| `/dem/*` · `/dem-world/*` | 정적(지형 타일) | 30일 — 이름에 해시가 없으니 바꿀 때는 경로·이름을 바꾼다 |
-| `/geo/*` | 정적(경계·하천) | 7일 |
-| `/data/*` | 정적(release 스냅숏) | 5분 + 재확인 |
-| `/`, `/ko/*`, `/en/*`, `*.html` | 정적(페이지) | 0(배포 즉시 새 판) |
-| `/api/v1/*` | **Pages Functions** `functions/api/[[path]].ts` → 서비스 바인딩 `API`(없으면 `API_ORIGIN`) | 백엔드 응답의 Cache-Control 그대로 |
-
-프록시 규칙(`functions/api/[[path]].ts`):
-- **넘기는 곳**: 서비스 바인딩 `API`(Worker `emberline-api` → Workers VPC → 전용 터널 → 백엔드)가 있으면 그쪽으로. 바인딩이 없을 때만 Pages 환경변수 `API_ORIGIN` 으로.
-  바인딩은 Cloudflare Pages 프로젝트 `emberline` 의 production·preview 양쪽에 **이미 설정돼 있다**(OMB). 레포에 `wrangler.toml` 을 두지 않는 한 프런트 쪽 할 일은 없다
-  — `wrangler.toml` 을 두면 그 파일이 프로젝트 설정을 덮으므로 그때는 `[[services]] binding = "API"` · `service = "emberline-api"` 를 꼭 넣는다.
-- `GET`·`HEAD` 만 넘긴다. 그 밖 메서드 → 405 problem+json(`method_not_allowed`). `/api/v1/` 밖 → 404(`not_found`).
-  계약의 `POST /summary-queries` 는 화면이 부르지 않아 막혀 있다 — 화면이 부르게 되면 이 파일을 같이 고친다.
-- 요청 헤더는 `Accept`·`Accept-Language`·`If-None-Match`·`If-Modified-Since` 만 넘긴다. **쿠키·Authorization 은 넘기지 않는다.**
-- 응답은 상태·본문·헤더(Cache-Control·ETag·X-Method-Version 등) 그대로, `Set-Cookie` 와 hop-by-hop 헤더만 뺀다.
-- 바인딩도 `API_ORIGIN` 도 없거나, 백엔드에 닿지 못하면(바인딩 호출이 던짐·연결 실패·20초 넘김) 502 problem+json(`upstream_error`, `Cache-Control: no-store`).
-- 접속자 IP 는 `X-Client-IP` 로(값 = Cloudflare 가 붙인 `CF-Connecting-IP`), 그리고 `X-Forwarded-Proto`·`X-Forwarded-Host` 를 붙인다.
-  **백엔드가 `X-Client-IP` 를 믿을지는 백엔드(OMB) 몫이다** — 터널 공개 주소로 직접 오는 요청은 이 헤더를 아무 값으로나 지어 보낼 수 있다.
-  믿으려면 백엔드가 Pages 에서 온 요청만 받게(예: Cloudflare Access 서비스 토큰·비밀 헤더) 막은 뒤에만 쓴다.
-
-### 필요한 설정 — 누가 넣나
-
-| 이름 | 종류 · 위치 | 값 | 누가 |
-|---|---|---|---|
-| `CLOUDFLARE_API_TOKEN` | GitHub 비밀(Settings › Secrets and variables › Actions, 또는 환경 `production`) | API 토큰 — 권한 **Account › Cloudflare Pages › Edit 하나만**, 계정 하나로 한정 | Cloudflare 계정 소유자가 만들고 → 레포 관리자가 등록 |
-| `CLOUDFLARE_ACCOUNT_ID` | GitHub 비밀 | Cloudflare 계정 ID(대시보드 › 계정 홈의 Account ID — 값은 저장소에 적지 않는다, 액션이 비밀로 읽는다) | 레포 관리자 |
-| `CF_PAGES_PROJECT` | GitHub **변수**(Variables) | `emberline` | 레포 관리자 |
-| 서비스 바인딩 `API` | **Cloudflare Pages 프로젝트 설정**(Settings › Bindings, production·preview) — GitHub 아님 | Worker `emberline-api` | **이미 설정됨**(OMB) — 할 일 없음 |
-| `API_ORIGIN`(선택) | Cloudflare Pages 프로젝트 환경변수(Settings › Variables and Secrets) — GitHub 아님 | 바인딩이 없을 때만 쓰는 대체 주소(출처만, 경로는 버림). 바인딩이 있으면 읽지 않는다 | 비워 둔다 |
-
-- 토큰 값은 사용자가 레포 관리자에게 직접 전달한다(저장소·문서에 적지 않는다).
-- Pages 프로젝트 `emberline` 은 이미 있다(주소 `https://emberline-9sd.pages.dev` — `emberline` 주소는 다른 곳이 써서 뒤가 붙었다). Direct Upload, 프로덕션 가지 `main`(`--branch=main` 이 운영 판). Git 연동 빌드는 켜지 않는다(빌드는 Actions 가 한다).
-- 바인딩·`API_ORIGIN` 을 바꾸면 Functions 는 **다음 배포부터** 새 값을 쓴다 — 바꾼 뒤 Actions › deploy 를 release 에서 다시 돌린다.
-- 한도: 파일 20,000 · 파일당 25 MiB · `_headers` 규칙 100. 지금 out/ = 파일 약 2,835 · 약 118.5 MiB · 가장 큰 파일 4.2 MiB(2026-11-15 팀 시험 서버 측정). 넘으면 `check-pages-out` 이 배포 전에 멈춘다.
-
-### 롤백
-
-1. **빠르게**: Cloudflare 대시보드 › Workers & Pages › 프로젝트 › Deployments › 이전 운영 배포 › 「Rollback to this deployment」. 정적 자산과 Functions 가 그 판으로 함께 돌아간다.
-2. **기록에 남게**: `release` 에서 문제 커밋을 `git revert` 해 PR 로 머지 → deploy.yml 이 되돌린 판을 다시 배포한다. 1 로 급히 돌렸으면 2 로 release 도 맞춰 둔다(안 그러면 다음 배포가 문제 판을 다시 올린다).
-
-### 로컬에서 운영과 같게 보기(실서버 모드)
-
-정적 내보내기는 서버가 없어서 `pnpm dev`·`serve-out.mjs` 에는 `/api/v1` 프록시가 없다(백엔드도 다른 출처 CORS 를 열지 않았다). 운영과 같은 모양은 Pages 런타임을 띄워 본다(로그인 불필요):
-
-```bash
-NEXT_PUBLIC_DATA_MODE=http pnpm build                    # Windows PowerShell: $env:NEXT_PUBLIC_DATA_MODE="http"; pnpm build
-node scripts/check-pages-out.mjs --mode http
-npx wrangler@4.155.0 pages dev out --port 8798 --binding API_ORIGIN=http://<백엔드 주소>   # http://127.0.0.1:8798/ko/calendar/
-```
-
-로컬에는 `emberline-api` Worker 가 없으므로 위처럼 `API_ORIGIN` 대체 경로로 본다. 바인딩 경로를 로컬에서 보려면 같은 이름 `API` 로 Worker 를 띄워 붙인다
-(`npx wrangler@4.155.0 dev <worker>.js --name <이름>` 을 따로 띄운 뒤 `pages dev out --service API=<이름>`).
-
-**MSW 모드는 시험용**: 환경변수 없이 `pnpm dev`·`pnpm build` 하면 코드 기본값(`src/shared/config/env.ts`)이 `msw` 라서 백엔드 없이 `public/data/snap` 스냅숏으로 돈다 — e2e·화면 작업용.
-운영 배포는 이 기본값에 기대지 않는다(deploy.yml 이 `http` 를 주고, 결과물에서 다시 잰다).
-
-## 구조 (FSD · App Router)
+## How the code is organized (FSD)
 
 ```
-app/                    Next 경로 파일만(얇게). [locale]/{calendar,analysis,method,home,ops,land,cmd,lab}/page.tsx
-pages/README.md         빈 폴더(지우지 말 것) — Next 가 src/app·src/pages 를 경로로 읽지 않게 한다
+app/          route files only (kept thin)
 src/
-  app/                  FSD 앱 층: boot/(공급자·어댑터 조립·데이터 시작) · shell/(머리줄 + 본문 배치) · styles/(토큰·테마·바탕)
-  pages/<화면>/          FSD 화면 층 — 화면 하나 = 슬라이스 하나(지금은 PageFrame 만)
-  widgets/              top-bar(머리줄 — 로그인 전 공개 탭 3 ¦ 로그인 뒤 상황판 + 역할 탭, 폰은 두 줄) · page-frame(제목 + 잠긴 화면 + 문지기 PageGate)
-  features/             select-country · switch-locale · auth-login · account-menu · alert-drawer
-  entities/             country · session · situation(시나리오 상황) · release(판) · month-value(캘린더·비교 쿼리)
-  shared/
-    api/                openapi-fetch 클라이언트 · problem+json 오류 · Query 키 규칙 · schema.d.ts(생성물)
-    msw/                MSW — 계약 경로를 release 스냅숏 값으로 응답(실제 백엔드 전까지)
-    data-cases/         자료 케이스 처리기 레지스트리(결측·구간 밖·진행 중…) — switch 금지
-    agency/             AgencyPort(기관 연동 포트) + http 어댑터 자리
-    auth/               AuthPort(인증 포트) + http 어댑터 자리
-    mock/               ⚠ 목 모듈(기관 연동 목 원장 · 예시 로그인) — 조립 지점만 import
-    i18n/ ui/ lib/ config/
-messages/<lang>/*.json  목업 사전 변환물(생성물) · messages-extra/ 목업에 아직 없는 키
-public/data/snap/       release 스냅숏(korea·countries·world-1deg) · public/geo/ 나라 색인·경계
-scripts/                import-*(목업 → 저장소) · check-isolation · serve-out · shot-header
-contract/openapi.yaml   계약 사본 → pnpm gen:api 로 타입 생성
+  app/        startup, layout shell, styles & tokens
+  pages/      one folder per screen
+  widgets/    big blocks: top bar, page frame
+  features/   user actions: pick a country, switch language, log in, alerts
+  entities/   data "things": country, session, release, month values
+  shared/     API client, mock API, i18n, UI parts, tools
 ```
 
-층 방향: `app → pages → widgets → features → entities → shared`. 같은 층 슬라이스끼리 import 금지, 슬라이스 밖에서는 `index.ts`(공개 API)로만 — steiger 가 잰다.
+Imports only go **downward**: `app → pages → widgets → features → entities → shared`. Folders on the same level don't import each other, and from outside a folder you only use its `index.ts`. A tool called Steiger checks this automatically.
 
-## 데이터
+## Mock ↔ real: switching with one line
 
-| 무엇 | 어디서 | 지금 | 나중 |
-|---|---|---|---|
-| 실제 데이터(캘린더·비교 분석·방법·상황판 통합 값·전망) | `shared/api` 클라이언트(계약 타입) | 브라우저 **MSW** 가 `public/data/snap` 값을 계약 모양으로 응답 | `NEXT_PUBLIC_DATA_MODE=http` + `NEXT_PUBLIC_API_BASE` → 실제 백엔드 |
-| 기관 연동(경보·출동·자원·필지·지휘 통계·시나리오 위험지수·기상·시계) | `useAgency()` → **AgencyPort** | 목 어댑터(`shared/mock/agency`, 목업 data.js 원장) | `NEXT_PUBLIC_AGENCY_ADAPTER=http` → `/api/v1/agency/**`(예약만, 미구현) |
-| 로그인(예시 + 역할 선택) | `useSession()` → **AuthPort** | 목 어댑터(`shared/mock/auth`, 역할은 localStorage `em.role`) | `NEXT_PUBLIC_AUTH_ADAPTER=http` → `/api/v1/auth/**` |
+| What | Now | Later |
+|---|---|---|
+| Fire data (calendar, analysis, method…) | MSW mock API answers with snapshot data | Real backend (`NEXT_PUBLIC_DATA_MODE=http`) |
+| Agency features (alerts, dispatch, resources…) | Mock adapter | Real API (`NEXT_PUBLIC_AGENCY_ADAPTER=http`) |
+| Sign-in & roles | Mock adapter (role saved in the browser) | Real API (`NEXT_PUBLIC_AUTH_ADAPTER=http`) |
 
-- **값은 release 그대로**(결정 A1). 화면은 verdict·percentile·status 를 다시 계산하지 않는다.
-- 행의 경우 가르기는 `shared/data-cases` 의 `judgeMonth(row, { view })` 하나로: 결측(null 「결측」, 0 아님 — E2) · 구간 밖(값 그대로, 구간 버리고 플래그 — E3) · 운용 전 · 진행 중 · NRT · 표본 부족. 사전 키 `shell.st.<st>`, 예외 카드 `shell.case.<id>.{why,what,how,opinion}`, 코드 `CASE_CODE`.
-- **Query 키 = `[경로, 정규화 파라미터, method_version]`**(`shared/api/query-keys.ts`). 본보기: `entities/month-value` 의 `calendarQuery` · `comparisonQuery`, `entities/release` 의 `methodQuery`.
-- 오류는 problem+json 의 문자열 `code` 로만 가른다(`ERROR_HANDLING` 표).
-- MSW 는 정적 내보내기에서도 같은 출처 워커(`public/mockServiceWorker.js`)로 돈다. 워커가 뜨기 전 요청은 `shared/api/ready.ts` 문에서 기다린다.
+Screens only know a **"port"** (a promise of what data looks like), not where the data comes from. So to switch from mock to real: change one line in `.env.local`, fit the real adapter to the actual API, and the screen code stays the same.
 
-### 목 ↔ 실제 교체 (결정 F5 「바로 수정할 수 있도록」)
+**Isolation rule:** mock code lives only in `src/shared/mock/`, and only one file (`src/app/boot/adapters.ts`) is allowed to import it. ESLint and a separate script both check this.
 
-1. `.env.local` 의 한 줄을 `http` 로.
-2. 그 포트의 http 어댑터(`shared/agency/http-agency-adapter.ts` · `shared/auth/http-auth-adapter.ts`) 경로·모양을 실제 API 에 맞춘다.
-3. 화면 코드는 그대로다(포트만 알기 때문). 새 어댑터 = 파일 하나 + `src/app/boot/adapters.ts` 표 한 줄.
+## Design tokens
 
-**격리 규칙**: `src/shared/mock/**` 은 `src/app/boot/adapters.ts` 만 import 한다. 목 모듈은 포트 타입·`shared/config`·`shared/lib` 만 import 한다(실제 데이터 모듈과 서로 import 금지). eslint `no-restricted-imports` + `scripts/check-isolation.mjs` 두 곳이 잰다. 목 데이터·생성기(목업 land.js 필지, cmd.js 통계 등)를 옮길 때도 이 폴더 안에만 둔다.
+- `tokens.css` is copied **word for word** from the mockup. Don't edit it by hand — change the mockup and run `pnpm import:tokens` again.
+- Short Tailwind names point to those tokens (e.g. `bg-s0`, `text-t1`, `p-3` = 12px on a 4px grid).
+- The page knows which device it's on (`web`, `tablet`, `phone`, `foldable`) and adjusts.
+- When the top bar gets crowded, whole items are hidden step by step — text is never cut off with "…".
+- Fonts: IBM Plex Sans KR / Plex Sans / Plex Mono, self-hosted at build time.
+- One dark theme only. No runtime CSS-in-JS. Maps and canvases read colors from CSS variables.
 
-## 디자인 토큰
+## Languages (i18n)
 
-- `src/app/styles/tokens.css` = 목업 `index.html :root` 블록 **글자 그대로**(생성물, `pnpm import:tokens`). 옛 별칭 31개만 뺐다. 손으로 고치지 말고 목업을 고친 뒤 다시 돌린다.
-- `theme.css` 의 `@theme inline` 은 별칭만: `bg-s0..s3`(면) · `text-t1..t3`(글자) · `border-line-soft/strong` · `text-fs1..fs4/body/stat/page/count` · `alert-1..4` · `h0..h6` · `data-modis/viirs/harm` · shadcn 이름(`background`·`primary`…). 간격 `p-3` = 12px = `--sp-3`(4px 격자). 기기군 크기는 `ctl`·`bar-btn`·`hit`·`gutter-x`·`ic-nav` 같은 이름 있는 유틸 또는 `h-(--bar-h)`.
-- 기기군: `<head>` 첫 스크립트가 `html[data-device=web|tablet|phone|foldable]`·`data-touch` 를 단다(목업 규칙 그대로, `?device=` 덮어쓰기). 변형 `phone:` `tablet:` `foldable:` `midsize:`(태블릿·폴더블) `web:` `touch:` `wide:`(≥1680) `narrow-web:`(<1280).
-- 머리줄 넘침 단계: 머리줄에 `data-tf=0..8` → 변형 `tf1:`…`tf8:`(목업 fitTop 같은 순서로 칸을 통째로 뺌, 말줄임 없음).
-- 글꼴: IBM Plex Sans KR · Plex Sans · Plex Mono 를 `next/font` 로 빌드 때 자체 호스팅.
-- 다크 한 벌(밝은 판 없음). 런타임 CSS-in-JS 금지. 지도·캔버스가 색이 필요하면 CSS 변수를 읽는다.
+- Pages live under `/ko` and `/en`. The root `/` sends you to your saved language → your browser's language → English.
+- Text comes from the mockup's dictionaries, converted to JSON with **the same keys**, e.g. `t("shell.top.risk")`.
+- Keys not in the mockup yet go into `messages-extra/`. If the mockup adds the same key later, the mockup wins.
 
-## 사전(i18n)
+## Versions
 
-- next-intl, 경로 접두사 `/ko` · `/en`(정적 내보내기라 서버 언어 협상 없음; 루트 `/` 가 저장값 → 브라우저 언어 → en 순으로 보냄).
-- `pnpm import:i18n --mockup <목업>` 이 목업 `i18n/{ko,en}/*.js` 를 `messages/<lang>/<묶음>.json` 으로 바꾼다. **키는 그대로**: 화면은 목업과 같은 키로 `const t = useT(); t("shell.top.risk")`. 원장 문자열은 `useTl()`(목업 EM.tl).
-- 잎이면서 가지인 키 11개는 `<키>._` 로 옮겨졌고 `useT` 가 알아서 찾는다. 복수형은 ICU(`{n, plural, …}`), `'` 는 `''` 로 이스케이프.
-- 목업에 아직 없는 키는 `messages-extra/<lang>.json`(목업에 같은 키가 생기면 목업이 이긴다).
+Every package is pinned to an **exact version** that had been out for at least two weeks (e.g. Next.js 16.4.3, React 19.3.1, TypeScript 5.9.3, Tailwind CSS 4.3.3, MapLibre GL 5.24.0). This keeps every teammate's build — and the deployed site — exactly the same.
 
-## 버전(정확히 고정, 배포 2주 넘은 판)
-
-| 패키지 | 판 | 패키지 | 판 |
-|---|---|---|---|
-| next · eslint-config-next | 16.4.3 | react · react-dom | 19.3.1 |
-| typescript | 5.9.3 | tailwindcss · @tailwindcss/postcss | 4.3.3 |
-| next-intl | 4.14.9 | @tanstack/react-query | 5.105.0 |
-| openapi-fetch · openapi-typescript | 0.17.0 · 7.13.0 | msw | 2.15.0 |
-| radix-ui | 1.8.1 | lucide-react | 1.65.0 |
-| sonner | 2.0.8 | maplibre-gl | 5.24.0(목업과 같은 판) |
-| steiger · @feature-sliced/steiger-plugin | 0.8.1 | eslint | 9.39.5 |
-| vitest | 4.1.12 | @playwright/test | 1.64.1 |
-| class-variance-authority · clsx · tailwind-merge | 0.7.1 · 2.1.1 · 3.7.0 | pixelmatch · pngjs | 7.2.0 · 7.0.0 |
-
-일부러 최신 메이저를 피한 것: typescript 7(openapi-typescript·typescript-eslint 가 <6.1 요구) · eslint 10 · vitest 5 · msw 3.
-
-## 아직 안 한 것(골격 범위 밖, 다음 단계)
-
-- 머리줄 「다음 위성 통과」 칸: 목업 `EM.passes`(궤도 계산) 이식 전이라 칸을 그리지 않는다. 다른 나라 「이번 달 배수」 값은 「–」.
-- 목업 해시 링크(`#analysis?…`) 호환 변환, 지도(MapLibre) 래퍼, 차트, 알림 미확인 수(시나리오 경보), 시각 회귀(목업 9단계) 이전.
-- 전망(outlook.json)이 아직 없어 `public/data/snap` 에 없다 — 생기면 `pnpm import:snapshot --snap <폴더> --outlook <파일>`.
