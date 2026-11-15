@@ -1,8 +1,5 @@
-/* 지도 불러오는 중 덮개 — 지도 칸을 덮고 가운데에 고리 + 문구. 색은 토큰만.
-   바탕 = 바다색(밝은 지도와 같은 밝기 — 걷힐 때 번쩍이지 않는다) · 180ms 뒤에 나타난다(빨리 뜨면 안 보임) */
-.wrap{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--sp-3);background:var(--map-void);pointer-events:none;opacity:0;animation:show var(--dur-fast) linear 180ms forwards}
-.ring{width:36px;height:36px;border-radius:50%;border:3px solid color-mix(in srgb,var(--map-label) 25%,transparent);border-top-color:var(--map-label);animation:spin .9s linear infinite}
-.text{font:var(--fw-medium) var(--fs-2) var(--font-body);color:var(--map-label);letter-spacing:.02em}
+/* 지도 불러오는 중 덮개 — 지도 칸을 덮고 가운데에 고리 + 문구. 색은 토큰만 */
+.wrap{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--sp-3);background:var(--map-void);pointer-events:none}
+.ring{width:36px;height:36px;border-radius:50%;border:3px solid color-mix(in srgb,var(--map-land) 30%,transparent);border-top-color:var(--map-land);animation:spin .9s linear infinite}
+.text{font:var(--fw-medium) var(--fs-2) var(--font-body);color:var(--map-land);letter-spacing:.02em}
 @keyframes spin{to{transform:rotate(360deg)}}
-@keyframes show{to{opacity:1}}
-@media (prefers-reduced-motion: reduce){.wrap{opacity:1}}
