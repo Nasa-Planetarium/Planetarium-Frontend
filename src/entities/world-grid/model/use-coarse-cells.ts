@@ -96,7 +96,7 @@ export function useCoarseSum(o: { aoiId: string; aois: CoarseAoi[] | null | unde
         decodeMonth(meta, buf, i).forEach(({ g, v }) => acc.set(g, (acc.get(g) ?? 0) + v));
       });
     const merged = [...acc.entries()].map(([g, v]) => ({ g, v }));
-    return { months: n, cells: coarseCells(merged, polys, bbox).map((c) => ({ lat: c.cell_lat, lon: c.cell_lon, size: 1, value: c.value })) };
+    return { months: n, cells: coarseCells(merged, polys, bbox).map((c) => ({ lat: c.cell_lat, lon: c.cell_lon, size: 1, value: c.value, months: Math.max(1, n) })) };
   }, [o.on, grid.data, polys, bbox, mKey]);
   return { data: cells, isPending: o.on && !cells && !grid.isError && !shpErr, isError: grid.isError || shpErr };
 }

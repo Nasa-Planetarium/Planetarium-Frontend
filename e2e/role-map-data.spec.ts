@@ -3,6 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 /**
  * 역할 화면 지도에 실제 자료가 그려지는지(2026-11-15 사용자 지적 「역할 화면 지도에 데이터를 보여줘야 하지 않나」의 회귀 시험).
  * MSW 모드: /hotspots·/cells 는 계약대로 503 이라 점은 없고, 넓은 범위 몫(정적 world-1deg 1° 칸)만 잰다.
+ * 범례는 공통 MapKey 하나(표시 규칙서 R7, data-map-key).
  * 잰다: 공통 지도 칸 수(data-n-cells) > 0 · 스타일 층에 cells 가 있다 · 한국 밖 감지 지도의 점 층(hotdot)이 꺼져 있지 않다 · 페이지 오류 0.
  */
 function watch(page: Page) {
@@ -39,7 +40,7 @@ test.describe("역할 화면 지도 실제 자료", () => {
     const map = page.locator('[data-testid="ops-det-map"][data-ready="1"]');
     await expect(map).toBeVisible({ timeout: 30000 });
     await expect.poll(() => nCells(page, "ops-det-map"), { timeout: 30000 }).toBeGreaterThan(0);
-    await expect(map.locator("[data-ckey]")).toBeVisible();
+    await expect(map.locator("[data-map-key]")).toBeVisible();
     expect(errs).toEqual([]);
   });
 

@@ -61,7 +61,6 @@ table.tbl{width: 100%; border-collapse: collapse; font-size: var(--fs-3); font-v
 .map .map-key > b{flex: 0 0 auto; font-weight: var(--fw-medium); color: var(--text-1);}
 .map .map-key i{flex: 0 0 auto; display: block; width: 10px; height: 10px; border-radius: var(--r-2xs); background: var(--c,var(--text-2));}
 /* 지도 범례 = 지도 램프(땅색 칩 위, F14 L1) */
-.map .map-key i.ramp{width: 56px; height: 8px; background: linear-gradient(90deg,var(--mh1),var(--mh3),var(--mh4),var(--mh5),var(--mh6));box-shadow:0 0 0 2px var(--map-land);}
 .chart svg{display: block; width: 100%; height: auto; overflow: visible;}
 .chart text{fill: var(--text-2); font-family: var(--font-data); font-size: var(--fs-1); font-variant-numeric: tabular-nums;}
 .chart text.t-ko{font-family: var(--font-body);}

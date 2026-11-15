@@ -24,6 +24,8 @@ export interface MapKeyProps {
   fmt?: (n: number) => string;
   /** 지도 아래쪽에 다른 막대가 있을 때 띄울 높이(px) */
   lift?: number;
+  /** 지도 밖 범례 줄 안에 둘 때(자리 고정 없이) */
+  inline?: boolean;
   testId?: string;
 }
 
@@ -33,7 +35,7 @@ export function MapKey(o: MapKeyProps) {
   const fmt = o.fmt ?? ((n: number) => String(n));
   return (
     <div
-      className={s.key}
+      className={o.inline ? `${s.key} ${s.inline}` : s.key}
       data-map-key=""
       data-level={o.level ?? ""}
       data-steps={STEPS.join(",")}

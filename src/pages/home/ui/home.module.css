@@ -392,8 +392,7 @@
 .hm-legend,.hm-pass{border: 0px; border-radius: 0px; background: color-mix(in srgb,var(--surface-0) 72%,transparent);}
 .hm-lgs{display: inline-flex; align-items: center; gap: var(--sp-1); color: var(--text-2);}
 /* 감지 점 범례 = 지도 위 점과 같은 색(지도용 센서색 + 어두운 테두리, F14 H1·L1) */
-.hm-lgd{display: inline-block; width: 8px; height: 8px; border-radius: var(--r-round); background: var(--map-viirs); box-shadow: 0 0 0 1px var(--map-dot-edge), 0 0 0 3px var(--map-land);}
-.hm-lgd.m{background: var(--map-modis);}
+.hm-lgd{display: inline-block; width: 8px; height: 8px; border-radius: var(--r-round); background: var(--mh5); box-shadow: 0 0 0 1px var(--map-dot-edge), 0 0 0 3px var(--map-land);}
 .hm-pass-k{font-family: var(--font-body);}
 .hm-map .attrib{border-radius: 0px;}
 .hm-aoibadge,.hm-flash,.hm-offv,.hm-outv,.hm-status{border-radius: var(--r-xs);}

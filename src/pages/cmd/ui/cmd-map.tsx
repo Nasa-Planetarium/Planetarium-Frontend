@@ -112,21 +112,17 @@ export function CmdMap(c: Ctx & { hist: Fire[] }) {
       focus={focus}
       hotspots={hot}
       cells={cells}
-      density
+      keyWin={wide ? `${view.year}` : null}
       fires={histShown}
       onRegion={(id) => (S.byId.has(id) ? S.setAoi(id) : undefined)}
       onReady={onReady}
       tools={["layers"]}
       layerMenu={menu}
       ticks
-      status={!view.cum && c.ptsState !== "ok" ? (c.ptsState === "wide" ? T_("shell.map.cells_wide_year", { p: `${view.year}`, n: String(cells.length) }) : c.ptsState === "pending" ? T_("cmd.real.loading") : c.ptsState === "rate" ? T_("shell.err.rate_limited") : T_("shell.err.request")) : null}
+      status={!view.cum && c.ptsState !== "ok" ? (c.ptsState === "wide" ? T_("map.level.L1") : c.ptsState === "pending" ? T_("cmd.real.loading") : c.ptsState === "rate" ? T_("shell.err.rate_limited") : T_("shell.err.request")) : null}
     >
-      <div className={cx("map-key")}>
-        <b>{wide ? T_("shell.map.cells_key") : T_("cmd.ui.hotspot_density")}</b>
-        <span>
-          <i className={cx("ramp")} />
-          {T_("cmd.ui.low_high")}
-        </span>
+      {/* 감지량 범례는 공통 지도의 MapKey 하나(표시 규칙서 R7) — 여기에는 지도 밖 층(지난 큰 불) 견본만 */}
+      <div className={cx("map-key")} hidden={!kor}>
         {kor ? (
           <span>
             <i style={{ background: "transparent", border: "2px dotted var(--alert-4)", borderRadius: "50%" }} />

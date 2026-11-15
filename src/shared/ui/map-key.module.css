@@ -1,6 +1,8 @@
 /* 지도 범례 하나(표시 규칙서 R7). 지도 왼쪽 아래 · 폰에서는 한 줄(제목 + 5칸)로 접고 숨기지 않는다. 색은 토큰만.
    견본은 땅색 칩 위에(지도에서 보이는 그대로) */
 .key{position:absolute;left:var(--sp-3);bottom:var(--sp-3);z-index:3;display:flex;flex-direction:column;gap:2px;max-width:calc(100% - 2 * var(--sp-3));padding:var(--sp-1) var(--sp-3) var(--sp-2);border-radius:var(--r-xs);background:color-mix(in srgb,var(--surface-2) 92%,transparent);border:1px solid var(--line-soft);font-size:var(--fs-1);color:var(--text-2);pointer-events:none}
+.inline{position:static;flex-direction:row;flex-wrap:wrap;align-items:center;gap:var(--sp-1) var(--sp-2);padding:0;border:0;background:transparent;max-width:none}
+.inline .lv{display:none}
 .head{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 var(--sp-2)}
 .head b{color:var(--text-1);font-weight:var(--fw-medium)}
 .win{color:var(--text-2)}

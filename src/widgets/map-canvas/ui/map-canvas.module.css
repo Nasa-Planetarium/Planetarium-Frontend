@@ -124,7 +124,3 @@
 .spn{position:absolute;right:-8px;top:-8px;min-width:18px;height:18px;padding:0 var(--sp-1);border-radius:var(--r-2xs);background:var(--marker-bg);border:1.5px solid var(--c);color:var(--text-1);font-size:var(--fs-1);font-weight:var(--fw-strong);line-height:15px;text-align:center;pointer-events:none;font-variant-numeric:tabular-nums}
 .spread{z-index:2}
 /* 월 감지량 칸 범례(cellsKey) — 왼쪽 위 · 지도 램프 띠(mh1→mh5, 땅색 칩 위 — 지도에서 보이는 그대로). 폰 「다음 통과」 줄이 있으면 그 아래로(F14 L8) */
-.ckey{position:absolute;left:var(--sp-3);top:var(--sp-3);z-index:3;display:inline-flex;align-items:center;gap:var(--sp-2);padding:var(--sp-1) var(--sp-3);border-radius:var(--r-xs);background:color-mix(in srgb,var(--surface-2) 92%,transparent);border:1px solid var(--line-soft);font-size:var(--fs-1);color:var(--text-2);pointer-events:none;white-space:nowrap}
-.ckey b{color:var(--text-1);font-weight:var(--fw-medium)}
-.ckey i{display:block;width:56px;height:8px;border-radius:2px;background:linear-gradient(90deg,var(--mh1),var(--mh2),var(--mh3),var(--mh4),var(--mh5));box-shadow:0 0 0 2px var(--map-land)}
-.ui:has(.passln) .ckey{top:calc(2 * var(--sp-3) + var(--sp-7))}
