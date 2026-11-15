@@ -127,8 +127,8 @@ export function DotMap(o: DotMapProps) {
             pts: { type: "geojson", data: { type: "FeatureCollection", features: [] } },
           },
           layers: [
-            { id: "bg", type: "background", paint: { "background-color": tok("map-void") } },
-            { id: "land", type: "fill", source: "land", paint: { "fill-color": tok("map-bg") } },
+            { id: "bg", type: "background", paint: { "background-color": tok("map-sea") } },
+            { id: "land", type: "fill", source: "land", paint: { "fill-color": tok("map-land") } },
             { id: "outl", type: "line", source: "outl", paint: { "line-color": tok("map-boundary"), "line-opacity": 0.5, "line-width": 0.8 } },
             { id: "isl", type: "circle", source: "isl", paint: { "circle-radius": 4, "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 1, "circle-stroke-color": tok("map-boundary"), "circle-stroke-opacity": 0.8 } },
             { id: "cells", type: "circle", source: "cells", paint: { "circle-radius": 2, "circle-color": "#000", "circle-stroke-width": 0 } },

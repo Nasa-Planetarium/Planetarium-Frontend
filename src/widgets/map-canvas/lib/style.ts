@@ -4,14 +4,14 @@ import { withAlpha } from "./geo";
 
 /**
  * 공통 지도 스타일(목업 map3d _styleKor · _styleGlobal 을 한 판으로).
- * 층 순서(아래 → 위): bg · hs(지형 음영) · world-mask · world-line · mask · reg-hi · rivers · roads · reg-line · reg-hi-line ·
+ * 층 순서(아래 → 위): bg(바다) · land-world(다른 나라 육지) · land(지금 나라 육지, 나라 1급 면) · hs(지형 음영) · world-mask · world-line · mask · reg-hi · rivers · roads · reg-line · reg-hi-line ·
  *   burn-fill · burn-line · heat · hotdot · hotpx · hotpx-modis · aoi-fill · aoi-line · route-glow · route-dash · draft-fill · draft-line · draft-pt
  * 나라·자료와 무관하게 층 id 는 같다(화면이 setLayer 로 켜고 끈다). 음영은 DEM 목록(W0)이 있을 때만 addDem() 이 더한다.
  */
 export type Tok = (name: string) => string;
 
 const empty = () => ({ type: "geojson" as const, data: { type: "FeatureCollection" as const, features: [] } });
-export const SOURCES = ["regions", "lines", "mask", "world", "hot", "hotpx", "burns", "aoi", "routes", "draft"] as const;
+export const SOURCES = ["land", "regions", "lines", "mask", "world", "hot", "hotpx", "burns", "aoi", "routes", "draft"] as const;
 
 export function buildStyle(T: Tok, iso3: string, worldUrl: string): StyleSpecification {
   const sources: StyleSpecification["sources"] = {};
@@ -21,7 +21,10 @@ export function buildStyle(T: Tok, iso3: string, worldUrl: string): StyleSpecifi
   sources.world = { type: "geojson", data: worldUrl };
   const bw = parseFloat(T("map-boundary-w")) || 1.1;
   const layers: LayerSpecification[] = [
-    { id: "bg", type: "background", paint: { "background-color": T("map-bg") } },
+    { id: "bg", type: "background", paint: { "background-color": T("map-sea") } },
+    // 육지 면: 다른 나라는 세계 윤곽(저배율)으로, 지금 나라는 나라 1급 면(더 고운 해안선)으로 — 세계 윤곽의 거친 해안이 바다로 삐져나오지 않게
+    { id: "land-world", type: "fill", source: "world", filter: ["!=", ["get", "iso3"], iso3], paint: { "fill-color": T("map-land") } },
+    { id: "land", type: "fill", source: "land", paint: { "fill-color": T("map-land") } },
     // 다른 나라 면(세계 윤곽)을 가린다. 지금 나라는 빼고(구멍)
     { id: "world-mask", type: "fill", source: "world", filter: ["!=", ["get", "iso3"], iso3], paint: { "fill-color": T("map-mask"), "fill-opacity": 0.55 } },
     { id: "world-line", type: "line", source: "world", paint: { "line-color": T("map-boundary"), "line-opacity": 0.45, "line-width": 0.8 } },

@@ -195,8 +195,8 @@ export function WorldReplay(o: WorldReplayProps) {
             wf: { type: "canvas", canvas: cv, animate: false, coordinates: [[-180, LAT_N], [180, LAT_N], [180, LAT_S], [-180, LAT_S]] } as never,
           },
           layers: [
-            { id: "bg", type: "background", paint: { "background-color": tok("map-void") } },
-            { id: "land", type: "fill", source: "land", paint: { "fill-color": tok("map-bg") } },
+            { id: "bg", type: "background", paint: { "background-color": tok("map-sea") } },
+            { id: "land", type: "fill", source: "land", paint: { "fill-color": tok("map-land") } },
             { id: "wf", type: "raster", source: "wf", paint: { "raster-resampling": "linear", "raster-fade-duration": 0, "raster-opacity": 0.95 } },
             { id: "line", type: "line", source: "land", paint: { "line-color": tok("map-boundary"), "line-opacity": 0.32, "line-width": 0.6 } },
             { id: "sel", type: "line", source: "land", filter: ["==", ["get", "iso3"], ""], paint: { "line-color": tok("accent"), "line-width": 1.6 } },

@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Crosshair, Layers as LayersIc, LocateFixed, Minus, Pentagon, Plus, Square } from "lucide-react";
 import { useT } from "@/shared/i18n";
 import { useDevice } from "@/shared/lib/use-device";
-import { demManifestQuery, linesQuery } from "../api/basemap";
+import { adm1RegionsQuery, demManifestQuery, linesQuery } from "../api/basemap";
 import { aoiBounds, aoiGeometry, checkPoint, clusterUnits, curve, fireMarkOf, heatGain, hotWeight, isClosedFire, maskPolygon, niceScale, pixelSquare, placeLabels, tickLabel, tickStep, type Box, type LabelItem } from "../lib/geo";
 import { buildStyle, demLayer, LAYER_IDS, type Tok } from "../lib/style";
 import { DEFAULT_LAYERS, type Bbox, type DrawMode, type DrawnAoi, type GeoCollection, type Geom, type LatLon, type LayerKey, type Layers, type MapBurn, type MapFire, type MapHotspot, type MapRegion, type MapRoute, type MapUnit, type TickOpts, type ToolKey } from "../model/types";
@@ -263,7 +263,22 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
   /* ── 나라 바뀜: 다른 나라 가림 ── */
   useEffect(() => {
     map?.setFilter("world-mask", ["!=", ["get", "iso3"], p.iso3] as FilterSpecification);
+    map?.setFilter("land-world", ["!=", ["get", "iso3"], p.iso3] as FilterSpecification);
   }, [map, p.iso3]);
+
+  /* ── 지금 나라 육지 면(나라 1급 — 바다와 색이 갈린다). 파일이 없으면 세계 윤곽으로 */
+  const landRegions = useQuery(adm1RegionsQuery(p.iso3, "en")).data;
+  useEffect(() => {
+    if (!map) return;
+    const rs = (landRegions ?? []).filter((r) => r.geometry);
+    if (rs.length) {
+      src("land", fc(rs.map((r) => ({ type: "Feature", properties: { id: r.id }, geometry: r.geometry }))));
+      map.setFilter("land-world", ["!=", ["get", "iso3"], p.iso3] as FilterSpecification);
+    } else {
+      src("land", fc([]));
+      map.setFilter("land-world", null);
+    }
+  }, [map, landRegions, p.iso3, src]);
 
   /* ── 지형 음영(W0 DEM 목록이 있을 때만) ── */
   const demOn = !!dem && layers.relief;
