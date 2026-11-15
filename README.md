@@ -13,7 +13,7 @@ MODIS(2000~)와 VIIRS(2012~) 위성 화재 감지를 하나의 기준(VIIRS S-NP
  데이터·예측 결과            파라미터를 정제해 API로 제공              화면 표시
 ```
 
-- 프론트엔드는 **백엔드 API만** 호출합니다. 모델 쪽 내부 API는 직접 부르지 않습니다.
+- 프론트엔드는 정제된 데이터의 API만 호출합니다. 모델 쪽 내부 API는 직접 부르지 않습니다.
 - 데이터·API 규칙: [Planetarium-AI/docs/api_contract.md](https://github.com/Nasa-Planetarium/Planetarium-AI/blob/main/docs/api_contract.md),
   [backend-handoff.md](https://github.com/Nasa-Planetarium/Planetarium-AI/blob/main/docs/backend-handoff.md)
 
