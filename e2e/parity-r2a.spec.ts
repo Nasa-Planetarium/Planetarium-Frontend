@@ -61,7 +61,8 @@ test("계정 창: 다음 위성 칸(머리줄과 같은 값)", async ({ page }) 
 });
 
 test("내려받기 토스트: 캘린더 PNG = 「… 저장」 + 「W × H PNG」", async ({ page }) => {
-  await page.goto("/ko/calendar/");
+  /* PR #15 뒤 캘린더 첫 화면이 전 세계 재생이라(PNG 단추 없음) 지역 캘린더로 연다 — main 6879732 에서도 실패하던 것 */
+  await page.goto("/ko/calendar/?aoi=KR&mode=cal");
   const btn = page.locator("button[data-png]").first();
   await expect(btn).toBeEnabled({ timeout: 30000 });
   await btn.click();
