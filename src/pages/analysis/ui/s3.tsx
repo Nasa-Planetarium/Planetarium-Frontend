@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronLeft, Download, FileText } from "lucide-react";
 import { api, hotspotsTooWide } from "@/shared/api";
+import { displayInterval, hasSpread } from "@/shared/lib/interval";
 import { toast } from "@/shared/ui/toast";
 import { LIM_BASE, RESULT_COLS, calendarCSV, isoD, lastDay, monthRec, safeName, toCSV, trDefault } from "../model/analysis";
 import { ymIso } from "../model/core";
@@ -184,7 +185,7 @@ export function PrintDoc({ x }: { x: Ctx }) {
         <ul>
           {li(
             T("g3.k_value"),
-            `${x.nf(c.value)}${c.value_lo != null && c.value_lo !== c.value_hi ? ` (${T("g3.range_lohi", { lo: x.nf(c.value_lo), hi: x.nf(c.value_hi) })})` : ""} ${W("unit.snpp_equiv")} · ${W(`st.${c.status}`)}`,
+            `${x.nf(c.value)}${((iv) => (hasSpread(iv) ? ` (${T("g3.range_lohi", { lo: x.nf(iv.lo), hi: x.nf(iv.hi) })})` : ""))(displayInterval(c.value, c.value_lo, c.value_hi))} ${W("unit.snpp_equiv")} · ${W(`st.${c.status}`)}`,
           )}
           {li(T("g3.k_verdict"), c.verdict ? W(`verdict.${c.verdict}`) : "–")}
           {sentText(x) ? <li key="sent">{sentText(x)}</li> : null}

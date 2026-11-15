@@ -35,6 +35,7 @@ import { cx } from "./cx";
 import { DistChart } from "./dist-chart";
 import { VdMark } from "./vd-mark";
 import type { Ctx } from "./types";
+import { displayInterval, hasSpread } from "@/shared/lib/interval";
 
 /** 보기 낱말 = 셸 사전 한 곳(shell.view.* — 캘린더 탭과 같은 낱말, 목업 g7 EM.viewWord) */
 export const viewWord = (x: Pick<Ctx, "W">, v: CalView) => x.W(`view.${v}`);
@@ -331,7 +332,7 @@ function VerdictLine({ x }: { x: Ctx }) {
           <span>
             {view !== "value" ? `${T("g3.k_value_harm")} ` : ""}
             <b className={cx("num")}>{x.nf(c.value)}</b>
-            {c.value_lo != null && c.value_hi != null && c.value_lo !== c.value_hi ? <span className={cx("num")}> {T("g3.range_lohi", { lo: x.nf(c.value_lo), hi: x.nf(c.value_hi) })}</span> : null} <Status st={c.status} />
+            {((iv) => (hasSpread(iv) ? <span className={cx("num")}> {T("g3.range_lohi", { lo: x.nf(iv.lo), hi: x.nf(iv.hi) })}</span> : null))(displayInterval(c.value, c.value_lo, c.value_hi))} <Status st={c.status} />
           </span>
         ) : null}
         {mk ? (
@@ -372,7 +373,8 @@ export function Detail({ x, onBar, light, width }: { x: Ctx; onBar?: ((y: number
   const harm = light || view === "value";
   const lh = (yy: number) => {
     const r = monthRec(cal, yy, m);
-    return r && r.value_lo !== r.value_hi ? { value_lo: r.value_lo ?? null, value_hi: r.value_hi ?? null } : {};
+    const iv = r ? displayInterval(r.value, r.value_lo, r.value_hi) : null;
+    return hasSpread(iv) ? { value_lo: iv.lo, value_hi: iv.hi } : {};
   };
   const dist = harm ? distOf(c, y, lh) : distRaw(cal, view, y, m, x.base.to);
   return (
