@@ -18,6 +18,7 @@ import {
   type KoreaSnap,
 } from "./snapshot";
 import { occurrenceHandlers } from "./occurrence";
+import { forecastHandlers } from "./forecast";
 import { createFireEventHandlers } from "./fire-events";
 import { createV12FwiSpreadHandlers } from "./v12-fwi-spread";
 import { createV12FrsHandlers } from "./v12-frs";
@@ -87,6 +88,8 @@ export function createHandlers(base: string) {
   return [
     // 다음 달 발생 확률(F15) + 시군구 경계 — 앞에 둔다(경계는 시군구만 답하고 나머지는 아래 503 으로 넘긴다)
     ...occurrenceHandlers(at, () => getKorea().then((k) => k.method_version)),
+    /* FireOutlook Planner 30일 전망(F17) — 모델 함수 실값 스냅숏, 없는 본문은 503 */
+    ...forecastHandlers(at, () => getKorea().then((k) => k.method_version)),
     /* v1.2 화재 사건(F15) — fire-events.ts */
     ...createFireEventHandlers(base, () => getKorea().then((k) => k.method_version)),
     /* v1.2 새 층: FWI · 확산 nowcast(public/data/snap/v12 — release v1.2 에서 자른 값) */
