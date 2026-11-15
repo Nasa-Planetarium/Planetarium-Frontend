@@ -4,11 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, FileSpreadsheet, Image as ImageIcon, Map as MapIcon, MapPin } from "lucide-react";
 import { aoiBounds, downloadMapPng } from "@/widgets/map-canvas";
-import { ApiError } from "@/shared/api";
+import { ApiError, HOTSPOT_MAX_AREA, bboxSqDeg } from "@/shared/api";
 import { hotspotsQuery } from "../api/queries";
 import { cx } from "./cx";
 import type { Ctx } from "./home-page";
-import { download, toCSV } from "./use-ui";
+import { download, downloadCsv, toCSV } from "./use-ui";
 
 /** 시나리오 권역 지도 범위(경북 북부 원장 bounds 와 같은 범위 — 서,남,동,북) */
 export const KR_VIEW: [number, number, number, number] = [128.05, 36.15, 129.55, 37.05];
@@ -31,6 +31,10 @@ export function HomeDownload(c: Ctx) {
     return () => document.removeEventListener("mousedown", off);
   }, [open]);
   const base = `emberline_${c.aoi}`;
+  /* 점 CSV 상자: 그린 영역 → 지역 상자 → 한국 시나리오 범위. 서버는 100 제곱도 넘는 상자를 400 으로 거절한다(나라 단위 일본·미국 등) →
+     누르기 전에 막고 까닭을 적는다(눌러도 아무것도 안 받아지던 2026-11-15 점검) */
+  const hotBox = c.drawn ? aoiBounds(c.drawn) : (c.aoiBbox ?? KR_VIEW);
+  const hotWide = (bboxSqDeg(hotBox) ?? 0) > HOTSPOT_MAX_AREA;
 
   const calPng = () => {
     const svg = document.querySelector<SVGSVGElement>('[data-testid="home"] [data-cal] svg');
@@ -70,19 +74,20 @@ export function HomeDownload(c: Ctx) {
       { label: "ratio_to_median", get: (r) => r.ratio_to_median },
       { label: "method_version", get: () => c.mv },
     ]);
-    download(`${base}_calendar.csv`, new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const ms = c.months.filter((r) => r.value != null || r.status !== "out_of_range");
+    downloadCsv(`${base}_calendar.csv`, csv, { aoi: c.aoi, aoi_name: c.dataAoiName, period: ms.length ? `${ms[0]!.year}-${String(ms[0]!.month).padStart(2, "0")}/${ms[ms.length - 1]!.year}-${String(ms[ms.length - 1]!.month).padStart(2, "0")}` : "", sensor: c.sensor, source: `/api/v1/aois/${c.aoi}/calendar` });
   };
   const hotCsv = async () => {
     if (!c.range) return;
     try {
-      const d = (await qc.fetchQuery(hotspotsQuery(c.drawn ? aoiBounds(c.drawn) : (c.aoiBbox ?? KR_VIEW), c.range.start, c.range.end, c.mv))) as unknown as { hotspots?: Record<string, unknown>[] };
+      const d = (await qc.fetchQuery(hotspotsQuery(hotBox, c.range.start, c.range.end, c.mv))) as unknown as { hotspots?: Record<string, unknown>[] };
       const rows = d.hotspots ?? [];
       if (!rows.length) {
         setNote(c.t("home.export_it.no_raw_detections_to"));
         return;
       }
       const keys = Object.keys(rows[0]!);
-      download(`${base}_hotspots_${c.range.start}_${c.range.end}.csv`, new Blob([toCSV(rows, keys.map((k) => ({ label: k, get: (r) => r[k] as string | number | null })))], { type: "text/csv;charset=utf-8" }));
+      downloadCsv(`${base}_hotspots_${c.range.start}_${c.range.end}.csv`, toCSV(rows, keys.map((k) => ({ label: k, get: (r) => r[k] as string | number | null }))), { aoi: c.aoi, aoi_name: c.dataAoiName, period: `${c.range.start}/${c.range.end}`, source: "/api/v1/hotspots" });
       setOpen(false);
     } catch (e) {
       setNote(c.t(e instanceof ApiError && e.code === "data_not_loaded" ? "shell.err.data_not_loaded" : "shell.err.request"));
@@ -114,11 +119,11 @@ export function HomeDownload(c: Ctx) {
               <span>{c.dataAoiName + c.t("home.item.value_state_reason_version")}</span>
             </span>
           </button>
-          <button type="button" role="menuitem" onClick={() => void hotCsv()} disabled={!c.range}>
+          <button type="button" role="menuitem" onClick={() => void hotCsv()} disabled={!c.range || hotWide} data-wide={hotWide || undefined}>
             <MapPin aria-hidden="true" strokeWidth={1.9} width={16} height={16} />
             <span>
               <b>{c.t("home.item.raw_detections_csv")}</b>
-              <span>{c.dataAoiName + c.t("home.item.map_period") + (c.range ? `${c.range.start} – ${c.range.end}` : "")}</span>
+              <span>{hotWide ? c.t("shell.err.range_too_large") : c.dataAoiName + c.t("home.item.map_period") + (c.range ? `${c.range.start} – ${c.range.end}` : "")}</span>
             </span>
           </button>
           <button type="button" role="menuitem" data-k="map" onClick={() => (downloadMapPng(c.mapH, `Emberline · ${c.aoiLabel}${c.range ? ` · ${c.range.start} – ${c.range.end}` : ""}`, `emberline_map_${c.aoi}`), setOpen(false))}>

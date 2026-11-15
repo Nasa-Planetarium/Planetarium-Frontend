@@ -3,9 +3,10 @@
 import { useMemo, type ReactNode } from "react";
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { useLocale } from "next-intl";
-import { burnState, countOf, eventPlace, eventSpan, monthEventsQuery, noCoverage, type FireEvent, type FireEventList } from "@/entities/fire-event";
+import { burnState, countOf, EVENTS_CSV_LIMIT, eventPlace, eventSpan, fireEventsCsv, monthEventsQuery, monthWindow, noCoverage, type FireEvent, type FireEventList } from "@/entities/fire-event";
 import { ApiError } from "@/shared/api";
 import { useT, type TFn } from "@/shared/i18n";
+import { CsvButton } from "@/shared/ui";
 import { cx } from "./cx";
 
 /**
@@ -148,6 +149,7 @@ export function MonthEvents({ aoiId, year, month, mv, testId = "month-events" }:
       <div className={cx("fev-h")}>
         <h3>{f.t("events.title")}</h3>
         <span className={cx("fev-tag")}>{f.t("events.tag")}</span>
+        {aoiId && (st === "ok" || st === "empty") ? <EventsCsv aoiId={aoiId} year={year} month={month} /> : null}
       </div>
       {st === "ok" || st === "empty" ? (
         <p className={cx("fev-line")}>
@@ -160,5 +162,23 @@ export function MonthEvents({ aoiId, year, month, mv, testId = "month-events" }:
       )}
       {big.data && big.data.events.length ? <EventRows events={big.data.events} /> : null}
     </section>
+  );
+}
+
+/** 그 달 사건 CSV(서버 CSV 그대로 · 겹침 규칙 · 큰 사건 순 최대 1,000건) */
+function EventsCsv({ aoiId, year, month }: { aoiId: string; year: number; month: number }) {
+  const t = useT();
+  const w = monthWindow(year, month);
+  const p = `${w.start}/${w.end}`;
+  return (
+    <CsvButton
+      kind="fire-events"
+      aria={t("csv.events", { a: aoiId, p })}
+      make={async () => ({
+        name: `emberline_fire-events_${aoiId}_${w.start.slice(0, 7)}.csv`,
+        text: await fireEventsCsv(aoiId, w.start, w.end),
+        meta: { aoi: aoiId, period: p, source: "/api/v1/fire-events", rule: "overlap local dates", sort: "sum_weight", limit: EVENTS_CSV_LIMIT },
+      })}
+    />
   );
 }

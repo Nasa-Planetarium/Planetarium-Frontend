@@ -1,0 +1,6 @@
+/* 층 CSV 단추 — 작은 알약 하나(토큰만, src/app/styles/tokens.css) */
+.b{display:inline-flex;align-items:center;gap:var(--sp-1);min-height:24px;padding:0 var(--sp-2);border-radius:var(--r-pill);border:var(--hair) solid var(--line-strong);background:var(--surface-1);color:var(--text-2);font:inherit;font-size:var(--fs-1);font-weight:var(--fw-medium);white-space:nowrap;cursor:pointer}
+.b:hover:not(:disabled){color:var(--text-1);border-color:var(--accent)}
+.b:focus-visible{outline:2px solid var(--focus-ring);outline-offset:1px}
+.b:disabled{opacity:.5;cursor:default}
+.b svg{width:var(--ic-inline);height:var(--ic-inline);flex:none}

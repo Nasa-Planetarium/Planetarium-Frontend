@@ -5,18 +5,56 @@ import { ChevronLeft, Download, FileText } from "lucide-react";
 import { api, hotspotsTooWide } from "@/shared/api";
 import { displayInterval, hasSpread } from "@/shared/lib/display";
 import { continuityParent } from "@/shared/lib/baseline-period";
+import type { CsvFile } from "@/shared/ui";
 import { toast } from "@/shared/ui/toast";
 import { LIM_BASE, RESULT_COLS, calendarCSV, isoD, lastDay, monthRec, safeName, toCSV, trDefault } from "../model/analysis";
 import { ymIso } from "../model/core";
 import { Status } from "./bits";
-import { saveText } from "./charts";
+import { saveCsv } from "./charts";
 import { cx } from "./cx";
-import { Detail, Sentence, sentText, trendCSVMonth, unitOf } from "./s2";
+import { Detail, Sentence, sentText, trendMonthFile, unitOf } from "./s2";
 import type { Ctx } from "./types";
 import { VdMark } from "./vd-mark";
 
 /** 원본 핫스팟 CSV 열 수(핸드오프 §1-1, 목업 EM.api.CSV_COLS.hotspots) */
 const HOT_COLS = 19;
+
+/** 캘린더 CSV(화면과 같은 조건) — 지역의 자료 있는 첫 달 ~ 마지막 달 */
+export function calendarFile(x: Ctx): CsvFile | null {
+  const cal = x.cal;
+  if (!cal) return null;
+  const ms = cal.months.filter((r) => r.status !== "out_of_range");
+  const a = ms[0];
+  const b = ms[ms.length - 1];
+  const sy = a?.year ?? 2000;
+  const ey = b?.year ?? 2026;
+  return {
+    name: `emberline_calendar_${safeName(x.aoi)}_${sy}-${ey}.csv`,
+    text: calendarCSV(cal),
+    meta: { data_version: x.M?.data_version ?? null, aoi: x.aoi, aoi_name: x.aoiName(x.rec), period: a && b ? `${ymIso(a.year, a.month)}/${ymIso(b.year, b.month)}` : "", source: `/api/v1/aois/${x.aoi}/calendar` },
+  };
+}
+
+/** 비교 결과 CSV(고른 달 한 행 — /comparison 값 그대로 + 기준 기간 · 문장) */
+export function resultFile(x: Ctx): CsvFile | null {
+  const { c, M, y, m } = x;
+  if (!c) return null;
+  const B = x.base;
+  return {
+    name: `emberline_result_${safeName(x.aoi)}_${ymIso(y, m)}.csv`,
+    text: toCSV(
+      [
+        {
+          aoi_id: x.aoi, aoi_name: x.aoiName(x.rec), year: y, month: m, value: c.value, value_lo: c.value_lo, value_hi: c.value_hi, value_source: c.value_source, status: c.status, verdict: c.verdict, percentile: c.percentile,
+          ratio_to_median: c.ratio_to_median, baseline_median: c.baseline_median, baseline_p25: c.baseline_p25, baseline_p75: c.baseline_p75, n_baseline_years: c.n_baseline_years, baseline_from: B.from, baseline_to: B.to,
+          sentence: sentText(x), method_version: M?.method_version ?? c.method_version ?? "", release: M?.data_version ?? "",
+        },
+      ],
+      RESULT_COLS,
+    ),
+    meta: { data_version: M?.data_version ?? null, aoi: x.aoi, aoi_name: x.aoiName(x.rec), period: ymIso(y, m), baseline: `${B.from}-${B.to}`, source: `/api/v1/aois/${x.aoi}/months/${ymIso(y, m)}/comparison` },
+  };
+}
 
 /* ═════════ 3 근거·보고 ═════════ */
 export function S3({ x }: { x: Ctx }) {
@@ -31,21 +69,8 @@ export function S3({ x }: { x: Ctx }) {
   const tr = { ...trDefault(y, m), freq: "month" as const };
 
   const resultCSV = () => {
-    if (!c) return;
-    const B = x.base;
-    saveText(
-      `emberline_result_${safeName(x.aoi)}_${ymIso(y, m)}.csv`,
-      toCSV(
-        [
-          {
-            aoi_id: x.aoi, aoi_name: name, year: y, month: m, value: c.value, value_lo: c.value_lo, value_hi: c.value_hi, value_source: c.value_source, status: c.status, verdict: c.verdict, percentile: c.percentile,
-            ratio_to_median: c.ratio_to_median, baseline_median: c.baseline_median, baseline_p25: c.baseline_p25, baseline_p75: c.baseline_p75, n_baseline_years: c.n_baseline_years, baseline_from: B.from, baseline_to: B.to,
-            sentence: sentText(x), method_version: M?.method_version ?? c.method_version ?? "", release: M?.data_version ?? "",
-          },
-        ],
-        RESULT_COLS,
-      ),
-    );
+    const f = resultFile(x);
+    if (f) saveCsv(f);
   };
   const rawCSV = async () => {
     const ym = ymIso(y, m);
@@ -53,7 +78,7 @@ export function S3({ x }: { x: Ctx }) {
     try {
       const r = await api.GET("/hotspots", { params: { query: q as never }, parseAs: "text" });
       if (r.error || typeof r.data !== "string") throw new Error("hotspots");
-      saveText(`emberline_hotspots_${safeName(x.aoi)}_${ym}.csv`, r.data);
+      saveCsv({ name: `emberline_hotspots_${safeName(x.aoi)}_${ym}.csv`, text: r.data, meta: { data_version: M?.data_version ?? null, aoi: x.aoi, aoi_name: name, period: `${q.start}/${q.end}`, layer: "all", limit: q.limit, source: "/api/v1/hotspots" } });
     } catch {
       setRawNote(W("err.network"));
     }
@@ -89,7 +114,10 @@ export function S3({ x }: { x: Ctx }) {
             <h3>{T("ui.export")}</h3>
           </div>
           <div className={cx("panel-b")}>
-            <button type="button" className={cx("an-xb")} data-csv="" disabled={!cal} onClick={() => cal && saveText(`emberline_calendar_${safeName(x.aoi)}_${sy}-${ey}.csv`, calendarCSV(cal))}>
+            <button type="button" className={cx("an-xb")} data-csv="" disabled={!cal} onClick={() => {
+                const f = calendarFile(x);
+                if (f) saveCsv(f);
+              }}>
               <span>
                 <b>{T("g3.csv_same")}</b>
                 <small>{`${name} · ${sy}–${ey} · ${T("g3.csv_fields")}`}</small>
@@ -103,7 +131,7 @@ export function S3({ x }: { x: Ctx }) {
               </span>
               <Download className={cx("ic ic-btn")} aria-hidden="true" />
             </button>
-            <button type="button" className={cx("an-xb")} data-trcsv="" onClick={() => saveText(`emberline_summary_${safeName(x.aoi)}_${tr.start}_${tr.end}_month.csv`, trendCSVMonth(x, tr))}>
+            <button type="button" className={cx("an-xb")} data-trcsv="" onClick={() => saveCsv(trendMonthFile(x, tr))}>
               <span>
                 <b>{T("g6.tr_csv_b")}</b>
                 <small>{`${tr.start} – ${tr.end} · ${T("g6.tr_month")}`}</small>

@@ -417,6 +417,8 @@ function LabScreen({ tabs }: { tabs: ReactNode }) {
         { label: "model", get: (r) => (kor ? (r.item?.model ?? "") : (sum.data?.model ?? "")) },
         { label: "data_release", get: () => (kor ? list.data?.data_release : sum.data?.data_release) ?? "" },
       ]),
+      undefined,
+      { aoi: scopeId, period: tm ?? "next", as_of_date: asOf ?? "", source: kor ? "/api/v1/occurrence/aois" : "/api/v1/occurrence/grid" },
     );
   };
 

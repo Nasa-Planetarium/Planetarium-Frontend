@@ -94,7 +94,7 @@ export function useSize<T extends HTMLElement>(): [(el: T | null) => void, numbe
 }
 
 /** 파일 내려받기 — 셸 공용(저장 토스트: CSV 「n행」 + 복사 · PNG 「W × H PNG」) */
-export { downloadBlob as download } from "@/shared/ui/download";
+export { downloadBlob as download, downloadCsv } from "@/shared/ui/download";
 export function toCSV<T>(rows: T[], cols: { label: string; get: (r: T) => string | number | null | undefined }[]) {
   const q = (v: unknown) => {
     const s = v == null ? "" : String(v);

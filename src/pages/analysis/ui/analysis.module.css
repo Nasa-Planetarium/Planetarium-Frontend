@@ -604,3 +604,4 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 .wf-bar .wf-range.cm-range::-moz-range-progress{height:4px;border-radius:999px;background:var(--grad-flame-x)}
 .wf-bar .wf-range.cm-range::-webkit-slider-thumb{width:6px;height:var(--sp-3);border-radius:999px;background:#fff;box-shadow:0 0 0 2px var(--flame-b),var(--glow-flame)}
 .wf-bar .wf-range.cm-range::-moz-range-thumb{width:6px;height:var(--sp-3);border-radius:999px;background:#fff;box-shadow:0 0 0 2px var(--flame-b),var(--glow-flame)}
+.an-bundle{margin-left:auto}

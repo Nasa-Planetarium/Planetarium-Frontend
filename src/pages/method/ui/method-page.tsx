@@ -7,11 +7,12 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { countryName, useCountry } from "@/entities/country";
 import { calendarQuery } from "@/entities/month-value";
 import { methodQuery } from "@/entities/release";
-import { satMonthsQuery, satSpans } from "@/entities/satellite-status";
+import { satelliteCsv, satMonthsQuery, satSpans } from "@/entities/satellite-status";
 import { api, qk, unwrap } from "@/shared/api";
 import { ORDER } from "@/shared/data-cases";
 import { useT, type TFn } from "@/shared/i18n";
 import { useDevice } from "@/shared/lib/use-device";
+import { CsvButton } from "@/shared/ui";
 import { FRP_RATIOS } from "../model/frp-ratios.gen";
 import {
   CONTRACT,
@@ -496,7 +497,15 @@ function SecStatus(c: Ctx) {
           {T("ui.range")} 2000-11 – 2026-11 · {nf(inR.length)} {T("ui.months")}
         </p>
       </Panel>
-      <Panel title={T("p.vs_aoi")} n={vsRows.length}>
+      <Panel
+        title={
+          <>
+            {T("p.vs_aoi")}
+            {files.satellite_day_status ? <SatCsv c={c} /> : null}
+          </>
+        }
+        n={vsRows.length}
+      >
         <Table heads={[[T("t.value")], [T("t.period")]]} rows={vsRows} />
         {files.satellite_day_status ? <SatBlock c={c} /> : null}
       </Panel>
@@ -747,6 +756,26 @@ function SatBlock({ c }: { c: Ctx }) {
         />
       )}
     </div>
+  );
+}
+
+/** 위성 × 달 상태 CSV(JSON 행 그대로 · 날 = UTC) */
+function SatCsv({ c }: { c: Ctx }) {
+  const q = useQuery(satMonthsQuery(c.M.method_version ?? null));
+  const spans = satSpans(q.data?.months);
+  const first = spans[0]?.first ?? null;
+  const through = q.data?.through ?? null;
+  if (!q.data || !spans.length) return null;
+  return (
+    <CsvButton
+      kind="satellite-status"
+      label=""
+      aria={c.t("csv.sat", { p: `${first?.slice(0, 7) ?? ""}–${through ?? ""}` })}
+      make={async () => {
+        const r = await satelliteCsv({ freq: "month" });
+        return { name: "emberline_satellite-status_month.csv", text: r.text, meta: { period: `${first ?? ""}/${r.through}`, source: "/api/v1/satellite-status", freq: "month", date_basis: "UTC", through: r.through } };
+      }}
+    />
   );
 }
 
