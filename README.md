@@ -5,7 +5,7 @@
 
 - 화면 정본 = 목업. **디자인은 목업 그대로**: shadcn/ui·Radix 는 동작·접근성 원소로만 쓰고, 겉모양은 목업 CSS 를 토큰·Tailwind 로 옮긴다. shadcn 기본 둥근 모서리·그림자·색이 화면에 보이면 결함이다.
 - 결정 원장: `planetarium-spec/00-decisions.md` (A–G). 설계: `planetarium-spec/architecture/frontend-design.md`. 계약: `contract/openapi.yaml`(사본, 원본 `planetarium-spec/contract`).
-- 이 소스는 프런트 팀에 **소스로 전달**한다(결정 G3). 원격 저장소 없음.
+- 이 소스는 프런트 팀에 **소스로 전달**한다(결정 G3). 원격 저장소 = `Nasa-Planetarium/Planetarium-Frontend`(GitHub) — `main` 개발, `release` 로 머지하면 배포(아래 「배포」).
 
 ## 실행
 
@@ -16,7 +16,7 @@ corepack enable                     # 처음 한 번(pnpm 이 이미 있으면 �
 pnpm install --frozen-lockfile      # lock 그대로. 「Ignored build scripts: @parcel/watcher, @swc/core」 안내는 무시해도 된다(미리 빌드된 바이너리를 씀)
 cp .env.example .env.local          # 필요하면 값 바꾸기(아래 「목 ↔ 실제 교체」)
 pnpm dev                            # http://localhost:8797/ko/calendar/
-pnpm build                          # 정적 내보내기 → out/ (nginx 가 그대로 서빙)
+pnpm build                          # 정적 내보내기 → out/ (환경변수 없으면 MSW 모드 — 운영 빌드는 아래 「배포」)
 node scripts/serve-out.mjs          # out/ 을 127.0.0.1:8797 에서 확인
 ```
 
@@ -27,7 +27,77 @@ pnpm check            # typecheck · eslint · steiger · check:isolation · vit
 pnpm exec playwright install chromium   # 처음 한 번 — e2e 용 브라우저 받기
 pnpm build && pnpm e2e                  # Playwright(out/ 을 띄워 연다). 이미 받아 둔 다른 판 chromium 을 쓰려면 PW_CHROMIUM=<실행 파일>
 node scripts/check-isolation.mjs --self-test   # 격리 검사기가 실제로 위반을 잡는지(가짜 위반 3개)
+node scripts/check-pages-out.mjs --mode http   # 빌드 결과가 Pages 한도 안인지 + 빌드에 박힌 데이터 모드(배포 전 문, CI 도 돈다)
 ```
+
+## 배포 (Cloudflare Pages · GitHub Actions)
+
+```
+기능 가지 ──PR──▶ main ──PR(머지)──▶ release ──push──▶ deploy.yml ──▶ Cloudflare Pages(운영)
+                  │                      │
+                  └─ ci.yml              └─ ci.yml
+```
+
+- **main** = 개발. PR·main·release 에 올라온 커밋마다 `.github/workflows/ci.yml` 이 돈다:
+  `pnpm install --frozen-lockfile` → `pnpm check` → 빌드 두 벌(http · msw) + `check-pages-out` → `pnpm e2e`(MSW 빌드, Playwright chromium).
+- **release 로 머지 = 배포.** `.github/workflows/deploy.yml` 이 `pnpm check` → http 빌드 → `check-pages-out --mode http` →
+  `cloudflare/wrangler-action`(wrangler 4.155.0)로 `pages deploy out --branch=main` 을 한다. 수동 실행(Actions › deploy › Run workflow)도 **release 가지에서만** 배포한다.
+  배포는 한 번에 하나(`concurrency: deploy-production`), GitHub 환경 `production` 에 기록된다.
+- 배포 빌드는 **실서버 모드로 고정**(`NEXT_PUBLIC_DATA_MODE=http`, `NEXT_PUBLIC_API_BASE=/api/v1`). 값을 환경변수로 주고, `check-pages-out` 이
+  결과물 청크에 박힌 값을 다시 읽어 `http` 가 아니면 배포 전에 멈춘다. 기관 연동·로그인은 아직 목 어댑터(`mock`, 기본값) 그대로다.
+- 액션은 커밋 SHA 로 고정했다(뒤 주석이 태그). wrangler 는 저장소 의존성에 넣지 않았다 — 배포 액션이 그 판을 러너 안에서만 설치한다.
+
+### 무엇이 어디로 가나
+
+| 경로 | 누가 응답 | 캐시(`public/_headers`) |
+|---|---|---|
+| `/_next/static/*` | 정적(해시 이름) | 1년 immutable |
+| `/dem/*` · `/dem-world/*` | 정적(지형 타일) | 30일 — 이름에 해시가 없으니 바꿀 때는 경로·이름을 바꾼다 |
+| `/geo/*` | 정적(경계·하천) | 7일 |
+| `/data/*` | 정적(release 스냅숏) | 5분 + 재확인 |
+| `/`, `/ko/*`, `/en/*`, `*.html` | 정적(페이지) | 0(배포 즉시 새 판) |
+| `/api/v1/*` | **Pages Functions** `functions/api/[[path]].ts` → `API_ORIGIN` | 백엔드 응답의 Cache-Control 그대로 |
+
+프록시 규칙(`functions/api/[[path]].ts`):
+- `GET`·`HEAD` 만 넘긴다. 그 밖 메서드 → 405 problem+json(`method_not_allowed`). `/api/v1/` 밖 → 404(`not_found`).
+  계약의 `POST /summary-queries` 는 화면이 부르지 않아 막혀 있다 — 화면이 부르게 되면 이 파일을 같이 고친다.
+- 요청 헤더는 `Accept`·`Accept-Language`·`If-None-Match`·`If-Modified-Since` 만 넘긴다. **쿠키·Authorization 은 넘기지 않는다.**
+- 응답은 상태·본문·헤더(Cache-Control·ETag·X-Method-Version 등) 그대로, `Set-Cookie` 와 hop-by-hop 헤더만 뺀다.
+- `API_ORIGIN` 이 없거나 백엔드에 닿지 못하면 502 problem+json(`upstream_error`, `Cache-Control: no-store`).
+- 접속자 IP 는 `X-Client-IP` 로(값 = Cloudflare 가 붙인 `CF-Connecting-IP`), 그리고 `X-Forwarded-Proto`·`X-Forwarded-Host` 를 붙인다.
+  **백엔드가 `X-Client-IP` 를 믿을지는 백엔드(OMB) 몫이다** — 터널 공개 주소로 직접 오는 요청은 이 헤더를 아무 값으로나 지어 보낼 수 있다.
+  믿으려면 백엔드가 Pages 에서 온 요청만 받게(예: Cloudflare Access 서비스 토큰·비밀 헤더) 막은 뒤에만 쓴다.
+
+### 필요한 설정 — 누가 넣나
+
+| 이름 | 종류 · 위치 | 값 | 누가 |
+|---|---|---|---|
+| `CLOUDFLARE_API_TOKEN` | GitHub 비밀(Settings › Secrets and variables › Actions, 또는 환경 `production`) | API 토큰 — 권한 **Account › Cloudflare Pages › Edit 하나만**, 계정 하나로 한정 | Cloudflare 계정 소유자가 만들고 → 레포 관리자가 등록 |
+| `CLOUDFLARE_ACCOUNT_ID` | GitHub 비밀 | Cloudflare 계정 ID | 계정 소유자 → 레포 관리자 |
+| `CF_PAGES_PROJECT` | GitHub **변수**(Variables) | Pages 프로젝트 이름(소문자·숫자·`-`) | 레포 관리자 |
+| `API_ORIGIN` | **Cloudflare Pages 프로젝트 환경변수**(Settings › Variables and Secrets, Production) — GitHub 아님 | 백엔드 공개 주소, 예 `https://emberline-api.example`(경로는 버리고 출처만 씀) | Cloudflare 계정 소유자(주소는 OMB 가 터널을 연 뒤 알려 줌) |
+
+- Pages 프로젝트는 **Direct Upload** 로 만들고 프로덕션 가지를 `main` 으로 둔다(`--branch=main` 이 운영 판이 되게). Git 연동 빌드는 켜지 않는다(빌드는 Actions 가 한다).
+- `API_ORIGIN` 을 바꾸면 Functions 는 **다음 배포부터** 새 값을 쓴다 — 바꾼 뒤 Actions › deploy 를 release 에서 다시 돌린다.
+- 한도: 파일 20,000 · 파일당 25 MiB · `_headers` 규칙 100. 지금 out/ = 파일 약 2,835 · 약 118.5 MiB · 가장 큰 파일 4.2 MiB(2026-11-15 aibox 측정). 넘으면 `check-pages-out` 이 배포 전에 멈춘다.
+
+### 롤백
+
+1. **빠르게**: Cloudflare 대시보드 › Workers & Pages › 프로젝트 › Deployments › 이전 운영 배포 › 「Rollback to this deployment」. 정적 자산과 Functions 가 그 판으로 함께 돌아간다.
+2. **기록에 남게**: `release` 에서 문제 커밋을 `git revert` 해 PR 로 머지 → deploy.yml 이 되돌린 판을 다시 배포한다. 1 로 급히 돌렸으면 2 로 release 도 맞춰 둔다(안 그러면 다음 배포가 문제 판을 다시 올린다).
+
+### 로컬에서 운영과 같게 보기(실서버 모드)
+
+정적 내보내기는 서버가 없어서 `pnpm dev`·`serve-out.mjs` 에는 `/api/v1` 프록시가 없다(백엔드도 다른 출처 CORS 를 열지 않았다). 운영과 같은 모양은 Pages 런타임을 띄워 본다(로그인 불필요):
+
+```bash
+NEXT_PUBLIC_DATA_MODE=http pnpm build                    # Windows PowerShell: $env:NEXT_PUBLIC_DATA_MODE="http"; pnpm build
+node scripts/check-pages-out.mjs --mode http
+npx wrangler@4.155.0 pages dev out --port 8798 --binding API_ORIGIN=http://<백엔드 주소>   # http://127.0.0.1:8798/ko/calendar/
+```
+
+**MSW 모드는 시험용**: 환경변수 없이 `pnpm dev`·`pnpm build` 하면 코드 기본값(`src/shared/config/env.ts`)이 `msw` 라서 백엔드 없이 `public/data/snap` 스냅숏으로 돈다 — e2e·화면 작업용.
+운영 배포는 이 기본값에 기대지 않는다(deploy.yml 이 `http` 를 주고, 결과물에서 다시 잰다).
 
 ## 구조 (FSD · App Router)
 

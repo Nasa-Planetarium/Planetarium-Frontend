@@ -1,0 +1,90 @@
+# 배포 — release 로 머지(push)되면 Cloudflare Pages 운영 판으로. 수동 실행(workflow_dispatch)도 release 에서만 배포한다.
+# 화면 = 정적 내보내기(out/, 실서버 http 모드로 고정) · API = functions/api/[[path]].ts 가 /api/v1/* 를 API_ORIGIN 으로 넘긴다.
+# 필요한 것(README 「배포」):
+#   비밀  CLOUDFLARE_API_TOKEN(계정 › Cloudflare Pages: Edit 만) · CLOUDFLARE_ACCOUNT_ID
+#   변수  CF_PAGES_PROJECT(Pages 프로젝트 이름, 프로덕션 가지 = main)
+#   Pages 프로젝트 환경변수 API_ORIGIN(백엔드 공개 주소) — 이 워크플로가 아니라 Cloudflare 대시보드에서
+name: deploy
+
+on:
+  push:
+    branches: [release]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# 배포는 하나씩, 진행 중인 배포를 끊지 않는다(뒤의 것은 기다렸다가 돈다)
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/release'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.deployment-url }}
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      # 배포 빌드는 반드시 실서버 모드 — 아래 「Pages 한도 · 모드 검사」가 결과물에 박힌 값을 다시 잰다
+      NEXT_PUBLIC_DATA_MODE: http
+      NEXT_PUBLIC_API_BASE: /api/v1
+    steps:
+      - name: 설정 확인
+        env:
+          CF_PAGES_PROJECT: ${{ vars.CF_PAGES_PROJECT }}
+          HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+          HAS_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+        run: |
+          missing=0
+          if [ -z "$CF_PAGES_PROJECT" ]; then echo "::error::변수 CF_PAGES_PROJECT 없음(Settings › Secrets and variables › Actions › Variables)"; missing=1;
+          elif ! printf '%s' "$CF_PAGES_PROJECT" | grep -Eq '^[a-z0-9][a-z0-9-]{0,57}$'; then echo "::error::CF_PAGES_PROJECT 는 소문자·숫자·- 만(Pages 프로젝트 이름)"; missing=1; fi
+          if [ "$HAS_TOKEN" != "true" ]; then echo "::error::비밀 CLOUDFLARE_API_TOKEN 없음"; missing=1; fi
+          if [ "$HAS_ACCOUNT" != "true" ]; then echo "::error::비밀 CLOUDFLARE_ACCOUNT_ID 없음"; missing=1; fi
+          exit "$missing"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: pnpm
+
+      - name: 설치(lock 그대로)
+        run: pnpm install --frozen-lockfile
+
+      - name: pnpm check
+        run: pnpm check
+
+      - name: 빌드 — http
+        run: pnpm build
+
+      - name: Pages 한도 · 모드 검사(http)
+        run: node scripts/check-pages-out.mjs --dir out --mode http
+
+      # wrangler 는 저장소 의존성에 넣지 않았다 — 액션이 이 판을 설치해 쓴다(package.json 이 러너 안에서만 바뀌어 --commit-dirty)
+      # pages deploy 는 작업 폴더의 functions/ 를 함께 묶어 올린다(Functions 가 /api/* 를 맡고 나머지는 정적 자산)
+      - name: Cloudflare Pages 배포
+        id: deploy
+        uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4.1.3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4.155.0"
+          packageManager: pnpm
+          command: pages deploy out --project-name=${{ vars.CF_PAGES_PROJECT }} --branch=main --commit-hash=${{ github.sha }} --commit-dirty=true
+
+      - name: 배포 주소
+        env:
+          URL: ${{ steps.deploy.outputs.deployment-url }}
+          ALIAS: ${{ steps.deploy.outputs.pages-deployment-alias-url }}
+        run: |
+          echo "배포: $URL" >> "$GITHUB_STEP_SUMMARY"
+          echo "별칭: $ALIAS" >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,43 @@
+# Cloudflare Pages 응답 헤더 — next build 가 public/ 을 out/ 으로 복사한다(Pages 는 이 파일 자체는 내주지 않는다).
+# 한 경로에 여러 규칙이 맞으면 같은 헤더 값은 쉼표로 합쳐진다 → Cache-Control 은 경로가 겹치지 않게 한 규칙에만 둔다.
+# 한도: 규칙 100 개 · 줄 2,000 자(scripts/check-pages-out.mjs 가 잰다). /api/* 는 Functions 가 응답하므로 여기 규칙이 붙지 않는다.
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+# 내용 해시가 이름에 든 빌드 산출물 — 1년, 바뀌지 않음
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# 지형 타일(DEM) — 이름에 해시가 없다. 바뀌면 길게는 30일 옛 타일이 보일 수 있다(바꿀 때는 경로·이름을 바꾼다)
+/dem/*
+  Cache-Control: public, max-age=2592000
+/dem-world/*
+  Cache-Control: public, max-age=2592000
+
+# 경계·하천선 — 7일
+/geo/*
+  Cache-Control: public, max-age=604800
+
+# release 스냅숏 — 판이 바뀌면 곧 보여야 해서 짧게(ETag 로 다시 확인)
+/data/*
+  Cache-Control: public, max-age=300, must-revalidate
+
+# 페이지(html·RSC .txt) — 배포 즉시 새 판
+/
+  Cache-Control: public, max-age=0, must-revalidate
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+/index.txt
+  Cache-Control: public, max-age=0, must-revalidate
+/404.html
+  Cache-Control: public, max-age=0, must-revalidate
+/ko/*
+  Cache-Control: public, max-age=0, must-revalidate
+/en/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+# MSW 워커(http 빌드에서는 등록되지 않음) — 캐시하지 않는다
+/mockServiceWorker.js
+  Cache-Control: no-cache

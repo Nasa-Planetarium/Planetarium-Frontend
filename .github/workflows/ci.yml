@@ -1,0 +1,93 @@
+# 검사 — PR 과 main·release 에 올라온 커밋마다.
+# 순서: 설치(lock 그대로) → pnpm check → 빌드 두 벌(http = 배포와 같은 것, msw = e2e 용) + Pages 한도 검사 → e2e(MSW).
+# 액션은 커밋 SHA 로 고정(뒤 주석이 태그). 올릴 때는 태그와 SHA 를 같이 바꾼다.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main, release]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+  # 로컬 .env.local 은 커밋되지 않는다 — 빌드마다 아래에서 값을 직접 준다(process.env 가 .env 파일보다 우선)
+  NEXT_PUBLIC_API_BASE: /api/v1
+
+jobs:
+  check-build-e2e:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # pnpm 판은 package.json 의 packageManager(pnpm@10.34.9)를 읽는다
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      # engines: node >=22.18.0 — aibox 검증 판(24.21.0)과 같은 메이저
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: pnpm
+
+      - name: 설치(lock 그대로)
+        run: pnpm install --frozen-lockfile
+
+      - name: pnpm check (typecheck · eslint · steiger · check:isolation · vitest)
+        run: pnpm check
+
+      - name: 빌드 — http(배포와 같은 설정)
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_DATA_MODE: http
+
+      - name: Pages 한도 · 모드 검사(http)
+        run: node scripts/check-pages-out.mjs --dir out --mode http
+
+      - name: 빌드 — msw(e2e 용)
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_DATA_MODE: msw
+
+      - name: Pages 한도 · 모드 검사(msw)
+        run: node scripts/check-pages-out.mjs --dir out --mode msw
+
+      - name: Playwright 판
+        id: pw
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Playwright 브라우저 캐시
+        id: pw-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      - name: Playwright 브라우저 받기
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Playwright 시스템 의존성(캐시 적중 시)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps chromium
+
+      - name: e2e (MSW 빌드)
+        run: pnpm e2e
+
+      - name: e2e 실패 흔적
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-test-results
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: ignore
