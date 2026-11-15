@@ -6,8 +6,8 @@
 .iconbtn::after,.chip::after,.btn.sm::after{content:"";position:absolute;inset:min(0px,calc(50% - var(--hit) / 2)) 0}
 .cpick-scrim{position:fixed;inset:0;z-index:95;background:transparent}
 .cpick-scrim.is-sheet{background:var(--scrim)}
-.cpick{position:fixed;width:min(360px,calc(100vw - 16px));max-height:min(560px,calc(100vh - 80px));display:flex;flex-direction:column;background:var(--surface-2);border:1px solid var(--line-strong);border-radius:var(--r-m);overflow:hidden}
-.cpick-scrim.is-sheet .cpick{left:0;right:0;bottom:0;top:auto;width:100%;max-height:80vh;border-radius:var(--r-sheet) var(--r-sheet) 0 0;padding-bottom:env(safe-area-inset-bottom,0px)}
+.cpick{position:fixed;z-index:95;width:min(360px,calc(100vw - 16px));max-height:min(560px,calc(100vh - 80px));display:flex;flex-direction:column;background:var(--surface-2);border:1px solid var(--line-strong);border-radius:var(--r-m);overflow:hidden}
+.cpick.is-sheet{left:0;right:0;bottom:0;top:auto;width:100%;max-height:80vh;border-radius:var(--r-sheet) var(--r-sheet) 0 0;padding-bottom:env(safe-area-inset-bottom,0px)}
 .cp-h{display:flex;align-items:center;gap:var(--sp-2);padding:var(--sp-2);border-bottom:var(--hair) solid var(--line-soft)}
 .cp-h .cp-q{flex:1;height:var(--hit)}
 .cp-l{overflow:auto;min-height:0;flex:1;overscroll-behavior:contain}
