@@ -728,25 +728,13 @@ function SatBlock({ c }: { c: Ctx }) {
   const ym = (d: string | null) => (d ? d.slice(0, 7) : "–");
   return (
     <div className={cx("mt-sat")} data-testid="method-sat">
-      {q.data && spans.length ? (
-        <div className={cx("mt-satx")}>
-          <CsvButton
-            kind="satellite-status"
-            aria={c.t("csv.sat", { p: `${spans[0]?.first?.slice(0, 7) ?? ""}–${q.data.through ?? ""}` })}
-            make={async () => {
-              const r = await satelliteCsv({ freq: "month" });
-              return { name: "emberline_satellite-status_month.csv", text: r.text, meta: { period: `all/${r.through}`, source: "/api/v1/satellite-status", freq: "month", date_basis: "UTC", through: r.through } };
-            }}
-          />
-        </div>
-      ) : null}
       {q.isPending ? (
         <p className={cx("mt-err")}>…</p>
       ) : q.isError || !spans.length ? (
         <None c={c} k="ui.not_provided" />
       ) : (
         <Table
-          heads={[[V("sat_title")], [<span key="p" title={`UTC · ${q.data?.through ?? "–"}`}>{T("t.period")} <span className={cx("mt-dim")}>UTC</span></span>], [V("st.low"), 1], [V("st.missing"), 1]]}
+          heads={[[<span key="s" className={cx("mt-sath")}>{V("sat_title")}<SatCsv c={c} first={spans[0]?.first ?? null} through={q.data?.through ?? null} /></span>], [<span key="p" title={`UTC · ${q.data?.through ?? "–"}`}>{T("t.period")} <span className={cx("mt-dim")}>UTC</span></span>], [V("st.low"), 1], [V("st.missing"), 1]]}
           rows={spans.map((r) => (
             <tr key={r.satellite} data-sat={r.satellite}>
               <td className={cx("nw")}>{r.satellite}</td>
@@ -760,6 +748,20 @@ function SatBlock({ c }: { c: Ctx }) {
         />
       )}
     </div>
+  );
+}
+
+/** 위성 × 달 상태 CSV(JSON 행 그대로 · 날 = UTC) */
+function SatCsv({ c, first, through }: { c: Ctx; first: string | null; through: string | null }) {
+  return (
+    <CsvButton
+      kind="satellite-status"
+      aria={c.t("csv.sat", { p: `${first?.slice(0, 7) ?? ""}–${through ?? ""}` })}
+      make={async () => {
+        const r = await satelliteCsv({ freq: "month" });
+        return { name: "emberline_satellite-status_month.csv", text: r.text, meta: { period: `${first ?? ""}/${r.through}`, source: "/api/v1/satellite-status", freq: "month", date_basis: "UTC", through: r.through } };
+      }}
+    />
   );
 }
 

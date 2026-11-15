@@ -68,8 +68,9 @@ export function BundleButton({ x }: { x: Ctx }) {
       const tr = { ...trDefault(x.y, x.m), freq: "month" as const };
       files.push(trendMonthFile(x, tr));
       if (isKorAoi(x.aoi)) {
-        const R = await qc.fetchQuery(summaryQuery(x.aoi, tr.start, tr.end, mv, true));
-        files.push(trendDayFile(x, { ...tr, freq: "day" }, R));
+        /* 일별 추이는 덤(한국 지역) — 못 받으면(자료 준비 중 등) 월별만 넣는다 */
+        const R = await qc.fetchQuery(summaryQuery(x.aoi, tr.start, tr.end, mv, true)).catch(() => null);
+        if (R) files.push(trendDayFile(x, { ...tr, freq: "day" }, R));
       }
       const rec = (aq.data ?? []).find((a) => a.aoi_id === x.aoi);
       if (!cellsTooMany(rec)) {
