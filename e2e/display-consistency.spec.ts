@@ -69,7 +69,7 @@ test.describe("나라와 상관없이 같은 표시 규칙", () => {
     page.on("pageerror", (e) => errs.push(e.message));
     await page.goto("/ko/calendar/?aoi=WORLD&ym=2025-03&mode=world");
     const w = await keyOf(page, '[data-testid="calendar"]');
-    await page.addInitScript(() => localStorage.setItem("em.role", "responder"));
+    await page.addInitScript(() => sessionStorage.setItem("em.role", "responder"));
     await page.goto("/ko/ops/?c=USA");
     const o = await keyOf(page, '[data-testid="ops-det-map"]');
     for (const k of [w, o]) {

@@ -50,7 +50,7 @@ test("비교 분석 S3: 인쇄 전용 6절 문서가 DOM 에 있다", async ({ p
 
 test("피해 면적: 감지 시각 옆 직전 위성 통과 · 레이어/PNG 단추", async ({ page }, info) => {
   test.skip(info.project.name === "phone", "폰은 상세 판 구성이 다르다");
-  await page.addInitScript(() => localStorage.setItem("em.role", "land"));
+  await page.addInitScript(() => sessionStorage.setItem("em.role", "land"));
   await page.goto("/ko/land/");
   const root = page.locator('[data-testid="land"]');
   await expect(root).toBeVisible({ timeout: 30000 });
@@ -61,7 +61,7 @@ test("피해 면적: 감지 시각 옆 직전 위성 통과 · 레이어/PNG 단
 
 test("알림 서랍: 모두 읽음 단추", async ({ page }, info) => {
   test.skip(info.project.name === "phone", "폰 종 위치가 다르다");
-  await page.addInitScript(() => localStorage.setItem("em.role", "responder"));
+  await page.addInitScript(() => sessionStorage.setItem("em.role", "responder"));
   await page.goto("/ko/home/");
   await page.getByRole("button", { name: /알림 미확인/ }).click();
   const all = page.locator("button[data-all]");

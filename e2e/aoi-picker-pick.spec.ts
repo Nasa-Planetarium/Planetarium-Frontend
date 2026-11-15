@@ -19,8 +19,8 @@ const press = async (l: Locator, info: TestInfo) => (info.project.name === "phon
 async function openPicker(page: Page, s: (typeof SURF)[number], info: TestInfo) {
   await page.addInitScript((role) => {
     localStorage.setItem("em.lang", "ko");
-    if (role) localStorage.setItem("em.role", role);
-    else localStorage.removeItem("em.role");
+    if (role) sessionStorage.setItem("em.role", role);
+    else sessionStorage.removeItem("em.role");
   }, s.role);
   await page.goto(s.path);
   const btn = page.locator(s.btn).first();

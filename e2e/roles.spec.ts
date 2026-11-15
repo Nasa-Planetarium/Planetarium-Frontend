@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 /**
  * 역할 화면 통합 시험(aibox 전용) — land·ops·cmd 세 화면을 정본 main 에서 함께 연다.
  * 잰다: 예시 로그인(역할 고르기) → 그 역할 탭 하나가 더해지고 첫 화면으로 간다 → 화면 뿌리가 그려진다 · 페이지 오류 0.
- * 폰 머리줄에는 로그인 단추가 없으므로(목업 규칙) 폰은 고른 역할(localStorage em.role)로 열어 탭·화면만 잰다.
+ * 폰 머리줄에는 로그인 단추가 없으므로(목업 규칙) 폰은 고른 역할(sessionStorage em.role)로 열어 탭·화면만 잰다.
  */
 const CASES = [
   { role: "responder", label: /조기경보·긴급대응/, screen: "ops", root: '[data-testid="ops"]' },
@@ -50,7 +50,7 @@ for (const c of CASES) {
     const errs = watchErrors(page);
     await page.addInitScript((role) => {
       localStorage.setItem("em.lang", "ko");
-      localStorage.setItem("em.role", role);
+      sessionStorage.setItem("em.role", role);
     }, c.role);
     await page.goto(`/ko/${c.screen}/`);
     await expect(page.locator(c.root)).toBeVisible({ timeout: 20000 });
@@ -62,7 +62,7 @@ for (const c of CASES) {
 test("다른 역할로는 세 화면이 잠겨 있다", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem("em.lang", "ko");
-    localStorage.setItem("em.role", "scientist");
+    sessionStorage.setItem("em.role", "scientist");
   });
   for (const s of ["ops", "land", "cmd"]) {
     await page.goto(`/ko/${s}/`);

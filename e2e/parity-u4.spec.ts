@@ -18,7 +18,7 @@ for (const c of SCREENS) {
   test(`${c.screen}: 공통 지도 바탕 층`, async ({ page }) => {
     await page.addInitScript((role) => {
       localStorage.setItem("em.lang", "ko");
-      localStorage.setItem("em.role", role);
+      sessionStorage.setItem("em.role", role);
     }, c.role);
     await page.goto(`/ko/${c.screen}/`);
     const map = page.locator(`[data-testid="${c.map}"][data-ready="1"]`);
@@ -32,7 +32,7 @@ test("상황판: 사각형·다각형 관심 영역 → 배지 · 해제 · 지�
   test.skip(info.project.name !== "web", "끌기·두 번 누르기는 넓은 칸에서만");
   await page.addInitScript(() => {
     localStorage.setItem("em.lang", "ko");
-    localStorage.setItem("em.role", "responder");
+    sessionStorage.setItem("em.role", "responder");
   });
   await page.goto("/ko/home/");
   await expect(page.locator('[data-testid="home"][data-ready="1"]')).toBeVisible({ timeout: 30000 });
@@ -79,7 +79,7 @@ test("상황판 → 비교 분석: 지역·달을 넘기고 「홈에서 가져�
   test.skip(info.project.name !== "web", "폰은 감지 목록 바닥 시트 — 같은 단추는 웹에서 잰다");
   await page.addInitScript(() => {
     localStorage.setItem("em.lang", "ko");
-    localStorage.setItem("em.role", "responder");
+    sessionStorage.setItem("em.role", "responder");
   });
   await page.goto("/ko/home/");
   await expect(page.locator('[data-testid="home"][data-ready="1"]')).toBeVisible({ timeout: 30000 });
