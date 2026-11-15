@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * R2 단위 A(셸·내려받기·알림·토스트·위성 통과 + 공통 지도) 시험(aibox 전용 · MSW 스냅숏 모드).
+ * R2 단위 A(셸·내려받기·알림·토스트·위성 통과 + 공통 지도) 시험(팀 시험 서버 전용 · MSW 스냅숏 모드).
  * 잰다: 종 미확인 배지(목업 처음 값 긴급대응 2 · 피해 면적 1) · 서랍 행 불 이름 · 모두 읽음 뒤 배지 0 ·
  *       잠긴 화면 목업 문구 + 돌아갈 곳 · 새 역할 탭 반짝 · 계정 창 다음 위성 칸 · 내려받기 토스트(PNG 크기 · CSV n행 + 복사) ·
  *       폰 경보·출동 지도 「다음 위성」 줄.
@@ -61,7 +61,8 @@ test("계정 창: 다음 위성 칸(머리줄과 같은 값)", async ({ page }) 
 });
 
 test("내려받기 토스트: 캘린더 PNG = 「… 저장」 + 「W × H PNG」", async ({ page }) => {
-  await page.goto("/ko/calendar/");
+  /* #15 부터 aoi 없는 /calendar/ 첫 화면은 전 세계 재생(PNG 단추는 지역 캘린더 연×월 칸에 있다) → 지역을 적어 연다 */
+  await page.goto("/ko/calendar/?aoi=KR");
   const btn = page.locator("button[data-png]").first();
   await expect(btn).toBeEnabled({ timeout: 30000 });
   await btn.click();

@@ -41,9 +41,9 @@
 .map .zoom button:focus-visible{outline-offset: -2px;}
 .map .zoom button + button{border-top: 1px solid var(--line-strong);}
 .map .zoom svg{width: var(--ic-map); height: var(--ic-map);}
-.map .scale{position: absolute; right: var(--sp-3); bottom: var(--sp-3); font-family: var(--font-data); font-size: var(--fs-1); font-variant-numeric: tabular-nums; color: var(--text-2); display: flex; align-items: center; gap: var(--sp-1); pointer-events: none;}
-.map .scale i{display: block; height: 5px; border-right-color: ; border-right-style: ; border-right-width: ; border-bottom-color: ; border-bottom-style: ; border-bottom-width: ; border-left-color: ; border-left-style: ; border-left-width: ; border-image-source: ; border-image-slice: ; border-image-width: ; border-image-outset: ; border-image-repeat: ; border-top: 0px;}
-.map .attrib{position: absolute; left: var(--sp-3); bottom: 10px; font-size: var(--fs-1); color: var(--text-3); font-family: var(--font-body); pointer-events: none; white-space: nowrap;}
+.map .scale{position: absolute; right: var(--sp-3); bottom: var(--sp-3); font-family: var(--font-data); font-size: var(--fs-1); font-variant-numeric: tabular-nums; color:var(--map-label);text-shadow:0 0 2px var(--map-halo),0 0 3px var(--map-halo),0 0 4px var(--map-halo); display: flex; align-items: center; gap: var(--sp-1); pointer-events: none;}
+.map .scale i{display:block;height:5px;border:1px solid var(--map-label);border-top:0;box-shadow:0 1px 0 var(--map-halo)}
+.map .attrib{position: absolute; left: var(--sp-3); bottom: 10px; font-size: var(--fs-1); color:var(--map-label);text-shadow:0 0 2px var(--map-halo),0 0 3px var(--map-halo),0 0 4px var(--map-halo); font-family: var(--font-body); pointer-events: none; white-space: nowrap;}
 .map .tipbox{position: absolute; pointer-events: none; background: color-mix(in srgb,var(--surface-1) 95%,transparent); border: 1px solid var(--line-strong); border-radius: var(--r-s); box-shadow: var(--elev-2); padding: var(--sp-2) var(--sp-3); font-size: var(--fs-2); min-width: 150px; max-width: 240px; transform: translate(12px, -50%); z-index: 5;}
 .chart svg{display: block; width: 100%; height: auto; overflow: visible;}
 .chart text{fill: var(--text-2); font-family: var(--font-data); font-size: var(--fs-1); font-variant-numeric: tabular-nums;}
@@ -75,13 +75,13 @@
 .m3-fire .m3-pulse{position: absolute; left: 50%; top: 50%; translate: -50% -50%; width: 44px; height: 44px; border-radius: var(--r-round); border: 2px solid var(--c); opacity: 0; pointer-events: none;}
 .m3-fire.is-new .m3-pulse{animation: m3pulse 1.6s var(--ease-out) infinite;}
 .m3-fire.is-closed{opacity: 1;}
-.m3-fire .m3-label{position: absolute; left: 30px; top: 3px; white-space: nowrap; font: var(--fw-strong) var(--fs-2) var(--font-body); color: var(--text-1); text-shadow: 0 0 3px var(--map-halo),0 0 3px var(--map-halo),0 0 6px var(--map-halo); display: none; pointer-events: none;}
+.m3-fire .m3-label{position: absolute; left: 30px; top: 3px; white-space: nowrap; font: var(--fw-strong) var(--fs-2) var(--font-body); color: var(--map-label-hi); text-shadow: 0 0 3px var(--map-halo),0 0 3px var(--map-halo),0 0 6px var(--map-halo); display: none; pointer-events: none;}
 .m3-fire.show-label:not(.is-past) .m3-label{display: block;}
 .m3-unit{--c: var(--data-unit-standby); width: 22px; height: 22px; border-radius: var(--r-2xs); background: var(--marker-bg); border: 1.6px solid var(--c); display: grid; place-items: center; color: var(--c); cursor: pointer; box-shadow: var(--elev-2);}
 .m3-unit svg{stroke: var(--c);}
 .m3-unit.is-clhid{display: none;}
 .m3-unit .m3-lead{position: absolute; left: 50%; top: 50%; height: 1.5px; background: var(--c); transform-origin: 0px 50%; pointer-events: none; opacity: 0.9;}
-.m3-unit .m3-dot{position: absolute; width: 4px; height: 4px; transform: translate(-50%, -50%); border: 2px solid var(--map-halo); box-sizing: content-box; border-radius: var(--r-round); background: var(--c); pointer-events: none;}
+.m3-unit .m3-dot{position: absolute; width: 4px; height: 4px; transform: translate(-50%, -50%); border: 2px solid var(--map-halo); box-shadow: 0 0 0 1px var(--map-label-hi); box-sizing: content-box; border-radius: var(--r-round); background: var(--c); pointer-events: none;}
 .m3-unit .m3-cl-n{position: absolute; right: calc(-1 * var(--sp-2)); top: calc(-1 * var(--sp-2)); min-width: 18px; height: 18px; padding: 0 var(--sp-1); border-radius: var(--r-2xs); background: var(--marker-bg); border: 1.5px solid var(--c); color: var(--text-1); font-size: var(--fs-1); font-weight: var(--fw-strong); line-height: 15px; text-align: center; pointer-events: none;}
 .m3-reg{font: var(--fw-medium) var(--fs-2) var(--font-body); color: var(--map-label); text-shadow: 0 0 2px var(--map-halo),0 0 3px var(--map-halo),0 0 4px var(--map-halo); white-space: nowrap; letter-spacing: 0.08em;}
 .m3-unit,.m3-fire{--mk-hit: max(44px,var(--hit));}
@@ -184,17 +184,18 @@
 .hm-map .map-ui > .hm-ov{pointer-events: none;}
 .hm-ov > *{pointer-events: auto;}
 .hm-ov-tl{position: absolute; left: 12px; top: 12px; right: 64px; display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); z-index: 3;}
-.hm-map::before,.hm-map::after{content: ""; position: absolute; left: 0px; right: 0px; pointer-events: none; z-index: 1;}
-.hm-map::before{top: 0px; height: 62px; background: linear-gradient(180deg,color-mix(in srgb,var(--surface-0) 78%,transparent),transparent);}
-.hm-map::after{bottom: 0px; height: 96px; background: linear-gradient(0deg,color-mix(in srgb,var(--surface-0) 82%,transparent),transparent);}
+/* 위·아래 어두운 덧칠(surface-0 78–82%)은 어두운 지도 시절 것 — 밝은 지도(F14)에서는 바다·땅 가장자리를 회갈색으로 더럽히고
+   흰 halo 를 두른 어두운 눈금·출처 글자를 어두운 바탕 위에 올려 대비를 떨어뜨려 뺐다(다른 네 지도에는 원래 없음) */
 .hm-map .map-ui{z-index: 2;}
 .hm-map .tipbox{z-index: 9;}
-.hm-map .attrib{padding: var(--sp-1) var(--sp-2); border-radius: var(--r-xs); background: color-mix(in srgb,var(--surface-0) 80%,transparent);}
+.hm-map .attrib{padding: var(--sp-1) var(--sp-2); border-radius: var(--r-xs); background: color-mix(in srgb,var(--map-land) 80%,transparent);}
 .hm-search{position: relative; display: flex; align-items: center; gap: var(--sp-2); height: var(--chip-h); padding: 0 var(--sp-3); width: 220px; border-radius: var(--r-xs); border: 1px solid var(--line-strong); background: color-mix(in srgb,var(--surface-1) 86%,transparent); backdrop-filter: blur(6px); color: var(--text-2);}
 .hm-search input{flex: 1 1 0%; min-width: 0px; height: 100%; border: 0px; background: transparent; font-size: var(--fs-2); color: var(--text-1);}
 .hm-search input:focus-visible{outline-color: transparent;}
 .hm-search input::-webkit-search-cancel-button{filter: invert(0.6);}
 .hm-sugg{position: absolute; left: 0px; top: calc(100% + 6px); width: max(100%, 260px); padding: var(--sp-1); background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: var(--r-m); box-shadow: var(--elev-3); z-index: 6;}
+/* 지도 상태 줄(.state, [data-state])이 뜨면 그 위로 올린다(겹침 334×30 px — F14 L8) */
+[data-state="1"] .hm-ov-bl{bottom: calc(34px + var(--sp-7) + var(--sp-1));}
 .hm-ov-bl{position: absolute; left: 12px; bottom: 34px; display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-2); max-width: calc(100% - 80px); z-index: 2;}
 .hm-aoibadge{display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-2); padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-3); border-radius: var(--r-m); border: 1px solid var(--line-strong); background: color-mix(in srgb,var(--surface-1) 88%,transparent); backdrop-filter: blur(8px); font-size: var(--fs-2); max-width: 100%;}
 .hm-aoi-k{font-family: var(--font-data); font-size: var(--fs-1); letter-spacing: 0.08em; color: var(--text-1);}
@@ -208,6 +209,9 @@
 .hm-clock{font-size: var(--fs-2); color: var(--text-2);}
 .hm-feed-n{font-size: var(--fs-2); color: var(--text-2); white-space: nowrap;}
 .hm-feed-n b{color: var(--text-1);}
+/* 감지 목록 빈 상태(「확대하면 감지 점이 보입니다」 등) — 규칙이 없어 굵은 본문 글자가 왼쪽 가장자리에 붙어 있었다(F14 관점 밖 참고 항목) */
+.hm-empty{padding: var(--sp-6) var(--sp-4); text-align: center; color: var(--text-2); font-size: var(--fs-2);}
+.hm-empty b{color: var(--text-1); font-size: var(--fs-3); font-weight: var(--fw-medium);}
 .hm-feed-src{padding: 0 var(--sp-4) var(--sp-2); font-size: var(--fs-2); border-bottom: 1px solid var(--line-soft);}
 .hm-feed{flex: 1 1 auto; min-height: 120px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent;}
 .hm-al{position: relative; display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-3) var(--sp-4) var(--sp-3) var(--sp-5); border-bottom: 1px solid var(--line-soft); cursor: pointer; outline-offset: -2px; transition: background var(--dur-fast) var(--ease-out);}
@@ -371,7 +375,7 @@
 .hm-dp-d.is-sel{background: var(--text-1); color: var(--surface-0); border-color: var(--text-1);}
 .hm-dp-d:disabled{color: var(--text-3); opacity: 0.45; cursor: default;}
 .hm-dp-d:focus-visible,.hm-dp-nav:focus-visible{outline: var(--ring-w) solid var(--focus-ring); outline-offset: -1px;}
-.m3-fire .hm-pin-tail{position: absolute; width: 4px; height: 4px; transform: translate(-50%, -50%); border: 2px solid var(--map-halo); box-sizing: content-box; border-radius: var(--r-round); background: var(--c); pointer-events: none;}
+.m3-fire .hm-pin-tail{position: absolute; width: 4px; height: 4px; transform: translate(-50%, -50%); border: 2px solid var(--map-halo); box-shadow: 0 0 0 1px var(--map-label-hi); box-sizing: content-box; border-radius: var(--r-round); background: var(--c); pointer-events: none;}
 .m3-fire.hm-hid{visibility: hidden;}
 .m3-fire.hm-hid .hm-pin-tail{visibility: visible;}
 .m3-fire .hm-pin-n{position: absolute; right: -8px; top: -8px; min-width: 18px; height: 18px; padding: 0 var(--sp-1); border-radius: var(--r-2xs); background: var(--marker-bg); border: 1.5px solid var(--c); color: var(--text-1); font-size: var(--fs-1); font-weight: var(--fw-strong); line-height: 15px; text-align: center; pointer-events: none;}
@@ -389,8 +393,9 @@
 .hm-search{border-radius: var(--r-xs);}
 .hm-legend,.hm-pass{border: 0px; border-radius: 0px; background: color-mix(in srgb,var(--surface-0) 72%,transparent);}
 .hm-lgs{display: inline-flex; align-items: center; gap: var(--sp-1); color: var(--text-2);}
-.hm-lgd{display: inline-block; width: 8px; height: 8px; border-radius: var(--r-round); background: var(--data-viirs); box-shadow: var(--mk-halo);}
-.hm-lgd.m{background: var(--data-modis);}
+/* 감지 점 범례 = 지도 위 점과 같은 색(지도용 센서색 + 어두운 테두리, F14 H1·L1) */
+.hm-lgd{display: inline-block; width: 8px; height: 8px; border-radius: var(--r-round); background: var(--map-viirs); box-shadow: 0 0 0 1px var(--map-dot-edge), 0 0 0 3px var(--map-land);}
+.hm-lgd.m{background: var(--map-modis);}
 .hm-pass-k{font-family: var(--font-body);}
 .hm-map .attrib{border-radius: 0px;}
 .hm-aoibadge,.hm-flash,.hm-offv,.hm-outv,.hm-status{border-radius: var(--r-xs);}
@@ -548,6 +553,7 @@ button.hm-scr-i:focus-visible{outline-offset: -2px;}
 :global(html[data-device="phone"]) .hm-ov-tl{right: 12px;}
 :global(html[data-device="phone"]) .hm-search{width: 100%;}
 :global(html[data-device="phone"]) .hm-ov-bl{bottom: var(--sp-7); max-width: calc(100% - var(--sp-8) - var(--sp-4));}
+:global(html[data-device="phone"]) [data-state="1"] .hm-ov-bl{bottom: calc(2 * var(--sp-7) + var(--sp-1));}
 :global(html[data-device="phone"]) .hm-legend{display: none;}
 :global(html[data-device="phone"]) .hm-flash{top: auto; bottom: 70px; flex-wrap: wrap;}
 :global(html[data-device="phone"]) .hm-kpis{grid-template-columns: 1fr 1fr;}

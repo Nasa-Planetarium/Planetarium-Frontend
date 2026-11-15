@@ -4,9 +4,10 @@
   "qx": { "aria": "나라·기간 바꾸기", "country": "나라", "all": "전체 (모든 나라)", "year": "연도", "month": "월", "month_n": "{m}월", "apply": "적용", "export": "데이터 내보내기" }
  },
  "shell": {
+  "cont": { "NA": "북아메리카", "SA": "남아메리카" },
   "err": { "range_too_large": "범위가 넓어 한 번에 받을 수 없음(서버 100 제곱도 이하) — 지역을 좁혀 주세요", "rate_limited": "요청이 많음 — 잠시 뒤 다시 시도" },
   "det": { "partial": "점 일부만 받음(조각 {n}/{m}) — 서버 요청 한도" },
-  "map": { "cells_wide": "넓은 범위 — 월 감지량 1° 칸({p}, {n}칸). 확대하면 감지 점", "cells_wide_year": "넓은 범위 — {p}년 월 감지량 1° 칸 합({n}칸). 지역을 좁히면 감지 점", "cells_key": "월 감지량 1° 칸", "cells_month": "{m} 감지량 1° 칸", "real_n": "실제 {n}개" },
+  "map": { "loading": "지도 불러오는 중…", "jump": "대륙으로 이동", "cells_wide": "넓은 범위 — 월 감지량 1° 칸({p}, {n}칸). 확대하면 감지 점", "cells_wide_year": "넓은 범위 — {p}년 월 감지량 1° 칸 합({n}칸). 지역을 좁히면 감지 점", "cells_key": "월 감지량 1° 칸", "cells_month": "{m} 감지량 1° 칸", "real_n": "실제 {n}개" },
   "nav": {
    "calendar": { "label": "캘린더", "short": "캘린더" },
    "method": { "label": "방법·검증", "short": "방법" }

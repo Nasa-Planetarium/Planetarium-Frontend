@@ -1,7 +1,7 @@
 /**
  * 예측 분석(lab) 화면 모델 — 목업 pages/lab.js 의 순수 부분(결정 F8 전망).
  * 숫자 원천: 평년 기반 전망 스냅숏 public/data/snap/outlook.json(release v1.1 aoi_month 로 만든 통계 · 모델팀 산출 아님).
- * 실서버(:18490 /api/v1)에 전망 경로가 없어(2026-11-14 /outlook·/aois/KR/outlook 404) 두 모드 모두 이 정적 파일을 읽는다.
+ * 실서버(/api/v1)에 전망 경로가 없어(2026-11-14 /outlook·/aois/KR/outlook 404) 두 모드 모두 이 정적 파일을 읽는다.
  * 여기서는 배율 되돌리기(×10·×100·×1000)와 코드 → 낱말만 한다 — 다시 계산하지 않는다.
  */
 
@@ -96,6 +96,8 @@ export const lvOf = (r: Row | null | undefined): LvKey => (r && r.level ? r.leve
 /** 지도 원 = 평년 대비 수준 3단(표 「수준」 열과 같은 말) · 0 = 자료 부족(빗금) */
 export const LV_CLS: Record<Level, number> = { low: 1, normal: 2, high: 3 };
 export const CLS_TOK = ["hatch-bg", "lv-low", "lv-normal", "lv-high"] as const;
+/** 밝은 지도 위 면 색(F14 C4·B11): 옅음 → 진함 = 낮음 → 높음 · 0 = 자료 부족(옅은 회색 + 빗금 층). 표(어두운 셸)는 CLS_TOK 그대로 */
+export const MAP_CLS_TOK = ["map-lv-na", "map-lv-low", "map-lv-normal", "map-lv-high"] as const;
 export const clsOf = (r: Row | null | undefined) => (r && r.median != null && r.level ? LV_CLS[r.level] : 0);
 export const LV_RANK: Record<LvKey, number> = { high: 3, normal: 2, low: 1, na: 0 };
 

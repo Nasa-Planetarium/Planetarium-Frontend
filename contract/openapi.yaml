@@ -18,7 +18,7 @@ info:
     - 응답 필드 이름 = 핸드오프 열 이름(snake_case). release 에서 이름이 다른 열은 `x-release-column` 에 적었다(적재기가 번역).
     - 숫자는 파일 값 그대로 낸다(A1 「모델 따른다」). verdict·percentile 을 다시 계산하지 않는다.
     - `x-status: assumed` = release 에 없어서 가정으로 둔 모양. `x-status: release-absent` = 이 release 로는 503.
-    - 예시 숫자는 release 실값(aibox 시제품 서버가 release 를 읽어 2026-11-14 19:12 KST 에 낸 응답에서 옮김). 점(`/hotspots`)·위성 상태는 release 에 없어 가짜 예시이며 그렇게 표시했다.
+    - 예시 숫자는 release 실값(팀 시험 서버에서 돈 시제품 서버가 release 를 읽어 2026-11-14 19:12 KST 에 낸 응답에서 옮김). 점(`/hotspots`)·위성 상태는 release 에 없어 가짜 예시이며 그렇게 표시했다.
 
     알려진 결함·열린 것: `contract/ASSUMPTIONS.md`, `CONFLICTS.md`. 대응표: `contract/MAPPING.md`.
   license:

@@ -24,7 +24,8 @@ const dest = path.join(root, "public", "data", "snap");
 const FILES = ["korea.json", "countries.json", "FORMAT.md", "world-1deg/grid.bin", "world-1deg/meta.json", "world-1deg/lat-band.json"];
 fs.rmSync(dest, { recursive: true, force: true });
 fs.mkdirSync(path.join(dest, "world-1deg"), { recursive: true });
-const manifest = { source: snap, files: {} };
+/* 원천 위치는 저장소 기준 상대 경로로만 적는다(공개 저장소 — 개인 홈 경로가 커밋되지 않게) */
+const manifest = { source: path.relative(root, snap).split(path.sep).join("/"), files: {} };
 for (const f of FILES) {
   const from = path.join(snap, f);
   if (!fs.existsSync(from)) {
