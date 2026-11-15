@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { useCountry } from "@/entities/country";
 import { useCoarseCells } from "@/entities/world-grid";
 import { ApiError } from "@/shared/api";
 import { API_BASE, DATA_MODE } from "@/shared/config";
@@ -29,6 +30,7 @@ import { calInput, cellCase, fmtCompact, inRange, monthWord, VIEWS, ymIso, type 
 import { Status, useRamp } from "./bits";
 import { CalSvg } from "./cal-svg";
 import { Bars, CellDots, Lines, saveText, svgToPng, type CellDot, type CellPt } from "./charts";
+import { useCellLand } from "./cell-land";
 import { cx } from "./cx";
 import { DistChart } from "./dist-chart";
 import { VdMark } from "./vd-mark";
@@ -104,7 +106,7 @@ export function S2({ x }: { x: Ctx }) {
               <div className={cx("an-gl")}>
                 <CalPanel x={x} onPick={pick} />
               </div>
-              <section className={cx("panel an-det")}>
+              <section className={cx("panel an-det")} aria-busy={x.stale || undefined}>
                 <div className={cx("panel-h")}>
                   <h3>
                     {T("ui.yearly")}
@@ -600,7 +602,7 @@ function Trend({ x }: { x: Ctx }) {
     saveText(`emberline_summary_${safeName(x.aoi)}_${tr.start}_${tr.end}_day.csv`, toCSV(rows, ["row_type", "aoi_id", "date", "value", "value_projected", "as_of_date", "days_in_range", "days_in_month", "residual_prorated", "freq", "method_version", "release"]));
   };
   return (
-    <section className={cx("panel an-trend")} aria-label={T("g6.tr_title")}>
+    <section className={cx("panel an-trend")} aria-label={T("g6.tr_title")} aria-busy={(freq === "day" && sq.isPlaceholderData) || undefined}>
       <div className={cx("panel-h")}>
         <h3>{T("g6.tr_title")}</h3>
         <div className={cx("seg an-trf")} role="group" aria-label={T("g6.tr_freq")}>
@@ -646,7 +648,7 @@ function Trend({ x }: { x: Ctx }) {
   );
 }
 
-/* ⑥ 보정 전·후 시계열 */
+/* ⑥ 위성 교체 전후 — 원래 감지 수 vs 통합 감지량 */
 const COL: Record<CalView, string> = { value: "var(--data-harm)", raw_stitched: "var(--text-1)", raw_modis: "var(--data-modis)", raw_viirs: "var(--data-viirs)" };
 function StepChart({ x }: { x: Ctx }) {
   const { T, cal, view } = x;
@@ -678,6 +680,16 @@ function StepChart({ x }: { x: Ctx }) {
       </div>
       <div className={cx("panel-b")}>
         <p className={cx("an-sts")}>{sumNode}</p>
+        <ul className={cx("an-stlg")} aria-label={T("g6.st_lg")}>
+          {series.map((s) => (
+            <li key={s.name} data-on={s.name === view ? "1" : "0"}>
+              <svg width="22" height="8" aria-hidden="true">
+                <line x1="1" y1="4" x2="21" y2="4" stroke={s.color} strokeWidth={s.name === view ? 2.6 : 1.6} strokeDasharray={s.dash} />
+              </svg>
+              {T(`g6.st_lg_${s.name}`)}
+            </li>
+          ))}
+        </ul>
         <div className={cx("an-schart chart")} ref={box}>
           <Lines series={series} width={wid} height={240} label={`${T("g6.st_title")} · ${viewWord(x, view)}`} marker={{ x: 2012 + 1 / 12, label: T("g6.st_mark") }} />
         </div>
@@ -694,11 +706,21 @@ function CellPanel({ x }: { x: Ctx }) {
   const ym = ymIso(y, m);
   const mv = x.M?.method_version ?? null;
   const q0 = useQuery(cellsQuery(x.aoi, ym, mv, true));
-  const wide = q0.error instanceof ApiError && q0.error.code === "range_too_large";
-  const aq = useQuery({ ...aoisQuery(mv), enabled: !!mv && wide });
+  /* 넓은 범위(400 range_too_large → 1° 묶음) 판정은 지역마다 하나 — 달이 바뀌어 새 응답을 기다리는 동안 앞 판정을 그대로 써서
+     「…」 빈 판으로 갔다 오지 않게(2026-11-15 깜빡임). 응답이 오면(성공·오류) 그 판정으로 바꾼다 */
+  const wideNow = q0.error instanceof ApiError && q0.error.code === "range_too_large";
+  const settled = (q0.isError || q0.isSuccess) && !q0.isPlaceholderData;
+  const [wideSt, setWideSt] = useState<{ a: string; w: boolean } | null>(null);
+  if (settled && (wideSt?.a !== x.aoi || wideSt.w !== wideNow)) setWideSt({ a: x.aoi, w: wideNow });
+  const wide = settled ? wideNow : wideSt?.a === x.aoi ? wideSt.w : false;
+  const aq = useQuery(aoisQuery(mv));
   const co = useCoarseCells({ aoiId: x.aoi, aois: aq.data, y, m, on: wide });
   const q: { data: CellsData | undefined; error: unknown; isPending: boolean } = wide ? { data: (co.data ?? undefined) as CellsData | undefined, error: co.isError ? q0.error : null, isPending: co.isPending } : q0;
   const [box, wid] = useWidth(640);
+  /* 바탕 땅(나라 1급 · 세계 윤곽) — 고른 지역 1급(시군구면 부모 1급) 테두리 강조 */
+  const { list: countries } = useCountry();
+  const parent = x.rec?.parent_id ? ((aq.data ?? []).find((a) => a.aoi_id === x.rec?.parent_id) ?? null) : null;
+  const base = useCellLand({ aoi: x.aoi, rec: x.rec, parent, countries });
   /* 점 층(목업 ptsMode): 실서버 = FIRMS 최근 24시간(WMS 그림) · 목 = 그 달 release 감지 점(/hotspots) — 둘 다 한국 지역만 */
   const pm = isKorAoi(x.aoi) ? (DATA_MODE === "http" ? "firms" : "month") : null;
   const [lyrOn, setLyrOn] = useState(false);
@@ -726,9 +748,9 @@ function CellPanel({ x }: { x: Ctx }) {
   if (q.data?.features.length && !cells.length && view !== "value") noField = q.data.features.every((f) => (view === "raw_modis" ? f.properties.raw_modis : f.properties.raw_viirs) == null);
   const st = q.data?.properties?.month_status ?? (q.data ? "ok" : "out_of_range");
   const vmax = Math.max(1, ...cells.map((c) => c.value));
-  const err = q.error ? W(q.error instanceof ApiError && q.error.code === "data_not_loaded" ? "err.data_not_loaded" : "err.network") : null;
+  const err = q.error ? W(q.error instanceof ApiError && (q.error.code === "data_not_loaded" || q.error.code === "rate_limited") ? `err.${q.error.code}` : "err.network") : null;
   return (
-    <section className={cx("panel an-cellp")}>
+    <section className={cx("panel an-cellp")} aria-busy={(wide ? false : q0.isPlaceholderData) || undefined}>
       <div className={cx("panel-h")}>
         <h3>
           {T("g3.cell_map")} <span className={cx("num")}>{ym}</span>
@@ -748,7 +770,19 @@ function CellPanel({ x }: { x: Ctx }) {
       <div className={cx("panel-b an-cellb")}>
         <div className={cx("an-cellsvg")} ref={box}>
           {ramp && cells.length ? (
-            <CellDots cells={cells} ramp={ramp} scaleMax={vmax} width={Math.min(wid, 640)} label={`${T("g3.cell_map")} ${ym}`} points={points} image={image} />
+            <CellDots
+              cells={cells}
+              ramp={ramp}
+              scaleMax={vmax}
+              width={Math.min(wid, 640)}
+              maxH={x.device === "phone" ? 420 : 520}
+              cellDeg={q.data?.properties?.cell_size_deg ?? 0.1}
+              land={base.land}
+              c0={base.c0}
+              label={`${T("g3.cell_map")} ${ym}`}
+              points={points}
+              image={image}
+            />
           ) : (
             <div className={cx("an-empty sm")}>
               <i className={cx("miss-sw big")} />

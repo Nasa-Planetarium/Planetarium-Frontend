@@ -6,7 +6,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Image as ImageIcon, Layers } from "lucide-react";
 import { useLocale } from "next-intl";
 import { methodQuery } from "@/entities/release";
-import { adm1RegionsQuery, childRegionsQuery, downloadMapPng, MapCanvas, type Bbox, type MapCanvasHandle } from "@/widgets/map-canvas";
+import { adm1RegionsQuery, childRegionsQuery, downloadMapPng, MapCanvas, type Bbox, type MapCanvasHandle, type MapHotspot } from "@/widgets/map-canvas";
+import { api, heavyRetry, heavyRetryDelay, unwrap } from "@/shared/api";
 import { useT } from "@/shared/i18n";
 import type { FireMeta, LandFire } from "../model/land";
 import { cx } from "./cx";
@@ -18,7 +19,26 @@ type GeoData = Parameters<GeoJSONSource["setData"]>[0];
  * 바탕(map-void) + 나라 경계 · 고른 불 소실 범위(h5 채움 16% + 실선 2px) · 다른 불 소실 범위(h4 50% 점선, 칸 안에 다 들 때만) ·
  * 불 표지(조준 고리 — 진화 끝 = text-3 파선, 과거 = 단계색 점선, 고른 불 = cosmo-star 선택 고리) · 면적 이름표 + 면·리 이름.
  * 도구: 레이어(소실 범위·핫스팟·시군 이름) · PNG / 확대·축소·전체 보기 / 축척 / 출처 / 범례.
+ * 핫스팟 = 실제 GET /hotspots(고른 불 소실 범위 상자 ± 0.05° · 감지일 전날 ~ 진화일(없으면 오늘) 다음 날, 92일까지) — 불·필지는 시나리오 목(F13)이라
+ * 시나리오 불 자리·날짜에 실제 감지가 없으면 0 으로 적는다(과거 대형 산불은 실제 감지가 그려진다).
  */
+const addDay = (d: string, k: number) => {
+  const t = new Date(`${d}T00:00:00Z`);
+  t.setUTCDate(t.getUTCDate() + k);
+  return t.toISOString().slice(0, 10);
+};
+type HotRow = { latitude: number; longitude: number; instrument: string; frp: number | null; confidence: string; acq_datetime_utc: string };
+const fireHotQuery = (bbox: Bbox | null, start: string, end: string, on: boolean) => ({
+  queryKey: ["hotspots", "land-fire", bbox, start, end] as const,
+  queryFn: ({ signal }: { signal: AbortSignal }) =>
+    api
+      .GET("/hotspots", { params: { query: { bbox: [...bbox!], start, end, layer: "all", limit: 5000 } }, querySerializer: { array: { style: "form", explode: false } }, signal })
+      .then(unwrap) as unknown as Promise<{ hotspots?: HotRow[] }>,
+  enabled: on && !!bbox && !!start,
+  staleTime: 60 * 60 * 1000,
+  retry: heavyRetry,
+  retryDelay: heavyRetryDelay,
+});
 export interface LandMapProps {
   fires: LandFire[];
   metas: Record<string, FireMeta>;
@@ -169,6 +189,26 @@ export function LandMap(p: LandMapProps) {
     (map.getSource("burn-other") as GeoJSONSource | undefined)?.setData(fc(feats) as GeoData);
   }, [map, view, p.metas]);
 
+  /* 고른 불 둘레 실제 감지 점(레이어 「핫스팟」을 켰을 때만 받는다) */
+  const hotBox: Bbox | null = useMemo(() => {
+    if (!sel) return null;
+    const poly = p.metas[sel.id]?.burn_poly ?? [];
+    const la = poly.length ? poly.map((q) => q[0]) : [sel.lat];
+    const lo = poly.length ? poly.map((q) => q[1]) : [sel.lon];
+    const r3 = (v: number) => Math.round(v * 1000) / 1000;
+    return [r3(Math.min(...lo) - 0.05), r3(Math.min(...la) - 0.05), r3(Math.max(...lo) + 0.05), r3(Math.max(...la) + 0.05)];
+  }, [sel, p.metas]);
+  const today = new Date().toISOString().slice(0, 10);
+  const hStart = sel ? addDay(sel.detected_at.slice(0, 10), -1) : "";
+  const hEnd0 = sel ? addDay((sel.contained_at ?? today).slice(0, 10), 1) : "";
+  const hEnd = hStart && hEnd0 > addDay(hStart, 91) ? addDay(hStart, 91) : hEnd0 > today ? today : hEnd0;
+  const hq = useQuery(fireHotQuery(hotBox, hStart, hEnd, p.layers.hot));
+  const hot: MapHotspot[] = useMemo(
+    () => (hq.data?.hotspots ?? []).map((h) => ({ lat: h.latitude, lon: h.longitude, sensor: h.instrument, frp: h.frp, conf: h.confidence, time: h.acq_datetime_utc.replace("T", " ").slice(0, 16) + " UTC" })),
+    [hq.data],
+  );
+  const hotN = hq.data ? hot.length : null;
+
   /* 전체 보기 = 원장 불 전체 범위 */
   const allView: Bbox | null = useMemo(() => {
     if (!p.fires.length) return null;
@@ -222,9 +262,9 @@ export function LandMap(p: LandMapProps) {
       items.push({ label: t("land.sync_key.selected_burn_extent_est"), kind: "sq", c: "var(--h4)" });
       if (view?.others.length) items.push({ label: t("land.sync_key.other_burn_extents"), kind: "dash", c: "var(--h4)" });
     }
-    if (p.layers.hot) items.push({ label: t("land.sync_key.viirs_pixel_375_m"), kind: "ring", c: "var(--h5)" });
+    if (p.layers.hot) items.push({ label: `${t("land.sync_key.hotspot_detections")} ${hotN == null ? (hq.error ? t((hq.error as { status?: number }).status === 429 ? "shell.err.rate_limited" : "shell.err.request") : "…") : t("shell.map.real_n", { n: hotN })}`, kind: "dot", c: "var(--data-viirs)" });
     return items;
-  }, [view, p.layers, t]);
+  }, [view, p.layers, t, hotN, hq.error]);
 
   return (
     <MapCanvas
@@ -234,7 +274,8 @@ export function LandMap(p: LandMapProps) {
       iso3="KOR"
       view={allView}
       regions={regions}
-      layers={{ heat: false, hotspots: false, boundaries: p.layers.bounds, labels: p.layers.bounds }}
+      hotspots={p.layers.hot ? hot : []}
+      layers={{ heat: p.layers.hot, hotspots: p.layers.hot, boundaries: p.layers.bounds, labels: p.layers.bounds }}
       onReady={onReady}
       onMove={() => setFrame((n) => n + 1)}
       ticks

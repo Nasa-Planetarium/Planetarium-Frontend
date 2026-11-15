@@ -4,13 +4,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Check, Info, Search, Truck, X } from "lucide-react";
 import { focusBoundaryQuery, geomMainBounds, linesQuery, MapCanvas, type Bbox, type LayerKey, type MapCanvasHandle, type MapHotspot } from "@/widgets/map-canvas";
+import { useCoarseSum } from "@/entities/world-grid";
 import { iso3OfAoi } from "@/features/pick-aoi";
 import { inbox, type Alert, type Fire } from "@/shared/agency";
 import { ApiError } from "@/shared/api";
 import { pageHref, type Locale } from "@/shared/config";
 import { useRouter } from "next/navigation";
 import { useDevice } from "@/shared/lib/use-device";
-import { hotspotsQuery } from "../api/queries";
+import { hotspotsQuery, monthsOf } from "../api/queries";
 import { ACTIVE } from "../model/home";
 import { cx } from "./cx";
 import type { Ctx } from "./home-page";
@@ -24,7 +25,8 @@ const r2 = (v: number) => Math.round(v * 20) / 20;
 /**
  * 상황판 지도 — 공통 지도(widgets/map-canvas, 목업 map3d EMMap3D 이식) 위에 상황판 몫만 얹는다.
  *  - 바탕: 지형 음영·바깥 가림·하천·도로·경계(고른 범위 아래 단)·이름표 비키기·경위도 눈금 = 공통 지도
- *  - 감지 점 = 실제 API /hotspots(지도 기간 · 보이는 범위, 100 제곱도 넘으면 확대 안내) — 확대하면 화소 사각형, 누르면 툴팁
+ *  - 감지 점 = 실제 API /hotspots(지도 기간 · 보이는 범위) — 확대하면 화소 사각형, 누르면 툴팁. 429 는 Retry-After 만큼 기다려 다시
+ *  - 보이는 범위가 100 제곱도를 넘으면(실서버 점 한도) 점 대신 고른 지역의 월 감지량 1° 칸(정적 world-1deg, 기간이 걸친 달 합) — 캘린더·분석의 넓은 범위 규칙과 같다
  *  - 불·자원·출동 경로 = 기관 연동 포트 목(한국 시나리오만) — 겹친 자원은 묶음
  *  - 사각형·다각형·좌표+반경 그리기 → 관심 영역(home-page 가 집계 지역으로 바꿔 캘린더·지표·CSV 에 반영) + 배지(해제 ×)
  *  - 검색 = 지금 나라의 모든 지역(실제 /aois 이름) — 고르면 지역 범위가 바뀐다
@@ -50,6 +52,13 @@ export function HomeMap(c: Ctx) {
   const area = vb ? Math.abs((vb[2] - vb[0]) * (vb[3] - vb[1])) : Infinity;
   const hb: Bbox | null = vb && area <= MAX_AREA ? (vb.map(r2) as Bbox) : null;
   const hotQ = useQuery({ ...hotspotsQuery(hb ?? [0, 0, 0, 0], c.range?.start ?? "", c.range?.end ?? "", c.range ? c.mv : null), enabled: !!hb && !!c.range && !!c.mv });
+  /* 넓은 범위: 월 감지량 1° 칸(기간이 걸친 달 합) */
+  const wide = !!vb && area > MAX_AREA;
+  const months = useMemo(() => (c.range ? monthsOf(c.range.start, c.range.end) : []), [c.range]);
+  const co = useCoarseSum({ aoiId: c.aoi, aois: S.aois, months, on: wide });
+  const cells = wide ? (co.data?.cells ?? []) : [];
+  const ymTxt = (x: [number, number]) => `${x[0]}.${String(x[1]).padStart(2, "0")}`;
+  const mTxt = months.length ? (months.length > 1 ? `${ymTxt(months[0]!)}–${ymTxt(months[months.length - 1]!)}` : ymTxt(months[0]!)) : "";
   const raw = useMemo(
     () => ((hotQ.data as unknown as { hotspots?: { latitude: number; longitude: number; instrument?: string; frp?: number; confidence?: string; acq_datetime_utc?: string }[] } | undefined)?.hotspots ?? []),
     [hotQ.data],
@@ -241,7 +250,8 @@ export function HomeMap(c: Ctx) {
       regions={c.mapRegions}
       hiRegions={hiRegions}
       focus={focus}
-      hotspots={hot}
+      hotspots={hb ? hot : []}
+      cells={cells}
       fires={fires}
       units={units}
       routes={routes}
@@ -260,7 +270,7 @@ export function HomeMap(c: Ctx) {
       layerMenu={menu}
       ticks
       offView={!c.drawn && !isCountry && view ? { pts: [[(view[1] + view[3]) / 2, (view[0] + view[2]) / 2]], label: c.aoiLabel } : c.drawn ? { pts: [[(c.drawn.type === "bbox" ? (c.drawn.south + c.drawn.north) / 2 : c.drawn.type === "point" ? c.drawn.lat : c.drawn.pts[0]![0]), (c.drawn.type === "bbox" ? (c.drawn.west + c.drawn.east) / 2 : c.drawn.type === "point" ? c.drawn.lon : c.drawn.pts[0]![1])]], label: c.drawnKind } : null}
-      status={vb && area > MAX_AREA ? c.t("maplab.zoom_for_points") : null}
+      status={wide ? c.t("shell.map.cells_wide", { p: mTxt, n: c.fmt.num(cells.length) }) : hotErr?.status === 429 ? c.t("shell.err.rate_limited") : null}
     >
       <div ref={tlRef} className={cx("hm-ov hm-ov-tl")} style={{ pointerEvents: "none" }}>
         <div className={cx("hm-search")} role="search">
@@ -386,8 +396,14 @@ export function HomeMap(c: Ctx) {
               MODIS
             </span>
             <span className={cx("hm-lg-n tn")} data-hcount="" data-n={hot.length}>
-              {hotErr ? c.t(hotErr.code === "data_not_loaded" ? "shell.err.data_not_loaded" : "shell.err.request") : !hb ? "–" : hotQ.isPending ? "–" : `VIIRS ${c.fmt.num(nV)}, MODIS ${c.fmt.num(nM)}`}
+              {hotErr ? c.t(hotErr.code === "data_not_loaded" ? "shell.err.data_not_loaded" : hotErr.status === 429 ? "shell.err.rate_limited" : "shell.err.request") : !hb ? "–" : hotQ.isPending ? "–" : `VIIRS ${c.fmt.num(nV)}, MODIS ${c.fmt.num(nM)}`}
             </span>
+            {wide ? (
+              <span className={cx("hm-lgs")} data-lg-cells="">
+                <i className={cx("hm-lgd")} style={{ borderRadius: 1, background: "var(--h3)" }} aria-hidden="true" />
+                {c.t("shell.map.cells_key")}
+              </span>
+            ) : null}
             {c.kor ? (
               <span className={cx("hm-lgs hm-lg-unit")}>
                 <Truck className={cx("ic ic-inline")} aria-hidden="true" strokeWidth={1.9} />

@@ -4,4 +4,4 @@ export { downloadMapPng } from "./lib/png";
 export { aoiGeometry, aoiBounds, approxRegions, inAoi, circleRing, fireMarkOf, geomMainBounds, labelPoint, clusterUnits } from "./lib/geo";
 export { adm1RegionsQuery, childRegionsQuery, focusBoundaryQuery, demManifestQuery, linesQuery } from "./api/basemap";
 export { DEFAULT_LAYERS } from "./model/types";
-export type { Bbox, DrawMode, DrawnAoi, LatLon, LayerKey, Layers, MapBurn, MapFire, MapHotspot, MapRegion, MapRoute, MapUnit, TickOpts, ToolKey, DemManifest, Geom } from "./model/types";
+export type { Bbox, DrawMode, DrawnAoi, LatLon, LayerKey, Layers, MapBurn, MapCell, MapFire, MapHotspot, MapRegion, MapRoute, MapUnit, TickOpts, ToolKey, DemManifest, Geom } from "./model/types";

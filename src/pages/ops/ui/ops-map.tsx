@@ -10,7 +10,7 @@ import { nextPass, SATS, type Pass } from "@/entities/satellite-pass";
 import { useScenarioNowMs } from "@/entities/situation";
 import type { Weather } from "@/shared/agency";
 import { useT, useTl } from "@/shared/i18n";
-import { api, unwrap } from "@/shared/api";
+import { api, heavyRetry, heavyRetryDelay, unwrap } from "@/shared/api";
 import { adm1RegionsQuery, childRegionsQuery, clusterUnits, MapCanvas, type Bbox, type MapCanvasHandle, type MapHotspot } from "@/widgets/map-canvas";
 import { DIRS, isClosed, type OpsFire } from "../model/ops";
 import { setSlotOf, useWorld, type Merged } from "../model/store";
@@ -139,7 +139,9 @@ const hotQuery = (bbox: Bbox | null, start: string, end: string) => ({
       .then(unwrap) as unknown as Promise<{ hotspots?: HotRow[] }>,
   enabled: !!bbox && !!start,
   staleTime: 10 * 60 * 1000,
-  retry: false,
+  /* 실서버 heavy 한도(429): Retry-After 만큼 기다려 다시 — 예전엔 retry:false 라 한국 경보·출동 지도의 실제 점이 429 하나로 비었다(잰 것 2026-11-15) */
+  retry: heavyRetry,
+  retryDelay: heavyRetryDelay,
 });
 const addDay = (d: string, k: number) => {
   const t = new Date(`${d}T00:00:00Z`);

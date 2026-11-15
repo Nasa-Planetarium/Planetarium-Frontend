@@ -10,7 +10,7 @@ import { MapLoading } from "@/shared/ui";
 import { adm1RegionsQuery, demManifestQuery, linesQuery } from "../api/basemap";
 import { aoiBounds, aoiGeometry, checkPoint, clusterUnits, curve, fireMarkOf, heatGain, hotWeight, isClosedFire, maskPolygon, niceScale, pixelSquare, placeLabels, tickLabel, tickStep, type Box, type LabelItem } from "../lib/geo";
 import { buildStyle, demLayer, LAYER_IDS, type Tok } from "../lib/style";
-import { DEFAULT_LAYERS, type Bbox, type DrawMode, type DrawnAoi, type GeoCollection, type Geom, type LatLon, type LayerKey, type Layers, type MapBurn, type MapFire, type MapHotspot, type MapRegion, type MapRoute, type MapUnit, type TickOpts, type ToolKey } from "../model/types";
+import { DEFAULT_LAYERS, type Bbox, type DrawMode, type DrawnAoi, type GeoCollection, type Geom, type LatLon, type LayerKey, type Layers, type MapBurn, type MapCell, type MapFire, type MapHotspot, type MapRegion, type MapRoute, type MapUnit, type TickOpts, type ToolKey } from "../model/types";
 import s from "./map-canvas.module.css";
 import { PassLine } from "./pass-line";
 import { moveBounds } from "../lib/bounds";
@@ -42,6 +42,10 @@ export interface MapCanvasProps {
   /** 초점 지역 윤곽: 그 밖을 어둡게 가린다(없으면 나라 밖만 가림) */
   focus?: Geom | null;
   hotspots?: MapHotspot[];
+  /** 월 감지량 칸(실제 /cells · 넓으면 1° 묶음) — 감지 점 아래 열 색 사각형 */
+  cells?: MapCell[];
+  /** 칸 범례 이름(주면 왼쪽 위에 「이름 · 적음 ▮▮▮ 많음」) — 화면이 따로 범례를 그리면 비운다 */
+  cellsKey?: string | null;
   /** 밀도 보기(열 지도) — 기본은 또렷한 점 */
   density?: boolean;
   heatGain?: number;
@@ -100,6 +104,24 @@ const lngLatOf = (c: unknown): [number, number] | null => {
 
 const fc = (features: unknown[]) => ({ type: "FeatureCollection" as const, features });
 const reduced = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+/** 이 브라우저의 WebGL 이 소프트웨어 래스터(SwiftShader·llvmpipe 등)인가 — 한 번만 재고 기억한다 */
+let softGl: boolean | null = null;
+const softwareGl = () => {
+  if (softGl !== null) return softGl;
+  softGl = false;
+  try {
+    const gl = document.createElement("canvas").getContext("webgl");
+    if (gl) {
+      const ext = gl.getExtension("WEBGL_debug_renderer_info");
+      const name = String(gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER) ?? "");
+      softGl = /swiftshader|llvmpipe|softpipe|software|basic render/i.test(name);
+      gl.getExtension("WEBGL_lose_context")?.loseContext();
+    }
+  } catch {
+    softGl = false;
+  }
+  return softGl;
+};
 const tokReader = (): Tok => {
   const css = getComputedStyle(document.documentElement);
   return (n) => css.getPropertyValue(`--${n}`).trim();
@@ -186,7 +208,8 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
         pitchWithRotate: false,
         touchPitch: false,
         fadeDuration: 0,
-        canvasContextAttributes: { antialias: true, preserveDrawingBuffer: true },
+        // 소프트웨어 GL(GPU 없는 PC·VM·CI 러너)에서는 MSAA 를 끈다 — 화면마다 다시 그리는 비용의 약 2할(aibox 1코어 실측)
+        canvasContextAttributes: { antialias: !softwareGl(), preserveDrawingBuffer: true },
       });
       made = m;
       mapRef.current = m;
@@ -223,6 +246,15 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
         pRef.current.onReady?.(m);
       });
       m.on("moveend", emitView);
+      /* 움직임 신호(data-moving): 카메라가 움직이기 시작하면(movestart — easeTo·fitBounds·끌기 모두 부르는 순간 바로) "1",
+         움직임이 끝나면(moveend) "0". 타일 읽기·경로 점선 흐름 같은 계속되는 그리기와는 상관없다(idle 은 그런 화면에서 오래 안 온다).
+         React 상태가 아니라 속성을 바로 바꾼다 — 움직이는 동안 다시 그리지 않게. 시험은 카메라를 옮긴 뒤 "0" 을 기다린다 */
+      const moving = (v: "0" | "1") => {
+        if (wrap.current) wrap.current.dataset.moving = v;
+      };
+      moving(m.isMoving() ? "1" : "0");
+      m.on("movestart", () => moving("1"));
+      m.on("moveend", () => moving("0"));
       const tick = () => {
         if (!raf)
           raf = requestAnimationFrame(() => {
@@ -338,6 +370,25 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
     const f = heatGain(H) * (p.heatGain ?? 1);
     map.setPaintProperty("heat", "heatmap-intensity", ["interpolate", ["linear"], ["zoom"], 7, 0.55 * f, 10, 0.9 * f, 13, 1.4 * f]);
   }, [map, hot, p.heatGain, src]);
+
+  /* ── 월 감지량 칸(사각형 · 값 단계 t = 로그 비율) ── */
+  const cells = p.cells;
+  useEffect(() => {
+    if (!map) return;
+    const C = (cells ?? []).filter((c) => c.value > 0);
+    const mx = Math.log1p(Math.max(1e-9, ...C.map((c) => c.value)));
+    src(
+      "cells",
+      fc(
+        C.map((c) => {
+          const h = c.size / 2;
+          const w = c.lon - h;
+          const e = c.lon + h;
+          return { type: "Feature", properties: { t: mx > 0 ? Math.log1p(c.value) / mx : 0, v: c.value }, geometry: { type: "Polygon", coordinates: [[[w, c.lat - h], [e, c.lat - h], [e, c.lat + h], [w, c.lat + h], [w, c.lat - h]]] } };
+        }),
+      ),
+    );
+  }, [map, cells, src]);
 
   /* ── 소실 범위 · 그린 영역 · 경로 ── */
   useEffect(() => {
@@ -1252,6 +1303,8 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
       data-dem={dem ? "1" : "0"}
       data-draw={drawMode ?? ""}
       data-aoi={aoi ? JSON.stringify(aoi) : ""}
+      data-n-hot={map ? String(hot?.length ?? 0) : ""}
+      data-n-cells={map ? String(cells?.filter((c) => c.value > 0).length ?? 0) : ""}
     >
       <div ref={glEl} className={s.gl} />
       <MapLoading show={!ready} />
@@ -1386,6 +1439,13 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
             <button type="button" className={s.btn} onClick={goOff}>
               {t("home.offv.go")}
             </button>
+          </div>
+        ) : null}
+        {p.cellsKey && layers.cells && (cells ?? []).some((c) => c.value > 0) ? (
+          <div className={s.ckey} data-ckey="" data-noobs="">
+            <b>{p.cellsKey}</b>
+            <span>{t("cmd.ui.low_high")}</span>
+            <i aria-hidden="true" />
           </div>
         ) : null}
         {p.status ? (

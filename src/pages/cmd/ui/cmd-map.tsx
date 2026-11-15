@@ -5,6 +5,7 @@ import type { GeoJSONSource, Map as MlMap } from "maplibre-gl";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale } from "next-intl";
 import type { CountryInfo } from "@/entities/country";
+import { useCoarseSum } from "@/entities/world-grid";
 import type { Fire } from "@/shared/agency";
 import { adm1RegionsQuery, childRegionsQuery, focusBoundaryQuery, MapCanvas, type Bbox, type LayerKey, type MapCanvasHandle, type MapFire, type MapHotspot } from "@/widgets/map-canvas";
 import { ids, SEASON_MONTHS, cellVal, years } from "../model/cmd";
@@ -19,7 +20,7 @@ const fc = (features: unknown[]) => ({ type: "FeatureCollection" as const, featu
  *  - 점 = 실제 감지 점(GET /hotspots, 고른 해 · 고른 범위 — 계절·신뢰도·FRP 거름만) → 밀도 열 지도(목업 cmd 「핫스팟 관측 밀도」), 확대하면 화소
  *  - 누적(2001–2026)은 점 창이 100여 번이라 받지 않고 행 지역마다 원 하나(넓이 = 그 기간 보정 지표 합, 실제 달 값 합)
  *  - 과거 대형 산불 = 공통 지도 과거 불 표지(시나리오 목, 한국만)
- * 넓은 범위(100 제곱도 초과)는 점을 내지 않는다(실서버 제한) — 안내 칩.
+ * 넓은 범위(100 제곱도 초과)는 실서버가 점을 내지 않는다 → 고른 해(계절 달만)의 월 감지량 1° 칸 합(정적 world-1deg — 캘린더·분석의 넓은 범위 규칙과 같다).
  */
 export function CmdMap(c: Ctx & { hist: Fire[] }) {
   const { board, q, view, T_, kor, iso3, pts } = c;
@@ -79,6 +80,12 @@ export function CmdMap(c: Ctx & { hist: Fire[] }) {
     (map.getSource("cm-sum") as GeoJSONSource | undefined)?.setData(fc(sums.map((p) => ({ type: "Feature", properties: { r: p.r }, geometry: { type: "Point", coordinates: [p.lon, p.lat] } }))) as GeoData);
   }, [map, sums]);
 
+  /* 넓은 범위: 고른 해 · 고른 계절 달의 1° 칸 합(누적은 행 원이 맡는다) */
+  const wide = c.ptsState === "wide" && !view.cum;
+  const months = useMemo(() => (view.cum ? [] : SEASON_MONTHS[q.season].map((m) => [view.year, m] as const)), [view.cum, view.year, q.season]);
+  const co = useCoarseSum({ aoiId: S.scope, aois: S.aois, months, on: wide });
+  const cells = wide ? (co.data?.cells ?? []) : [];
+
   const hot: MapHotspot[] = useMemo(() => (view.cum ? [] : pts.map((p) => ({ lat: p.lat, lon: p.lon, sensor: "VIIRS", frp: p.frp }))), [pts, view.cum]);
   const histShown: MapFire[] = useMemo(
     () =>
@@ -104,6 +111,7 @@ export function CmdMap(c: Ctx & { hist: Fire[] }) {
       hiRegions={S.focus ? [S.focus] : []}
       focus={focus}
       hotspots={hot}
+      cells={cells}
       density
       fires={histShown}
       onRegion={(id) => (S.byId.has(id) ? S.setAoi(id) : undefined)}
@@ -111,10 +119,10 @@ export function CmdMap(c: Ctx & { hist: Fire[] }) {
       tools={["layers"]}
       layerMenu={menu}
       ticks
-      status={!view.cum && c.ptsState !== "ok" ? (c.ptsState === "wide" ? T_("cmd.real.pts_wide") : c.ptsState === "pending" ? T_("cmd.real.loading") : T_("shell.err.data_not_loaded")) : null}
+      status={!view.cum && c.ptsState !== "ok" ? (c.ptsState === "wide" ? T_("shell.map.cells_wide_year", { p: `${view.year}`, n: String(cells.length) }) : c.ptsState === "pending" ? T_("cmd.real.loading") : c.ptsState === "rate" ? T_("shell.err.rate_limited") : T_("shell.err.request")) : null}
     >
       <div className={cx("map-key")}>
-        <b>{T_("cmd.ui.hotspot_density")}</b>
+        <b>{wide ? T_("shell.map.cells_key") : T_("cmd.ui.hotspot_density")}</b>
         <span>
           <i className={cx("ramp")} />
           {T_("cmd.ui.low_high")}

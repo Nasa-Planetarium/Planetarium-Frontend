@@ -117,7 +117,7 @@ function CmdScreen() {
               <h2>{T_("cmd.ui.hourly_distribution")}</h2>
             </div>
             <p className={cx("cm-cap")} role="status">
-              {real.hourlyState === "wide" ? T_("cmd.real.hr_wide", { a: aoiLabel }) : real.hourlyState === "pending" ? T_("cmd.real.loading") : t("shell.err.data_not_loaded")}
+              {real.hourlyState === "wide" ? T_("cmd.real.hr_wide", { a: aoiLabel }) : real.hourlyState === "pending" ? T_("cmd.real.loading") : real.hourlyState === "rate" ? t("shell.err.rate_limited") : t("shell.err.request")}
             </p>
           </section>
         ) : null}

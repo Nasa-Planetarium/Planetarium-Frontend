@@ -34,6 +34,8 @@ export interface Ctx {
   rec: AoiRec | null;
   cal: CalendarData | null;
   c: Comparison | null;
+  /** c 가 앞 달 값(새 달 응답 받는 중 — placeholderData) */
+  stale: boolean;
   M: MethodDoc | null;
   view: CalView;
   y: number;

@@ -2,6 +2,7 @@
 
 import { useLocale } from "next-intl";
 import { downloadBlob } from "@/shared/ui/download";
+import { cellFrame, cellRadius, ringsPath, type LandPart } from "../model/cell-frame";
 import { fmtAxis, fmtVal, niceMax, stepOf } from "../model/core";
 import { VS_TRACK, ymK, type Pt, type Regime } from "../model/analysis";
 import { C, Tx } from "./cal-svg";
@@ -9,7 +10,7 @@ import { cx } from "./cx";
 
 /**
  * 비교 분석 그림(목업 analysis.js track · barSVG · charts.line · charts.cells 의 이 화면 몫). 색은 토큰 var() 그대로.
- * 칸 지도는 결정 F9(점(원) 지도)대로 칸 중심에 원 — 크기 = 로그 단계, 색 = 열 램프.
+ * 칸 지도는 결정 F9(점(원) 지도)대로 칸 중심에 원 — 크기 = 로그 단계(칸 간격에 맞춤), 색 = 열 램프, 바탕 = 바다 + 나라 1급 땅(model/cell-frame).
  */
 
 /** 지원 기간 띠: 받은 구간을 비율대로만 그린다(목업 track). 위치는 계산값이라 인라인 style */
@@ -158,31 +159,42 @@ export interface CellPt {
   lat: number;
   title: string;
 }
-export function CellDots(o: { cells: CellDot[]; ramp: (t: number) => string; scaleMax: number; width: number; label: string; points?: CellPt[]; image?: { href: string; bbox: [number, number, number, number] } | null }) {
+export function CellDots(o: {
+  cells: CellDot[];
+  ramp: (t: number) => string;
+  scaleMax: number;
+  width: number;
+  label: string;
+  points?: CellPt[];
+  image?: { href: string; bbox: [number, number, number, number] } | null;
+  /** 바탕 땅 면(나라 1급 · 세계 윤곽) — 없으면 바다 바탕만 */
+  land?: LandPart[];
+  /** 접기 중심 경도(나라 중심) */
+  c0?: number | null;
+  /** 칸 크기(도) — 원 반지름을 칸 간격에 맞춘다 */
+  cellDeg?: number;
+  maxH?: number;
+}) {
   if (!o.cells.length) return null;
-  const lats = o.cells.map((c) => c.lat);
-  const lons = o.cells.map((c) => c.lon);
-  const s = Math.min(...lats) - 0.1;
-  const n = Math.max(...lats) + 0.1;
-  const w = Math.min(...lons) - 0.1;
-  const e = Math.max(...lons) + 0.1;
-  const k = Math.cos((((s + n) / 2) * Math.PI) / 180);
-  const pad = 14;
-  const sc = (o.width - pad * 2) / ((e - w) * k);
-  const H = Math.round((n - s) * sc + pad * 2);
-  const X = (x: number) => pad + (x - w) * k * sc;
-  const Y = (y: number) => pad + (n - y) * sc;
-  const R = [2.5, 4, 6, 9, 13];
+  const land = o.land ?? [];
+  const f = cellFrame({ cells: o.cells, land, c0: o.c0, cellDeg: o.cellDeg ?? 0.1, width: o.width, maxH: o.maxH ?? 520 });
+  if (!f) return null;
+  const { X, Y } = f;
+  const [w, s, e, n] = f.bbox;
+  const on = land.filter((p) => p.on);
   return (
-    <svg viewBox={`0 0 ${o.width} ${H}`} role="img" aria-label={o.label}>
+    <svg viewBox={`0 0 ${f.W} ${f.H}`} role="img" aria-label={o.label} data-an-cellmap="" data-land={land.length}>
+      <rect x={0} y={0} width={f.W} height={f.H} fill="var(--map-sea)" data-an-sea="" />
+      {land.length ? <path d={land.map((p) => ringsPath(f, p.rings)).join("")} fill="var(--map-land)" stroke="var(--map-boundary)" strokeOpacity={0.55} strokeWidth={0.6} strokeLinejoin="round" pointerEvents="none" data-an-land="" /> : null}
       {o.cells
         .slice()
         .sort((a, b) => a.value - b.value)
         .map((c) => (
-          <circle key={`${c.lat},${c.lon}`} cx={X(c.lon)} cy={Y(c.lat)} r={R[stepOf(c.value)]} fill={o.ramp(Math.sqrt(Math.min(1, c.value / (o.scaleMax || 1))))} fillOpacity={0.85} stroke={C.bg} strokeWidth={0.75}>
+          <circle key={`${c.lat},${c.lon}`} cx={X(c.lon)} cy={Y(c.lat)} r={cellRadius(f.cs, stepOf(c.value))} fill={o.ramp(Math.sqrt(Math.min(1, c.value / (o.scaleMax || 1))))} fillOpacity={0.88} stroke={C.bg} strokeWidth={0.6}>
             <title>{c.title}</title>
           </circle>
         ))}
+      {on.length ? <path d={on.map((p) => ringsPath(f, p.rings)).join("")} fill="none" stroke={C.ink} strokeWidth={1.4} strokeLinejoin="round" pointerEvents="none" data-an-on="" /> : null}
       {o.image ? (
         <image
           data-an-wms=""
@@ -196,7 +208,7 @@ export function CellDots(o: { cells: CellDot[]; ramp: (t: number) => string; sca
         />
       ) : null}
       {(o.points ?? [])
-        .filter((p) => p.lat >= s && p.lat <= n && p.lon >= w && p.lon <= e)
+        .filter((p) => p.lat >= s && p.lat <= n && f.wrap(p.lon) >= w && f.wrap(p.lon) <= e)
         .map((p, i) => (
           <circle key={i} data-an-pt="" cx={X(p.lon)} cy={Y(p.lat)} r={1.8} fill="var(--surface-0)" stroke="var(--text-1)" strokeWidth={0.8}>
             <title>{p.title}</title>

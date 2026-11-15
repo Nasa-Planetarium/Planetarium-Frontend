@@ -20,4 +20,7 @@ describe("이동 경계(목업 map3d maxBounds 식)", () => {
     expect(b[0][0]).toBeGreaterThanOrEqual(-180);
     expect(b[1][1]).toBeLessThanOrEqual(85);
   });
+  it("날짜 변경선을 넘는 범위(미국 172–293)는 묶지 않는다 — ±180 으로 자르면 캄차카에 갇혔다", () => {
+    expect(moveBounds([172.495, 18.964, 293.013, 71.408])).toBeNull();
+  });
 });

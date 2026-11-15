@@ -1,16 +1,27 @@
-import { api, unwrap } from "@/shared/api";
+import { api, rateWaitMs, unwrap } from "@/shared/api";
 import type { DetPoint } from "../lib/cluster";
 
 /**
  * 나라 하나의 최근 감지 점(계약 GET /hotspots). 실서버는 점을 100 제곱도 이하 범위로만 내므로(400 range_too_large)
  * 나라 본토 범위(bbox_main)를 9.9°×9.9° 조각으로 나눠 bbox 로 받는다(최대 MAX_TILES 조각).
  * 날짜 창은 지금 앞 2일 ~ 뒤 1일(date_local 이 현지 태양시라 하루씩 여유) — 24시간 자르기는 detections() 가 acq_datetime_utc 로 한다.
- * 실패(503 data_not_loaded 등)는 화면이 「자료 준비 중」으로 그린다.
+ * 실서버 heavy 한도(429, 분당 약 30 토큰 · /hotspots 2): 조각을 2개씩 받고, 429 면 Retry-After 만큼 기다려 그 조각부터 다시(최대 RATE_WAITS 번).
+ * 그래도 막히면 받은 만큼으로 끝낸다(done/total · rate). 하나도 못 받았으면 그 오류를 던진다 — 화면은 429 를 「서버 요청 한도」로 적는다.
+ * weight(조각) 를 주면(최근 달 1° 칸 감지량 합) 무게 큰 조각부터 받는다 — 한도에 걸려 멈춰도 불이 잦은 땅을 먼저 받는다. 무게 0 이면서 1급 지역 중심도 없는 조각(바다)은 받지 않는다.
  */
 type Bbox = readonly [number, number, number, number];
 const day = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 const STEP = 9.9; // 100 제곱도 한도에 소수 오차로 걸리지 않게 10 보다 조금 작게
 const MAX_TILES = 120;
+const RATE_WAITS = 3;
+const sleep = (ms: number, signal: AbortSignal) =>
+  new Promise<void>((res, rej) => {
+    const id = setTimeout(res, ms);
+    signal.addEventListener("abort", () => {
+      clearTimeout(id);
+      rej(signal.reason);
+    });
+  });
 
 /* 경도는 날짜변경선을 넘으면(미국 172°–293°) 180 을 넘는 값으로 온다 → 조각마다 −180…180 으로 옮기고, 걸치면 둘로 자른다 */
 const f4 = (v: number) => +v.toFixed(4);
@@ -55,35 +66,70 @@ export function orderTiles(ts: Bbox[], centers: readonly (readonly [number, numb
   return ts.map((b, i) => ({ b, i, k: n(b) })).sort((a, b) => b.k - a.k || a.i - b.i).map((x) => x.b);
 }
 
-/** centers = 그 나라 1급 지역 중심 [위도, 경도] — 조각 순서에만 쓴다 */
-export const recentDetectionsQuery = (iso3: string, bbox: Bbox | null | undefined, nowMs: number | null, mv: string | null, centers: readonly (readonly [number, number])[] = []) => {
+/** centers = 그 나라 1급 지역 중심 [위도, 경도] — 조각 순서에만 쓴다. weight = 조각 무게(있으면 무게 큰 순) */
+export const recentDetectionsQuery = (
+  iso3: string,
+  bbox: Bbox | null | undefined,
+  nowMs: number | null,
+  mv: string | null,
+  centers: readonly (readonly [number, number])[] = [],
+  weight?: { key: string; of: (b: Bbox) => number } | null,
+) => {
   const slot = nowMs != null ? Math.floor(nowMs / 600e3) * 600e3 : 0;
   const start = day(slot - 2 * 86400e3);
   const end = day(slot + 86400e3);
   return {
-    queryKey: ["hotspots", "recent", iso3, bbox ?? null, start, end, mv, centers.length] as const,
-    /* 실서버 heavy 요청 한도(429)에 걸리지 않게 조각을 3개씩 차례로 받고, 429 가 나면 거기서 멈춘다(받은 만큼 + 몇 조각인지) */
-    queryFn: async ({ signal }: { signal: AbortSignal }): Promise<{ points: DetPoint[]; done: number; total: number }> => {
-      const ts = orderTiles(tilesOf(bbox!), centers);
+    queryKey: ["hotspots", "recent", iso3, bbox ?? null, start, end, mv, centers.length, weight?.key ?? ""] as const,
+    queryFn: async ({ signal }: { signal: AbortSignal }): Promise<{ points: DetPoint[]; done: number; total: number; rate: boolean }> => {
+      let ts = orderTiles(tilesOf(bbox!), centers);
+      if (weight) {
+        /* 무게 0 이고 1급 지역 중심도 없는 조각 = 바다(미국 84조각 중 다수) → 받지 않는다 */
+        const hasCenter = (b: Bbox) => centers.some(([la, lo]) => {
+          const x = lo > 180 ? lo - 360 : lo;
+          return la >= b[1] && la < b[3] && x >= b[0] && x < b[2];
+        });
+        ts = ts
+          .map((b, i) => ({ b, i, k: weight.of(b) }))
+          .filter((x) => x.k > 0 || hasCenter(x.b))
+          .sort((a, b) => b.k - a.k || a.i - b.i)
+          .map((x) => x.b);
+      }
       const points: DetPoint[] = [];
       let done = 0;
       let firstErr: unknown = null;
-      for (let i = 0; i < ts.length; i += 3) {
-        const got = await Promise.allSettled(ts.slice(i, i + 3).map((b) => tile(b, start, end, signal)));
-        let stop = false;
-        got.forEach((x) => {
+      let waits = 0;
+      let rate = false;
+      const queue = [...ts];
+      while (queue.length) {
+        const batch = queue.splice(0, 2);
+        const got = await Promise.allSettled(batch.map((b) => tile(b, start, end, signal)));
+        const again: Bbox[] = [];
+        let wait = 0;
+        got.forEach((x, j) => {
           if (x.status === "fulfilled") {
             points.push(...x.value);
             done++;
-          } else {
-            firstErr ??= x.reason;
-            if ((x.reason as { status?: number })?.status === 429) stop = true;
+            return;
+          }
+          const w = rateWaitMs(x.reason);
+          if (w == null) firstErr ??= x.reason;
+          else {
+            wait = Math.max(wait, w);
+            again.push(batch[j]!);
           }
         });
-        if (stop) break;
+        if (!again.length) continue;
+        rate = true;
+        if (waits >= RATE_WAITS) {
+          firstErr ??= (got.find((x) => x.status === "rejected") as PromiseRejectedResult | undefined)?.reason;
+          break;
+        }
+        waits++;
+        await sleep(wait, signal);
+        queue.unshift(...again);
       }
       if (!done && ts.length) throw firstErr ?? new Error("hotspots");
-      return { points, done, total: ts.length };
+      return { points, done, total: ts.length, rate };
     },
     enabled: !!mv && nowMs != null && !!bbox,
     staleTime: 10 * 60 * 1000,

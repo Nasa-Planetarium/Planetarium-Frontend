@@ -31,7 +31,7 @@ test("경보·출동: 레일 · 목록 ↓ · 자원 묶음 · 화면 밖 칩", 
 
   for (let i = 0; i < 3; i++) {
     await map.locator("[data-z='1']").click();
-    await page.waitForTimeout(400);
+    await expect(map).toHaveAttribute("data-moving", "0"); // 확대 이동이 끝난 뒤(고정 대기 대신)
   }
   const chips = page.locator('[data-testid="ops-off"] [data-side]');
   await expect(chips.first()).toBeVisible({ timeout: 5000 });

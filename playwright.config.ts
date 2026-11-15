@@ -19,6 +19,9 @@ export default defineConfig({
     baseURL: `http://127.0.0.1:${port}`,
     locale: "ko-KR",
     timezoneId: "Asia/Seoul",
+    // 실패한 시험만 흔적을 남긴다(test-results/<시험>/trace.zip · test-failed-*.png — 보기: pnpm exec playwright show-trace <trace.zip>)
+    trace: "retain-on-failure",
+    screenshot: "only-on-failure",
     launchOptions: { executablePath, args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader"] },
   },
   webServer: {
