@@ -262,6 +262,8 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 .an-ramp em{font-style:normal;font-size:var(--fs-2)}
 .an-rsw{display:inline-flex;gap:var(--sp-1)}
 .an-rsw i{width:14px;height:10px;border-radius:var(--r-2xs)}
+/* 지도 램프 범례(칸 지도): 땅색 칩 위 — 지도에서 보이는 그대로(F14 L1) */
+.an-rsw.an-rsw-map{padding:var(--sp-half);border-radius:var(--r-2xs);background:var(--map-land)}
 .an-cls{display:flex;flex-wrap:wrap;gap:var(--sp-1) var(--sp-4)}
 .an-cls span{display:inline-flex;align-items:center;gap:var(--sp-2);white-space:nowrap}
 .an-cls i.lg{position:relative;width:14px;height:12px;border-radius:var(--r-2xs);flex:none}
@@ -467,12 +469,13 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 .an-prev[open] .an-prevx{transform:rotate(180deg)}
 .an-prev:not([open]) > summary{padding-bottom:var(--sp-3)}
 .an-map{padding:0 var(--sp-4) var(--sp-4)}
-.an-map svg{display:block;width:100%;height:auto;max-height:420px}
-.an-rg{fill:color-mix(in srgb,var(--text-3) 6%,transparent);stroke:var(--map-boundary);stroke-width:var(--map-boundary-w);transition:fill var(--dur-fast) var(--ease-out)}
-.an-rg:hover{fill:var(--surface-2)}
-.an-rg.on{fill:var(--surface-3)}
-.an-rl{font:var(--fw-medium) var(--fs-2) var(--font-body);letter-spacing:.04em;fill:var(--text-2);pointer-events:none;paint-order:stroke;stroke:var(--map-halo);stroke-width:3px}
-.an-rl.on{fill:var(--text-1)}
+/* 경계 미리보기도 다른 지도와 같은 밝은 바탕(바다·땅) + 지도 이름표 잉크·흰 halo(F14 B3·L2). 고른 지역 = 지도 강조(map-sel) 옅은 면 + 선 */
+.an-map svg{display:block;width:100%;height:auto;max-height:420px;background:var(--map-sea);border-radius:var(--r-2xs)}
+.an-rg{fill:var(--map-land);stroke:var(--map-boundary);stroke-width:var(--map-boundary-w);transition:fill var(--dur-fast) var(--ease-out)}
+.an-rg:hover{fill:color-mix(in srgb,var(--map-sel) 8%,var(--map-land))}
+.an-rg.on{fill:color-mix(in srgb,var(--map-sel) 16%,var(--map-land));stroke:var(--map-sel);stroke-width:1.4px}
+.an-rl{font:var(--fw-medium) var(--fs-2) var(--font-body);letter-spacing:.04em;fill:var(--map-label);pointer-events:none;paint-order:stroke;stroke:var(--map-halo);stroke-width:3px;stroke-linejoin:round}
+.an-rl.on{fill:var(--map-label-hi);font-weight:var(--fw-strong)}
 .an-eras{margin-top:var(--sp-1)}
 .eras{position:relative;height:calc(8px + var(--sp-1) + var(--fs-1));min-width:0}
 .eras .er-ln{position:absolute;left:0;right:0;top:7px;height:var(--hair);background:var(--cosmo-tick)}
@@ -545,7 +548,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 .wf-kv dd{margin:0;font-size:var(--fs-4)}
 .wf-unit{margin:0;font-size:var(--fs-1);color:var(--text-3)}
 .wf-legt{display:block;font-size:var(--fs-1);color:var(--text-3);margin-bottom:var(--sp-1)}
-.wf-ramp{display:flex;height:var(--sp-3);border-radius:var(--r-2xs);overflow:hidden}
+.wf-ramp{display:flex;height:var(--sp-3);border-radius:var(--r-2xs);overflow:hidden;box-shadow:0 0 0 2px var(--map-land)}
 .wf-ramp i{flex:1}
 .wf-ticks{display:flex;justify-content:space-between;font-size:var(--fs-1);color:var(--text-3);margin-top:var(--sp-1)}
 .wf-lb{grid-area:lb;padding:var(--sp-3) var(--sp-4);border-top:var(--hair) solid var(--seam);min-width:0}
@@ -582,7 +585,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 .an-lyr[aria-pressed="true"]{background:var(--surface-3);color:var(--text-1);box-shadow:var(--sel-b)}
 .an-lyr::after{content:"";position:absolute;inset:min(0px,calc(50% - var(--hit) / 2)) 0}
 .an-lyr svg{width:var(--ic-inline,14px);height:var(--ic-inline,14px)}
-.an-pt{display:inline-block;width:var(--sp-2);height:var(--sp-2);border-radius:var(--r-round);border:var(--hair) solid var(--text-1);background:var(--surface-0)}
+.an-pt{display:inline-block;width:var(--sp-2);height:var(--sp-2);border-radius:var(--r-round);border:var(--hair) solid var(--map-halo);background:var(--map-sel);box-shadow:0 0 0 2px var(--map-land)}
 .an-hl{display:inline-block;width:14px;height:10px;border:var(--sp-half) solid var(--text-1)}
 .an-firmsd{color:var(--text-3)}
 :global(html[data-touch="1"]) .an-lyr{height:var(--hit)}
