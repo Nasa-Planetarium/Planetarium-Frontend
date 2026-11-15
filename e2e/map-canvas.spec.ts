@@ -8,7 +8,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  *       · 화면 밖 안내 칩 · 지도 PNG · 다른 나라(ESP)에서도 그리기 단추가 켜져 있음 · 가로 넘침 없음.
  *
  * 한 시험에 다 몰아 두면 GPU 없는 CI 러너(소프트웨어 WebGL)에서 끌기 한 걸음마다 지도를 통째로 다시 그리느라
- * 30초 한도를 넘었다(GitHub run 43673310169 — 같은 시험이 aibox `taskset -c 0` 에서 1.1분). 그래서 기능마다 나눈다.
+ * 30초 한도를 넘었다(GitHub run 43673310169 — 같은 시험이 팀 시험 서버 `taskset -c 0` 에서 1.1분). 그래서 기능마다 나눈다.
  * 카메라가 움직인 뒤(전체 보기·영역 맞춤·끌기)에는 지도 움직임 신호 data-moving="0" 을 기다린 뒤 다음 단추를 누른다.
  */
 test.beforeEach(async ({ page }) => {
@@ -30,7 +30,7 @@ const center = async (map: Locator) => {
   return { box, cx: box.x + box.width / 2, cy: box.y + box.height / 2 };
 };
 const webOnly = (name: string) => test.skip(name !== "web", "끌기·두 번 누르기·지도 창은 넓은 칸에서만");
-/** 끌기가 많은 시험의 한도: 끌기 한 걸음 = 지도 한 번 다시 그리기. 소프트웨어 WebGL 1코어(aibox taskset -c 0)에서 23–31초 걸렸다(5회) → 60초 */
+/** 끌기가 많은 시험의 한도: 끌기 한 걸음 = 지도 한 번 다시 그리기. 소프트웨어 WebGL 1코어(팀 시험 서버 taskset -c 0)에서 23–31초 걸렸다(5회) → 60초 */
 const DRAG_BUDGET = 60_000;
 /** 좌표·반경 창으로 반경 영역을 정한다(끌기 없이 그린 영역 만들기) */
 const applyPoint = async (map: Locator, lat: string, lon: string, r: string) => {

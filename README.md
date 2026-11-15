@@ -38,12 +38,25 @@ node scripts/serve-out.mjs          # out/ 을 127.0.0.1:8797 에서 확인
 검사 — 커밋 전에 전부 통과해야 한다:
 
 ```bash
-pnpm check            # typecheck · eslint · steiger · check:isolation · vitest
+pnpm check            # typecheck · eslint · steiger · check:isolation · check:leaks · vitest
 pnpm exec playwright install chromium   # 처음 한 번 — e2e 용 브라우저 받기
 pnpm build && pnpm e2e                  # Playwright(out/ 을 띄워 연다). 이미 받아 둔 다른 판 chromium 을 쓰려면 PW_CHROMIUM=<실행 파일>
 node scripts/check-isolation.mjs --self-test   # 격리 검사기가 실제로 위반을 잡는지(가짜 위반 3개)
+node scripts/check-public-leaks.mjs --self-test   # 공개 저장소 검사기가 실제로 잡고·거르는지
 node scripts/check-pages-out.mjs --mode http   # 빌드 결과가 Pages 한도 안인지 + 빌드에 박힌 데이터 모드(배포 전 문, CI 도 돈다)
 ```
+
+### 공개 저장소 검사(check:leaks)
+
+이 저장소는 공개다. `pnpm check`(CI 도)는 `scripts/check-public-leaks.mjs` 로 추적되는 파일 전부에서
+내부망 주소(192.168.x.x) · 개인 홈 경로(`/home/<사용자>`) · 팀 시험 서버 호스트 이름 · 내부 포트(18000–19999 번)를 찾고, 하나라도 있으면 멈춘다.
+
+- 문서·주석에는 「팀 시험 서버」 같은 일반 낱말, 예시 주소는 `http://localhost:8080` 이나 `<API_ORIGIN>` 을 쓴다.
+- 동작에 필요한 값은 코드에 박지 않고 환경 변수로 받는다 — 실서버 출처는 Pages Functions 의 `API_ORIGIN`(Pages 프로젝트 환경 변수 · `functions/api/[[path]].ts`),
+  가져오기 스크립트의 원천 폴더는 `SNAP_DIR` · `OUTLOOK_FILE` · `META_FILE`(`import:snapshot`) · `MOCKUP_DIR`(`import:i18n`).
+  가져오기 보고(`public/data/snap/manifest.json` · `messages/_import-report.json`)에는 저장소 기준 상대 경로만 적힌다.
+- 정말 공개돼도 되는 값이면 `scripts/public-leaks-allow.txt` 에 이유와 함께 넣는다.
+- 2026-11-15 이전 커밋 이력에는 옛 값이 남아 있다(이력은 다시 쓰지 않았다).
 
 ## 배포 (Cloudflare Pages · GitHub Actions)
 
@@ -100,7 +113,7 @@ node scripts/check-pages-out.mjs --mode http   # 빌드 결과가 Pages 한도 �
 - 토큰 값은 사용자가 레포 관리자에게 직접 전달한다(저장소·문서에 적지 않는다).
 - Pages 프로젝트 `emberline` 은 이미 있다(주소 `https://emberline-9sd.pages.dev` — `emberline` 주소는 다른 곳이 써서 뒤가 붙었다). Direct Upload, 프로덕션 가지 `main`(`--branch=main` 이 운영 판). Git 연동 빌드는 켜지 않는다(빌드는 Actions 가 한다).
 - 바인딩·`API_ORIGIN` 을 바꾸면 Functions 는 **다음 배포부터** 새 값을 쓴다 — 바꾼 뒤 Actions › deploy 를 release 에서 다시 돌린다.
-- 한도: 파일 20,000 · 파일당 25 MiB · `_headers` 규칙 100. 지금 out/ = 파일 약 2,835 · 약 118.5 MiB · 가장 큰 파일 4.2 MiB(2026-11-15 aibox 측정). 넘으면 `check-pages-out` 이 배포 전에 멈춘다.
+- 한도: 파일 20,000 · 파일당 25 MiB · `_headers` 규칙 100. 지금 out/ = 파일 약 2,835 · 약 118.5 MiB · 가장 큰 파일 4.2 MiB(2026-11-15 팀 시험 서버 측정). 넘으면 `check-pages-out` 이 배포 전에 멈춘다.
 
 ### 롤백
 

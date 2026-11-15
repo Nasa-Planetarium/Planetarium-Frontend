@@ -1,5 +1,5 @@
 {
- "mockup": "/home/trevi/planetarium/fe-src/mockup",
+ "mockup": "../fe-src/mockup",
  "generated_at": "2026-11-14T14:41:50.331Z",
  "langs": {
   "ko": {
