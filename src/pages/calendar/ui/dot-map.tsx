@@ -83,6 +83,18 @@ export function DotMap(o: DotMapProps) {
     return boundsOf(outPts.length ? outPts : cellPts.length ? cellPts : kPts, o.size * 0.6) ?? [[124, 33], [131, 39]];
   }, [o.focus, o.outlines, o.cells, o.size, k]);
 
+  /* 작은 섬(몰디브·세이셸처럼 맞춘 범위에 비해 윤곽이 몇 화소도 안 되는 고리) — 윤곽 선만으로는 안 보여 고리 가운데에 빈 원 표시 */
+  const islands = useMemo(() => {
+    const span = Math.max(fit[1][0] - fit[0][0], fit[1][1] - fit[0][1]);
+    const out: number[][] = [];
+    o.outlines.forEach((r) => {
+      const b = boundsOf(r, 0);
+      if (!b) return;
+      if (Math.max(b[1][0] - b[0][0], b[1][1] - b[0][1]) < span / 60) out.push([(b[0][0] + b[1][0]) / 2, (b[0][1] + b[1][1]) / 2]);
+    });
+    return out;
+  }, [o.outlines, fit]);
+
   /* 지도(한 번) */
   useEffect(() => {
     let dead = false;
@@ -110,6 +122,7 @@ export function DotMap(o: DotMapProps) {
           sources: {
             land: { type: "geojson", data: "/geo/world.json" },
             outl: { type: "geojson", data: { type: "FeatureCollection", features: [] } },
+            isl: { type: "geojson", data: { type: "FeatureCollection", features: [] } },
             cells: { type: "geojson", data: { type: "FeatureCollection", features: [] } },
             pts: { type: "geojson", data: { type: "FeatureCollection", features: [] } },
           },
@@ -117,6 +130,7 @@ export function DotMap(o: DotMapProps) {
             { id: "bg", type: "background", paint: { "background-color": tok("map-void") } },
             { id: "land", type: "fill", source: "land", paint: { "fill-color": tok("map-bg") } },
             { id: "outl", type: "line", source: "outl", paint: { "line-color": tok("map-boundary"), "line-opacity": 0.5, "line-width": 0.8 } },
+            { id: "isl", type: "circle", source: "isl", paint: { "circle-radius": 4, "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 1, "circle-stroke-color": tok("map-boundary"), "circle-stroke-opacity": 0.8 } },
             { id: "cells", type: "circle", source: "cells", paint: { "circle-radius": 2, "circle-color": "#000", "circle-stroke-width": 0 } },
             { id: "pts", type: "circle", source: "pts", paint: { "circle-stroke-width": 0, "circle-opacity": 0.85, "circle-radius": 2 } },
           ],
@@ -142,7 +156,8 @@ export function DotMap(o: DotMapProps) {
   useEffect(() => {
     if (!map) return;
     (map.getSource("outl") as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: o.outlines.length ? [{ type: "Feature", properties: {}, geometry: { type: "MultiLineString", coordinates: o.outlines } }] : [] });
-  }, [map, o.outlines]);
+    (map.getSource("isl") as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: islands.map((c) => ({ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: c } })) });
+  }, [map, o.outlines, islands]);
 
   /* 칸 원: 반지름 = 칸 간격 비례(줌마다 2배) · 색 = 단계 */
   const { cells, size, rampAt, ptsWanted } = o;

@@ -150,4 +150,4 @@ export function statusCounts(ms: MonthRow[]) {
 export const monthsOf = (ms: MonthRow[], st: string) => ms.filter((x) => x.status === st).map((x) => ymS(x.year, x.month));
 
 /** 머리줄 나라 → AOI(한국 KR · 다른 나라 ADM0_<iso3>) */
-export const aoiOfCountry = (iso3: string) => (iso3 === "KOR" ? "KR" : `ADM0_${iso3}`);
+export { aoiOfIso3 as aoiOfCountry } from "@/shared/lib/adm0";

@@ -40,7 +40,7 @@ export function useAoiScope() {
     (a: AoiRec | string | null | undefined): string => {
       const r = typeof a === "string" ? byId.get(a) : a;
       const id = typeof a === "string" ? a : (a?.aoi_id ?? "");
-      if (!r) return id === "KR" ? countryName(cidx.get("KOR"), lang, id) : /^ADM0_/.test(id) ? countryName(cidx.get(id.slice(5)), lang, id) : id;
+      if (!r) return id === "KR" ? countryName(cidx.get("KOR"), lang, id) : /^ADM0_/.test(id) ? countryName(cidx.get(iso3OfAoi(id) ?? ""), lang, id) : id;
       if (r.aoi_id === "WORLD") return t("shell.aoi.world");
       if (r.level === "country") {
         const ci = cidx.get(iso3OfAoi(r.aoi_id) ?? "");

@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { worldGridQuery, type LatBand, type WorldMeta } from "@/entities/world-grid";
-import { api, ApiError, qk, unwrap } from "@/shared/api";
+import { api, ApiError, listAllAois, qk, unwrap } from "@/shared/api";
 import type { CalendarData, CellProps, MonthRow } from "../model/calendar";
 import { Y0, Y1 } from "../model/calendar";
 
@@ -25,17 +25,7 @@ export const aoisQuery = (mv: string | null) =>
   queryOptions({
     queryKey: qk("aois", { all: 1 }, mv),
     queryFn: async ({ signal }) => {
-      const out: AoiRec[] = [];
-      let cursor: string | undefined;
-      for (let i = 0; i < 20; i++) {
-        const r = (await api.GET("/aois", { params: { query: { limit: 1000, ...(cursor ? { cursor } : {}) } }, signal }).then(unwrap)) as unknown as {
-          aois: AoiRec[];
-          next_cursor?: string | null;
-        };
-        out.push(...r.aois);
-        if (!r.next_cursor) break;
-        cursor = r.next_cursor;
-      }
+      const out = await listAllAois<AoiRec>(signal);
       if (!out.some((a) => a.aoi_id === "WORLD")) out.unshift({ aoi_id: "WORLD", level: "world", name_ko: null, name_en: null, parent_id: null, synthetic: true });
       return out;
     },

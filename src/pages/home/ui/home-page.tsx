@@ -182,7 +182,9 @@ function HomeScreen() {
   const aggNames = (agg?.regionIds ?? []).map(regionName);
   const aoiLabel = drawn ? drawnKind + (aggNames.length ? ` · ${aggNames.length > 1 ? t("home.aoi.and_more", { a: aggNames[0]!, n: aggNames.length - 1 }) : aggNames[0]}` : "") : region ? regName(region) : S.nameOf(S.chosen) || cname;
   const apiAoi = aoiQ.data as { name_ko?: string; name_en?: string | null } | undefined;
-  const dataAoiName = drawn ? aoiLabel : apiAoi ? (lang === "ko" ? apiAoi.name_ko : apiAoi.name_en || apiAoi.name_ko) || aoi : aoi;
+  /* 실서버 나라 행의 name_ko 는 영어 이름(예 「Maldives」)이라 나라·한국 단위는 지역 고르기 이름(나라 색인 한글명)을 먼저 */
+  const scopeName = S.nameOf(aoi);
+  const dataAoiName = drawn ? aoiLabel : scopeName && scopeName !== aoi ? scopeName : apiAoi ? (lang === "ko" ? apiAoi.name_ko : apiAoi.name_en || apiAoi.name_ko) || aoi : aoi;
 
   /* 시나리오 원장(경북)만: 다른 나라는 비운다(목업 FIRES·feedAlerts) */
   const fires: Fire[] = kor ? ag.fires : [];

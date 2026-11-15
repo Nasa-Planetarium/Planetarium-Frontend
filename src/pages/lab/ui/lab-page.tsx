@@ -9,6 +9,7 @@ import { ScopeButton, bboxCenter, rowWordKey, useAoiScope, type Bbox } from "@/f
 import { api, unwrap } from "@/shared/api";
 import { PAGES } from "@/shared/config";
 import { useT } from "@/shared/i18n";
+import { aoiOfIso3 } from "@/shared/lib/adm0";
 import { useDevice } from "@/shared/lib/use-device";
 import { PageFrame } from "@/widgets/page-frame";
 import { LV_RANK, dimYM, lvOf, olRow, type LvKey, type Outlook, type Row } from "../model/outlook";
@@ -88,7 +89,7 @@ function LabScreen() {
 
   /* 한국: 고른 범위의 아래 단(전망 스냅숏 par) · 위치는 /aois bbox 가운데 · 면은 /aois/{id}/boundary */
   const S = useAoiScope();
-  const scopeId = kor ? S.scope : `ADM0_${iso3}`;
+  const scopeId = kor ? S.scope : aoiOfIso3(iso3);
   const krRows = useMemo(() => (kor && O ? O.aoi.filter((a) => a.par === scopeId) : []), [kor, O, scopeId]);
   const geoms = useQueries({
     queries: krRows.map((a) => ({

@@ -8,12 +8,12 @@ import { ChevronRight, Play, Square, X } from "lucide-react";
 import { countryName, useCountry } from "@/entities/country";
 import { worldGridQuery, type LatBand, type WorldMeta } from "@/entities/world-grid";
 import { useT } from "@/shared/i18n";
+import { aoiOfIso3 } from "@/shared/lib/adm0";
 
 /* 작은 도우미(화면 슬라이스 import 없이 — 캘린더 model/calendar 와 같은 규칙) */
 const p2 = (n: number) => String(n).padStart(2, "0");
 const ymIso = (y: number, m: number) => `${y}-${p2(m)}`;
 const ymOfIndex = (i: number): [number, number] => [2000 + Math.floor((10 + i) / 12), ((10 + i) % 12) + 1];
-const aoiOfIso3 = (iso3: string) => (iso3 === "KOR" ? "KR" : `ADM0_${iso3}`);
 const nfC = new Map<string, Intl.NumberFormat>();
 const intl = (lang: string, key: string, o: Intl.NumberFormatOptions) => {
   const k = `${lang}|${key}`;

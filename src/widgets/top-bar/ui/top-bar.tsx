@@ -19,6 +19,7 @@ import { LangButton, useSwitchLocale } from "@/features/switch-locale";
 import { PAGES, PAGE_IDS, ROLE_DEF, pageHref, tabsFor, type Locale, type PageId } from "@/shared/config";
 import { useT, useTl } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
+import { aoiOfIso3 } from "@/shared/lib/adm0";
 import { localHM, tzAbbr } from "@/shared/lib/time";
 import { useDevice } from "@/shared/lib/use-device";
 import { usePref } from "@/shared/lib/use-pref";
@@ -93,7 +94,7 @@ export function TopBar() {
   const mv = meth?.method_version ?? null;
   const dv = meth?.data_version ? (meth.data_version.split("#")[0] ?? null) : null;
   const verShort = dv && dv.indexOf("-") > 0 ? (dv.split("-")[0] ?? "–") : "–";
-  const relAoi = KOR ? "KR" : `ADM0_${iso3}`;
+  const relAoi = aoiOfIso3(iso3);
   const yr = nowMs != null ? new Date(nowMs).getUTCFullYear() : null;
   const { data: cal } = useQuery({ ...calendarQuery(relAoi, { start_year: yr ?? 0, end_year: yr ?? 0 }, mv), enabled: !!mv && yr != null });
   const months = cal && typeof cal === "object" ? cal.months : [];

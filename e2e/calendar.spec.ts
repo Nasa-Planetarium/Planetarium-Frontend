@@ -35,3 +35,16 @@ test("전 세계 재생: 달 합계(meta.total)", async ({ page }) => {
   await expect(root).toBeVisible({ timeout: 30000 });
   await expect(root.locator('[data-month="2025-03"]')).toContainText("141.2만", { timeout: 20000 });
 });
+
+/* 나라 칩으로 고른 나라가 지역 목록에 없다고 전 세계로 돌아가지 않는다: 숨김 섬나라(몰디브) · 색인과 release 코드가 다른 나라(남수단 SSD → ADM0_SDS) */
+for (const [c, aoi] of [
+  ["MDV", "ADM0_MDV"],
+  ["SSD", "ADM0_SDS"],
+] as const) {
+  test(`나라 ${c}: 캘린더가 그 나라 단위(${aoi})로 열린다`, async ({ page }) => {
+    await page.goto(`/ko/calendar/?c=${c}`);
+    const root = page.locator('[data-testid="calendar"][data-ready="1"]');
+    await expect(root).toBeVisible({ timeout: 30000 });
+    await expect(root).toHaveAttribute("data-aoi", aoi);
+  });
+}

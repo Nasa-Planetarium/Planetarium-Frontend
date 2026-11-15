@@ -3,6 +3,8 @@
  * 원천은 계약 GET /aois(실서버 parent_id·level·bbox). 상황판·지휘 통계·예측 분석이 같은 규칙으로 「고른 지역 = 범위, 그 아래 단 = 행」을 쓴다.
  * 이름·좌표는 지리 정의(값이 아님)라 화면 표시에만 쓴다.
  */
+import { aoiOfIso3, iso3OfAdm0 } from "@/shared/lib/adm0";
+
 export interface AoiRec {
   aoi_id: string;
   name_ko: string | null;
@@ -29,9 +31,10 @@ export function iso3OfAoi(id: string | null | undefined): string | null {
   if (!id || id === "WORLD") return null;
   if (isKorId(id)) return "KOR";
   const m = /^ADM[01]_([A-Z]{3})/.exec(id);
-  return m ? (m[1] as string) : null;
+  return m ? iso3OfAdm0(m[1] as string) : null;
 }
-export const aoiOfIso3 = (iso3: string) => (iso3 === "KOR" ? "KR" : `ADM0_${iso3}`);
+/** 나라 색인 코드 → release 지역 id(색인과 release 코드가 다른 나라 4개는 shared/lib/adm0 가 맞춘다) */
+export { aoiOfIso3 };
 
 /** 위경도 글자(「36.35, 128.70」 · 「36.35N 128.70E」) */
 export function parseLatLon(s: string | null | undefined) {

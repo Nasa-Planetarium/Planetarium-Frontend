@@ -14,7 +14,7 @@ import { prefs } from "@/shared/lib/prefs";
 import { useDevice } from "@/shared/lib/use-device";
 import { aoisQuery, calendarAllQuery, comparisonQuery, type AoiRec } from "../api/queries";
 import { AOI_OK, KOR_AOIS, coverage, defaultAoi, isStep, monthRec, regimes, selectable, ymK, type Step } from "../model/analysis";
-import { iso3OfAoi, LAST, lastMonth, monthIndex, monthWord, nameEn, VIEWS, ymIso, ymOfIndex, type CalView } from "../model/core";
+import { aoiOfIso3, iso3OfAoi, LAST, lastMonth, monthIndex, monthWord, nameEn, VIEWS, ymIso, ymOfIndex, type CalView } from "../model/core";
 import { AoiPicker } from "./aoi-picker";
 import { Status, StIcon, useRamp } from "./bits";
 import { Track, useNf } from "./charts";
@@ -78,7 +78,7 @@ function AnalysisScreen() {
   const aoi = useMemo(() => {
     if (!aq.data) return null;
     if (urlAoi && AOI_OK(urlAoi) && has(urlAoi) && !(KOR && /^ADM0_/.test(urlAoi))) return urlAoi;
-    if (!KOR && has(`ADM0_${iso3}`)) return `ADM0_${iso3}`;
+    if (!KOR && has(aoiOfIso3(iso3))) return aoiOfIso3(iso3);
     return defaultAoi(has);
   }, [aq.data, urlAoi, has, KOR, iso3]);
   const rec: AoiRec | null = aoi ? (byId.get(aoi) ?? null) : null;
@@ -276,7 +276,7 @@ function S1({ x, KOR, yr, setYr, inScope, iso3 }: { x: Ctx; KOR: boolean; yr: nu
   const pickMonth = (mm: number) => x.writeQ({ ym: ymIso(y, mm), step: null });
 
   /* 지역 단추: 한국 = 경북 북부 묶음(있으면) · 경북 · 한국 + 지금 고른 다른 지역 · 다른 나라 = 그 나라 단위 */
-  const ids: string[] = KOR ? KOR_AOIS.filter(has) : [`ADM0_${iso3}`];
+  const ids: string[] = KOR ? KOR_AOIS.filter(has) : [aoiOfIso3(iso3)];
   if (aoi && aoi !== "WORLD" && !ids.includes(aoi)) ids.push(aoi);
   /* 전 세계(WORLD) — 목록에 행이 있을 때만(실서버 있음 · 목 스냅숏 없음) */
   if (has("WORLD")) ids.push("WORLD");
@@ -297,7 +297,7 @@ function S1({ x, KOR, yr, setYr, inScope, iso3 }: { x: Ctx; KOR: boolean; yr: nu
     const [yy, mm] = ymOfIndex(i);
     setYr(yy);
     if (i3 === iso3) x.writeQ({ ym: ymIso(yy, mm), step: null });
-    else x.writeQ({ aoi: i3 === "KOR" ? null : `ADM0_${i3}`, ym: ymIso(yy, mm), step: null }, false, i3);
+    else x.writeQ({ aoi: i3 === "KOR" ? null : aoiOfIso3(i3), ym: ymIso(yy, mm), step: null }, false, i3);
   };
 
   return (

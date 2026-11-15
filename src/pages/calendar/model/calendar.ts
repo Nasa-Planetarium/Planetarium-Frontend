@@ -4,6 +4,7 @@
  *       E3 구간 밖 = 값 유지 · 구간 버림 · 플래그 · E4 경우 가르기 = shared/data-cases judgeMonth(switch 없음).
  */
 import { judgeMonth, type CaseResult, type CaseRow, type View } from "@/shared/data-cases";
+import { aoiOfIso3, iso3OfAdm0 } from "@/shared/lib/adm0";
 
 export const Y0 = 2000;
 export const Y1 = 2026;
@@ -243,9 +244,10 @@ export function iso3OfAoi(id: string | null | undefined): string | null {
   if (!id || id === "WORLD") return null;
   if (isKorId(id)) return "KOR";
   const m = /^ADM0_([A-Z]{3})$/.exec(id);
-  return m ? (m[1] as string) : null;
+  return m ? iso3OfAdm0(m[1] as string) : null;
 }
-export const aoiOfIso3 = (iso3: string) => (iso3 === "KOR" ? "KR" : `ADM0_${iso3}`);
+/** 나라 색인 코드 → release 지역 id(색인과 release 코드가 다른 나라 4개는 shared/lib/adm0 가 맞춘다) */
+export { aoiOfIso3 };
 
 /** 사례(경북 안 지역에서 점 지도 확대 상자) */
 export const CASES_UI: readonly (readonly [string, number, number])[] = [

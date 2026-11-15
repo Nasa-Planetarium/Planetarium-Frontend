@@ -80,7 +80,7 @@ export const childRegionsQuery = (parentId: string, lang: string, mv: string | n
       const rows: AoiRow[] = [];
       let cursor: string | undefined;
       for (let i = 0; i < 10; i++) {
-        const r = (await api.GET("/aois", { params: { query: { parent_id: parentId, limit: 1000, ...(cursor ? { cursor } : {}) } as never }, signal }).then(unwrap)) as unknown as { aois: AoiRow[]; next_cursor?: string | null };
+        const r = (await api.GET("/aois", { params: { query: { parent_id: parentId, limit: 1000, include_hidden: true, ...(cursor ? { cursor } : {}) } as never }, signal }).then(unwrap)) as unknown as { aois: AoiRow[]; next_cursor?: string | null };
         rows.push(...r.aois);
         if (!r.next_cursor) break;
         cursor = r.next_cursor;

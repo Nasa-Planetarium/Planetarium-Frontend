@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { iso3OfAdm0 } from "@/shared/lib/adm0";
 import { adm1ShapesQuery, worldGridQuery, worldShapesQuery, type ShapeFeature } from "../api/world-grid";
 import { coarseCells, decodeMonth, monthIdx, polysOf, type Polys } from "../lib/coarse";
 
@@ -21,7 +22,8 @@ export interface CoarseCellsData {
  */
 export function useCoarseCells(o: { aoiId: string; aois: CoarseAoi[] | null | undefined; y: number; m: number; on: boolean }) {
   const id = o.aoiId;
-  const adm0 = /^ADM0_([A-Z]{3})$/.exec(id)?.[1] ?? null;
+  const adm0c = /^ADM0_([A-Z]{3})$/.exec(id)?.[1];
+  const adm0 = adm0c ? iso3OfAdm0(adm0c) : null;
   const adm1 = /^ADM1_([A-Z]{3})-(.+)$/.exec(id);
   const cont = /^CONT_/.test(id);
   const grid = useQuery({ ...worldGridQuery(), enabled: o.on });
@@ -35,7 +37,7 @@ export function useCoarseCells(o: { aoiId: string; aois: CoarseAoi[] | null | un
     if (adm0) return shapes.data ? byIso([adm0], shapes.data) : undefined;
     if (cont) {
       if (!shapes.data) return undefined;
-      const iso = (o.aois ?? []).filter((a) => a.parent_id === id && /^ADM0_[A-Z]{3}$/.test(a.aoi_id)).map((a) => a.aoi_id.slice(5));
+      const iso = (o.aois ?? []).filter((a) => a.parent_id === id && /^ADM0_[A-Z]{3}$/.test(a.aoi_id)).map((a) => iso3OfAdm0(a.aoi_id.slice(5)));
       return byIso(iso, shapes.data);
     }
     if (adm1) {
