@@ -11,6 +11,7 @@ import { ApiError } from "@/shared/api";
 import { useT } from "@/shared/i18n";
 import { usePath, useQueryParams } from "@/shared/lib/nav";
 import { prefs } from "@/shared/lib/prefs";
+import { baselineOf } from "@/shared/lib/baseline-period";
 import { useDevice } from "@/shared/lib/use-device";
 import { aoisQuery, calendarAllQuery, comparisonQuery, type AoiRec } from "../api/queries";
 import { AOI_OK, KOR_AOIS, coverage, defaultAoi, isStep, monthRec, regimes, selectable, ymK, type Step } from "../model/analysis";
@@ -154,7 +155,8 @@ function AnalysisScreen() {
   );
 
   const rule = M?.verdict_rule ?? null;
-  const base = { from: rule?.baseline?.from ?? rule?.baseline_from ?? 2001, to: rule?.baseline?.to ?? rule?.baseline_to ?? 2025 };
+  /* 기준 기간: 비교 응답 baseline_period(지역마다 — 한국 2012–2025 등) → 없으면(옛 응답) /methods 규칙 → 2001–2025 */
+  const base = baselineOf(c?.baseline_period, { from: rule?.baseline?.from ?? rule?.baseline_from ?? 2001, to: rule?.baseline?.to ?? rule?.baseline_to ?? 2025 });
   const fail = kq.error ?? cq.error ?? aq.error ?? mq.error;
   const errWord = fail ? W(fail instanceof ApiError && (fail.code === "data_not_loaded" || fail.code === "rate_limited") ? `err.${fail.code}` : "err.network") : null;
   const ready = !!aq.data && (!aoi || !!cal || !!cq.error) && (step === 1 || !!c || !!kq.error);
