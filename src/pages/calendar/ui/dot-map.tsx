@@ -5,16 +5,38 @@ import type { GeoJSONSource, Map as MlMap } from "maplibre-gl";
 import { useLocale } from "next-intl";
 import { Minus, Play, Plus, Square, Target, X } from "lucide-react";
 import { useT } from "@/shared/i18n";
-import { MapLoading } from "@/shared/ui";
+import {
+  boundsOf,
+  CELL_OPACITY,
+  DOT_AGE_OPACITY,
+  DOT_EDGE_TOKEN,
+  DOT_TOKEN,
+  dotRadiusExpr,
+  FIT_PADDING,
+  islandMarkers,
+  lonInFit,
+  radiusExpr,
+  STATIC_TOKEN,
+  stepColorExpr,
+  stepOfCell,
+  tokVal,
+  useStepColors,
+  type Box,
+  type Level,
+  type LL,
+  type MapStatusKind,
+} from "@/shared/lib/display";
+import { MapKey, MapLoading, MapStatus } from "@/shared/ui";
 import type { MonthPoints } from "../api/queries";
-import { fmtLat, fmtLon, fmtNum, kst, SAT_NAME, stepOf } from "../model/calendar";
-import { tok } from "./bits";
+import { fmtLat, fmtLon, fmtNum, kst, SAT_NAME } from "../model/calendar";
 import { cx } from "./cx";
 
 /**
- * 점(원) 지도(목업 pages/calendar-dots.js · 결정 F9 · F10 ④). MapLibre 2D(기울기·회전 없음).
- * 칸 원: /cells 칸 값을 칸 중심에 원으로(색·크기 = 로그 눈금 5단계, 칸 간격 비례). 감지 점: /hotspots 그 달 점 전부, 크기 = FRP,
- * 밝기 = 재생 시각에서 지난 시간(12시간 · 2일 · 그 전). 누르면 위치·시각·FRP·위성·기준 점 여부.
+ * 점(원) 지도(목업 pages/calendar-dots.js · 결정 F9 · F10 ④ · 표시 규칙서 2026-11-15). MapLibre 2D(기울기·회전 없음).
+ * 무엇을 그릴지는 쓰는 쪽(CalMap)이 지금 시야 넓이로 고른 단계(R1)로 정한다 — 이 지도는 시야를 알려 주고(onView) 받은 것을 같은 규칙으로 그린다.
+ *  - 칸 원(L1 1° · L2 0.1°): 색 = 0.1° 칸당 월 감지량 5단계(R3·R4), 크기 = 화면 px 규칙(R5), 불투명도 0.85 하나.
+ *  - 감지 점(L3): 한 색 + 어두운 테두리(R6), 나이는 불투명도(최근 24시간 1 · 그 앞 .55), 산업 열원은 회색 빈 점(개수 제외).
+ *  - 범례 MapKey · 상태 줄 MapStatus 는 모든 지도와 같은 부품(R7 · R11). 섬 표지는 지금 줌 기준(R10).
  */
 export interface DotCell {
   lon: number;
@@ -28,54 +50,37 @@ export interface DotMapProps {
   size: number;
   outlines: number[][][];
   pts: MonthPoints | null;
-  /** 점 자료를 받는 중(재생 막대 자리를 남긴다) */
-  ptsWanted: boolean;
+  level: Level | null;
   focus: [number, number, number, number] | null;
   label: string;
-  rampAt: (k: number) => string;
+  /** 시야가 바뀌면(끌기·확대 뒤 300ms) 상자와 줌 */
+  onView: (box: Box, zoom: number) => void;
+  status: { kind: MapStatusKind | null; tail?: string | null; vars?: Record<string, string | number> };
+  /** 범례 시간 창(「2025년 3월」) */
+  win: string;
   extra?: React.ReactNode;
 }
 
-const K_R = [0.2, 0.28, 0.36, 0.44, 0.52];
-const RECENT = 12 * 60;
-const PX_DEG = 512 / 360;
+const RECENT = 24 * 60;
 type Pop = { lng: number; lat: number; kind: "pt" | "cell"; i: number } | null;
+const DEF_FIT: LL = [
+  [124, 33],
+  [131, 39],
+];
 
-/* 날짜 변경선을 넘는 경도 범위(예: 미국 172 → 293, 러시아 19 → 190)를 지도에 맞는 −180 ~ 180 안으로 — 더 넓은 쪽을 남긴다.
-   (QA 2026-11-15: 미국을 고르면 아시아·러시아 쪽이 보이던 것. 이 지도는 세계 복사본을 그리지 않아 180 밖은 빈 곳) */
-function fitLon(w: number, e: number): [number, number] {
-  if (e > 180) return e - 180 > 180 - w ? [Math.max(-180, w - 360), e - 360] : [w, 180];
-  if (w < -180) return -180 - w > e + 180 ? [w + 360, Math.min(180, e + 360)] : [-180, e];
-  return [w, e];
-}
-
-function boundsOf(pts: number[][], pad: number): [[number, number], [number, number]] | null {
-  let w = 999;
-  let s = 999;
-  let e = -999;
-  let n = -999;
-  pts.forEach(([x, y]) => {
-    w = Math.min(w, x as number);
-    e = Math.max(e, x as number);
-    s = Math.min(s, y as number);
-    n = Math.max(n, y as number);
-  });
-  if (w > e) return null;
-  /* 경도 폭이 반 바퀴를 넘으면 날짜 변경선을 넘는 것으로 보고 서경을 +360 해서 다시 잰다(알류샨 열도 + 미국 본토 → 172 ~ 294) */
-  if (e - w > 180) {
-    w = 999;
-    e = -999;
-    pts.forEach(([x]) => {
-      const xx = (x as number) < 0 ? (x as number) + 360 : (x as number);
-      w = Math.min(w, xx);
-      e = Math.max(e, xx);
-    });
-  }
-  const [fw, fe] = fitLon(w - pad, e + pad);
-  return [
-    [fw, s - pad],
-    [fe, n + pad],
+/* 고른 지역 바깥 가림막: 세계 상자에서 고른 지역 고리를 구멍으로(구멍은 바깥 고리와 반대 방향 — MapLibre 는 감김 방향으로 구멍을 가른다) */
+const area2 = (r: number[][]) => r.reduce((s, p, i) => s + (p[0] as number) * ((r[(i + 1) % r.length] as number[])[1] as number) - ((r[(i + 1) % r.length] as number[])[0] as number) * (p[1] as number), 0);
+function maskOf(rings: number[][][]) {
+  /* 바깥 고리는 ±180 안(세계 사본을 넘으면 타일 자르기가 고리를 쪼개 구멍이 사라진다) */
+  const outer = [
+    [-180, -85],
+    [180, -85],
+    [180, 85],
+    [-180, 85],
+    [-180, -85],
   ];
+  const holes = rings.filter((r) => r.length >= 3).map((r) => (area2(r) > 0 ? [...r].reverse() : r));
+  return { type: "Feature" as const, properties: {}, geometry: { type: "Polygon" as const, coordinates: [outer, ...holes] } };
 }
 
 export function DotMap(o: DotMapProps) {
@@ -85,6 +90,7 @@ export function DotMap(o: DotMapProps) {
   const host = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<MlMap | null>(null);
   const [pop, setPop] = useState<Pop>(null);
+  const [zoom, setZoom] = useState(0);
   const [, setFrame] = useState(0);
   const k = o.pts && o.pts.n ? o.pts : null;
   const tmin = useMemo(() => (k ? Math.min(...k.t) : 0), [k]);
@@ -92,39 +98,63 @@ export function DotMap(o: DotMapProps) {
   const [cur, setCur] = useState<number | null>(null);
   const tNow = cur ?? tmax;
   const [playing, setPlaying] = useState(false);
+  const colors = useStepColors();
 
-  type BB = [[number, number], [number, number]];
-  const fit = useMemo<BB>(() => {
-    if (o.focus) return boundsOf([[o.focus[0], o.focus[1]], [o.focus[2], o.focus[3]]], 0.02) ?? [[124, 33], [131, 39]];
+  /* 윤곽이 없을 때만 칸으로 맞춘다 — 칸이 바뀔 때마다(끌기 · 달 바꿈) 다시 맞추지 않게 */
+  const cellsSeed = !o.outlines.length && o.cells.length > 0;
+  const fit = useMemo<LL>(() => {
+    if (o.focus) return boundsOf([[o.focus[0], o.focus[1]], [o.focus[2], o.focus[3]]], 0.02) ?? DEF_FIT;
     const outPts: number[][] = [];
     o.outlines.forEach((r) => r.forEach((q) => outPts.push(q)));
     const cellPts = o.cells.map((c) => [c.lon, c.lat]);
-    const kPts = k ? k.lo.map((x, i) => [x, k.la[i] as number]) : [];
-    return boundsOf(outPts.length ? outPts : cellPts.length ? cellPts : kPts, o.size * 0.6) ?? [[124, 33], [131, 39]];
-  }, [o.focus, o.outlines, o.cells, o.size, k]);
+    return boundsOf(outPts.length ? outPts : cellPts, o.size * 0.6) ?? DEF_FIT;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [o.focus, o.outlines, cellsSeed]);
 
-  /* 맞춘 범위가 늦게 바뀌면(나라 윤곽·칸이 지도보다 늦게 도착) 다시 맞춘다 — 사용자가 지도를 움직이기 전까지만.
-     (QA 2026-11-15: 전 세계에서 미국을 고른 뒤 지역 캘린더로 가면 아시아 등 엉뚱한 곳이 보이던 것) */
+  /* 맞춘 범위가 늦게 바뀌면(나라 윤곽이 지도보다 늦게 도착 · 달이 바뀌어 사례 초점이 바뀜) 다시 맞춘다 — 사용자가 지도를 움직이기 전까지만(PR #15) */
   const touched = useRef(false);
-  const fitKey = JSON.stringify(fit);
+  const fitKey = fit.flat().map((v) => v.toFixed(3)).join(",");
   useEffect(() => {
     if (!map || touched.current) return;
-    map.fitBounds(fit, { padding: 16, duration: 0 });
+    map.fitBounds(fit, { padding: FIT_PADDING, duration: 0 });
     // fit 은 fitKey 로 비교(배열 정체성 말고 값)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, fitKey]);
 
-  /* 작은 섬(몰디브·세이셸처럼 맞춘 범위에 비해 윤곽이 몇 화소도 안 되는 고리) — 윤곽 선만으로는 안 보여 고리 가운데에 빈 원 표시 */
+  /* 시야 알리기(끌기·확대가 끝난 뒤 300ms) — 단계(R1)와 받을 타일(R2)은 쓰는 쪽이 고른다 */
+  const onView = useRef(o.onView);
+  useEffect(() => {
+    onView.current = o.onView;
+  }, [o.onView]);
+  useEffect(() => {
+    if (!map) return;
+    let id = 0;
+    const send = () => {
+      window.clearTimeout(id);
+      id = window.setTimeout(() => {
+        const b = map.getBounds();
+        onView.current([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()], map.getZoom());
+        setZoom(map.getZoom());
+      }, 300);
+    };
+    send();
+    map.on("moveend", send);
+    return () => {
+      window.clearTimeout(id);
+      map.off("moveend", send);
+    };
+  }, [map]);
+
+  /* 섬 표지(R10): 지금 줌에서 4px 미만 고리만, 본토가 보이면 0 · 고른 쪽 경도 */
   const islands = useMemo(() => {
-    const span = Math.max(fit[1][0] - fit[0][0], fit[1][1] - fit[0][1]);
-    const out: number[][] = [];
-    o.outlines.forEach((r) => {
-      const b = boundsOf(r, 0);
-      if (!b) return;
-      if (Math.max(b[1][0] - b[0][0], b[1][1] - b[0][1]) < span / 60) out.push([(b[0][0] + b[1][0]) / 2, (b[0][1] + b[1][1]) / 2]);
-    });
-    return out;
-  }, [o.outlines, fit]);
+    if (!map) return [] as [number, number][];
+    return islandMarkers(o.outlines, (lon, lat) => {
+      const p = map.project([lon, lat]);
+      return [p.x, p.y] as const;
+    }, (lon) => lonInFit(lon, fit));
+    // zoom 이 바뀌면 다시 잰다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, o.outlines, fit, zoom]);
 
   /* 지도(한 번) */
   useEffect(() => {
@@ -133,11 +163,12 @@ export function DotMap(o: DotMapProps) {
     let ro: ResizeObserver | null = null;
     void import("maplibre-gl").then((ml) => {
       if (dead || !host.current) return;
+      const empty = { type: "FeatureCollection" as const, features: [] };
       const m = new ml.Map({
         container: host.current,
         attributionControl: false,
         bounds: fit,
-        fitBoundsOptions: { padding: 16 },
+        fitBoundsOptions: { padding: FIT_PADDING },
         maxZoom: 13,
         minZoom: 1,
         pitch: 0,
@@ -152,22 +183,27 @@ export function DotMap(o: DotMapProps) {
           version: 8,
           sources: {
             land: { type: "geojson", data: "/geo/world.json" },
-            outf: { type: "geojson", data: { type: "FeatureCollection", features: [] } },
-            outl: { type: "geojson", data: { type: "FeatureCollection", features: [] } },
-            isl: { type: "geojson", data: { type: "FeatureCollection", features: [] } },
-            cells: { type: "geojson", data: { type: "FeatureCollection", features: [] } },
-            pts: { type: "geojson", data: { type: "FeatureCollection", features: [] } },
+            outf: { type: "geojson", data: empty },
+            outl: { type: "geojson", data: empty },
+            mask: { type: "geojson", data: empty },
+            isl: { type: "geojson", data: empty },
+            cells: { type: "geojson", data: empty },
+            pts: { type: "geojson", data: empty },
           },
+          /* 층 순서: 바다 → 땅 → 경계 → 자료 층 → 가림막(고른 지역 밖) */
           layers: [
-            { id: "bg", type: "background", paint: { "background-color": tok("map-sea") } },
-            { id: "land", type: "fill", source: "land", paint: { "fill-color": tok("map-land") } },
+            { id: "bg", type: "background", paint: { "background-color": tokVal("map-sea") } },
+            { id: "land", type: "fill", source: "land", paint: { "fill-color": tokVal("map-land") } },
             /* 고른 지역의 자세한 윤곽(outl 과 같은 고리)으로 육지를 한 번 더 채운다 — 단순한 world.json 면 밖으로 윤곽선이 삐져나가거나
-               world.json 에 없는 작은 섬이 선만 남는 것을 막는다(프런트 UI/UX, 2026-11-15) */
-            { id: "outf", type: "fill", source: "outf", paint: { "fill-color": tok("map-land") } },
-            { id: "outl", type: "line", source: "outl", paint: { "line-color": tok("map-boundary"), "line-opacity": 0.5, "line-width": 0.8 } },
-            { id: "isl", type: "circle", source: "isl", paint: { "circle-radius": 4, "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 1, "circle-stroke-color": tok("map-boundary"), "circle-stroke-opacity": 0.8 } },
-            { id: "cells", type: "circle", source: "cells", paint: { "circle-radius": 2, "circle-color": "#000", "circle-stroke-width": 0 } },
-            { id: "pts", type: "circle", source: "pts", paint: { "circle-stroke-width": 0, "circle-opacity": 0.85, "circle-radius": 2 } },
+               world.json 에 없는 작은 섬이 선만 남는 것을 막는다(PR #11) */
+            { id: "outf", type: "fill", source: "outf", paint: { "fill-color": tokVal("map-land") } },
+            { id: "outl", type: "line", source: "outl", paint: { "line-color": tokVal("map-boundary"), "line-opacity": 0.5, "line-width": 0.8 } },
+            { id: "isl", type: "circle", source: "isl", paint: { "circle-radius": 4, "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 1, "circle-stroke-color": tokVal("map-boundary"), "circle-stroke-opacity": 0.8 } },
+            { id: "cells", type: "circle", source: "cells", paint: { "circle-radius": 2, "circle-opacity": CELL_OPACITY, "circle-stroke-width": 0.5, "circle-stroke-color": tokVal("map-land"), "circle-stroke-opacity": 0.7 } },
+            { id: "pts-static", type: "circle", source: "pts", filter: ["==", ["get", "s"], 1], paint: { "circle-radius": dotRadiusExpr() as never, "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 1.2, "circle-stroke-color": tokVal(STATIC_TOKEN) } },
+            { id: "pts", type: "circle", source: "pts", filter: ["==", ["get", "s"], 0], paint: { "circle-radius": dotRadiusExpr() as never, "circle-color": tokVal(DOT_TOKEN), "circle-stroke-width": 0.75, "circle-stroke-color": tokVal(DOT_EDGE_TOKEN) } },
+            /* 가림막(R2): 고른 지역 밖을 흐리게 — 자료 층 위에 두어 이웃 나라 칸·점도 같이 흐려진다(고른 지역 칸과 같은 진하기로 보이지 않게) */
+            { id: "mask", type: "fill", source: "mask", paint: { "fill-color": tokVal("map-mask"), "fill-opacity": 0.6 } },
           ],
         },
       });
@@ -187,50 +223,65 @@ export function DotMap(o: DotMapProps) {
       ro?.disconnect();
       made?.remove();
     };
-    // fit 은 처음 한 번만(달이 바뀌면 부모가 key 로 다시 만든다)
+    // 지도는 한 번만 만든다(달이 바뀌면 위 fitKey 효과가 범위만 다시 맞춘다)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* 윤곽 */
+  /* 달(점 자료)이 바뀌면 재생 위치·팝업을 처음으로 */
+  const [seenK, setSeenK] = useState(k);
+  if (seenK !== k) {
+    setSeenK(k);
+    setCur(null);
+    setPlaying(false);
+    setPop(null);
+  }
+
+  /* 윤곽 · 가림막 */
   useEffect(() => {
     if (!map) return;
-    (map.getSource("outl") as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: o.outlines.length ? [{ type: "Feature", properties: {}, geometry: { type: "MultiLineString", coordinates: o.outlines } }] : [] });
+    /* 날짜 변경선 나라는 고른 쪽 경도로(표지·칸과 같은 쪽, R10) */
+    const ol = o.outlines.map((r) => r.map((q) => [lonInFit(q[0] as number, fit), q[1] as number]));
+    (map.getSource("outl") as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: ol.length ? [{ type: "Feature", properties: {}, geometry: { type: "MultiLineString", coordinates: ol } }] : [] });
     /* 같은 고리를 면으로(닫힌 고리 · 점 3개 미만은 뺀다) */
-    const polys = o.outlines.filter((r) => r.length >= 3).map((r) => {
+    const closed = ol.filter((r) => r.length >= 3).map((r) => {
       const a = r[0] as number[];
       const z = r[r.length - 1] as number[];
-      return [a[0] === z[0] && a[1] === z[1] ? r : [...r, a]];
+      return a[0] === z[0] && a[1] === z[1] ? r : [...r, a];
     });
-    (map.getSource("outf") as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: polys.length ? [{ type: "Feature", properties: {}, geometry: { type: "MultiPolygon", coordinates: polys } }] : [] });
+    (map.getSource("outf") as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: closed.length ? [{ type: "Feature", properties: {}, geometry: { type: "MultiPolygon", coordinates: closed.map((r) => [r]) } }] : [] });
+    (map.getSource("mask") as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: closed.length ? [maskOf(closed)] : [] });
+  }, [map, o.outlines, fit]);
+  useEffect(() => {
+    if (!map) return;
     (map.getSource("isl") as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: islands.map((c) => ({ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: c } })) });
-  }, [map, o.outlines, islands]);
+  }, [map, islands]);
 
-  /* 칸 원: 반지름 = 칸 간격 비례(줌마다 2배) · 색 = 단계 */
-  const { cells, size, rampAt, ptsWanted } = o;
+  /* 칸 원: 단계 k = 0.1° 칸당 값(R3) · 크기 = 화면 px 규칙(R5) · 색 = 5색(R4) */
+  const { cells, size } = o;
   useEffect(() => {
     if (!map) return;
     (map.getSource("cells") as GeoJSONSource | undefined)?.setData({
       type: "FeatureCollection",
-      features: cells.map((c, i) => ({ type: "Feature", id: i, properties: { i, k: stepOf(c.value) }, geometry: { type: "Point", coordinates: [c.lon, c.lat] } })),
+      features: cells.flatMap((c, i) => {
+        const kk = stepOfCell(c.value, size);
+        return kk == null ? [] : [{ type: "Feature" as const, id: i, properties: { i, k: kk }, geometry: { type: "Point" as const, coordinates: [lonInFit(c.lon, fit), c.lat] } }];
+      }),
     });
-    const kx = ["match", ["get", "k"], 0, K_R[0], 1, K_R[1], 2, K_R[2], 3, K_R[3], K_R[4]];
-    map.setPaintProperty("cells", "circle-radius", ["interpolate", ["exponential", 2], ["zoom"], 0, ["*", kx, size * PX_DEG], 16, ["*", kx, size * PX_DEG * 65536]]);
-    map.setPaintProperty("cells", "circle-color", ["match", ["get", "k"], 0, rampAt(0), 1, rampAt(1), 2, rampAt(2), 3, rampAt(3), rampAt(4)]);
-    map.setPaintProperty("cells", "circle-opacity", ptsWanted ? 0.32 : 0.78);
-  }, [map, cells, size, rampAt, ptsWanted]);
+    map.setPaintProperty("cells", "circle-radius", radiusExpr(size) as never);
+    map.setPaintProperty("cells", "circle-color", stepColorExpr(colors) as never);
+  }, [map, cells, size, colors, fit]);
 
   /* 감지 점 */
   useEffect(() => {
     if (!map) return;
-    const f = k ? k.la.map((la, i) => ({ type: "Feature" as const, id: i, properties: { i, t: k.t[i], frp: Math.max(0, k.frp[i] as number), ref: k.ref[i] }, geometry: { type: "Point" as const, coordinates: [k.lo[i] as number, la] } })) : [];
+    const f = k ? k.la.map((la, i) => ({ type: "Feature" as const, id: i, properties: { i, t: k.t[i], frp: Math.max(0, k.frp[i] as number), s: k.st?.[i] ? 1 : 0 }, geometry: { type: "Point" as const, coordinates: [lonInFit(k.lo[i] as number, fit), la] } })) : [];
     (map.getSource("pts") as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: f });
-    const frpR = (s: number) => ["interpolate", ["linear"], ["get", "frp"], 0, 1.4 * s, 20, 2.2 * s, 100, 3.4 * s, 500, 5.2 * s];
-    map.setPaintProperty("pts", "circle-radius", ["interpolate", ["exponential", 2], ["zoom"], 8, frpR(1), 12, frpR(3.2)]);
-  }, [map, k]);
+  }, [map, k, fit]);
   useEffect(() => {
     if (!map || !k) return;
-    map.setFilter("pts", ["<=", ["get", "t"], tNow]);
-    map.setPaintProperty("pts", "circle-color", ["case", ["<", ["-", tNow, ["get", "t"]], RECENT], tok("h6"), ["<", ["-", tNow, ["get", "t"]], RECENT * 4], tok("h4"), tok("h2")]);
+    map.setFilter("pts", ["all", ["==", ["get", "s"], 0], ["<=", ["get", "t"], tNow]]);
+    map.setFilter("pts-static", ["all", ["==", ["get", "s"], 1], ["<=", ["get", "t"], tNow]]);
+    map.setPaintProperty("pts", "circle-opacity", ["case", ["<", ["-", tNow, ["get", "t"]], RECENT], DOT_AGE_OPACITY[0], DOT_AGE_OPACITY[1]]);
   }, [map, k, tNow]);
 
   /* 재생: 3시간씩 90ms 마다 */
@@ -260,13 +311,13 @@ export function DotMap(o: DotMapProps) {
   useEffect(() => {
     if (!map) return;
     const near = (x: number, y: number, r: number) => {
-      const fs = map.queryRenderedFeatures([[x - r, y - r], [x + r, y + r]], { layers: ["cells", "pts"] });
+      const fs = map.queryRenderedFeatures([[x - r, y - r], [x + r, y + r]], { layers: ["cells", "pts", "pts-static"] });
       let best: (typeof fs)[number] | null = null;
       let bd = 1e9;
       fs.forEach((f) => {
         const c = (f.geometry as { coordinates: [number, number] }).coordinates;
         const p = map.project(c);
-        const d = (p.x - x) ** 2 + (p.y - y) ** 2 + (f.layer.id === "pts" ? 0 : 40);
+        const d = (p.x - x) ** 2 + (p.y - y) ** 2 + (f.layer.id === "cells" ? 40 : 0);
         if (d < bd) {
           bd = d;
           best = f;
@@ -279,7 +330,7 @@ export function DotMap(o: DotMapProps) {
       const f = near(ev.point.x, ev.point.y, touch ? 22 : 10);
       if (!f) return setPop(null);
       const c = (f.geometry as { coordinates: [number, number] }).coordinates;
-      setPop({ lng: c[0], lat: c[1], kind: f.layer.id === "pts" ? "pt" : "cell", i: Number((f.properties as { i: number }).i) });
+      setPop({ lng: c[0], lat: c[1], kind: f.layer.id === "cells" ? "cell" : "pt", i: Number((f.properties as { i: number }).i) });
     };
     const onMove = (ev: { point: { x: number; y: number } }) => {
       map.getCanvas().style.cursor = near(ev.point.x, ev.point.y, 8) ? "pointer" : "";
@@ -311,7 +362,7 @@ export function DotMap(o: DotMapProps) {
         kv(T("at"), <span className={cx("num")}>{`${kst(k.t0, k.t[pop.i] as number)} KST`}</span>),
         kv(T("frp"), frp == null ? "–" : <><b className={cx("num")}>{fmtNum(lang, frp, 1)}</b> MW</>),
         kv(T("sat"), SAT_NAME[sat] ?? sat),
-        kv(T("kind"), T(k.ref[pop.i] ? "ref" : "other")),
+        kv(T("kind"), k.st?.[pop.i] ? t("map.key.static") : T(k.ref[pop.i] ? "ref" : "other")),
       ];
     } else {
       const c = o.cells[pop.i];
@@ -333,14 +384,16 @@ export function DotMap(o: DotMapProps) {
       if (tt >= a && tt <= b && b > a) axis.push({ left: ((tt - a) / (b - a)) * 100, d: new Date(d0 + j * 864e5).getUTCDate() });
     }
   }
-  const nNow = k ? k.t.filter((x) => x <= tNow).length : 0;
-  const lab = ["<1", "1", "10", "100", "1k+"];
+  const nNow = k ? k.t.filter((x, i) => x <= tNow && !k.st?.[i]).length : 0;
+  const hasStatic = !!k?.st?.some(Boolean);
 
   return (
-    <div className={cx("cl-dm", k && "has-case")} data-ready={map ? "1" : "0"} data-t={k ? String(tNow) : undefined}>
+    <div className={cx("cl-dm", k && "has-case")} data-ready={map ? "1" : "0"} data-level={o.level ?? ""} data-t={k ? String(tNow) : undefined}>
       <div className={cx("cl-dmw")}>
         <div className={cx("cl-dmmap")} ref={host} role="region" aria-label={o.label} />
         <MapLoading show={!map} />
+        {map ? <MapStatus kind={o.status.kind} tail={o.status.tail} vars={o.status.vars} /> : null}
+        {map ? <MapKey level={o.level} win={o.win} tail={o.status.tail} nPts={(o.level === "L3" || o.level === "L4") && (o.status.kind == null || o.status.kind === "empty") ? nNow : null} staticPts={hasStatic} fmt={(n) => fmtNum(lang, n)} /> : null}
         {pop && popXY && popBody ? (
           <div className={cx("cl-popbox")} style={{ left: popXY.x, top: popXY.y }}>
             <button type="button" className={cx("cl-popx")} aria-label={t("calendar.act.close")} onClick={() => setPop(null)}>
@@ -356,7 +409,7 @@ export function DotMap(o: DotMapProps) {
           <button type="button" className={cx("iconbtn")} aria-label={T("zoom_out")} onClick={() => map?.zoomOut()}>
             <Minus aria-hidden="true" />
           </button>
-          <button type="button" className={cx("iconbtn")} aria-label={T("zoom_fit")} onClick={() => map?.fitBounds(fit, { padding: 16 })}>
+          <button type="button" className={cx("iconbtn")} aria-label={T("zoom_fit")} onClick={() => map?.fitBounds(fit, { padding: FIT_PADDING })}>
             <Target aria-hidden="true" />
           </button>
         </div>
@@ -390,47 +443,11 @@ export function DotMap(o: DotMapProps) {
           </div>
           <div className={cx("cl-dmnow")}>
             <b className={cx("num")}>{`${kst(k.t0, tNow).slice(5)} KST`}</b>
-            <span className={cx("num")}>{T("pts_n", { n: fmtNum(lang, nNow) })}</span>
+            <span className={cx("num")}>{t("map.key.pts_n", { n: fmtNum(lang, nNow) })}</span>
           </div>
         </div>
       ) : null}
-      <div className={cx("cl-dmleg")}>
-        <span className={cx("cl-dmlg")}>
-          <em>{T(o.ptsWanted ? "cells_month" : "cells")}</em>
-          {lab.map((l, j) => (
-            <span key={l}>
-              <i className={cx("cl-dot")} style={{ ["--d" as string]: `${6 + j * 3}px`, ["--c" as string]: o.rampAt(j) }} />
-              <span className={cx("num")}>{l}</span>
-            </span>
-          ))}
-        </span>
-        {k ? (
-          <span className={cx("cl-dmlg")}>
-            <em>{T("pts")}</em>
-            <span>
-              <i className={cx("cl-dot")} style={{ ["--d" as string]: "9px", ["--c" as string]: "var(--h6)" }} />
-              {T("age0")}
-            </span>
-            <span>
-              <i className={cx("cl-dot")} style={{ ["--d" as string]: "9px", ["--c" as string]: "var(--h4)" }} />
-              {T("age1")}
-            </span>
-            <span>
-              <i className={cx("cl-dot")} style={{ ["--d" as string]: "9px", ["--c" as string]: "var(--h2)" }} />
-              {T("age2")}
-            </span>
-          </span>
-        ) : null}
-        {o.extra}
-        {o.pts ? (
-          <>
-            {o.pts.n ? null : <span className={cx("cl-dmnote num")}>{T("pts_n", { n: 0 })}</span>}
-            {o.pts.note ? <span className={cx("cl-dmnote")}>{o.pts.note}</span> : null}
-          </>
-        ) : !o.ptsWanted ? (
-          <span className={cx("cl-dmnote")}>{T("pts_pending")}</span>
-        ) : null}
-      </div>
+      {o.extra ? <div className={cx("cl-dmleg")}>{o.extra}</div> : null}
     </div>
   );
 }

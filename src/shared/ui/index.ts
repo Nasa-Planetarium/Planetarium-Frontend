@@ -5,3 +5,7 @@ export { Button, buttonVariants, iconButtonClass } from "./button";
 export type { ButtonProps } from "./button";
 export { PageHead } from "./page-head";
 export { MapLoading } from "./map-loading";
+export { MapKey } from "./map-key";
+export type { MapKeyProps } from "./map-key";
+export { MapStatus } from "./map-status";
+export type { MapStatusProps } from "./map-status";

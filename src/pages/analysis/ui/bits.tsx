@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useT } from "@/shared/i18n";
-import { makeRamp } from "../model/core";
+import { shellRamp } from "@/shared/lib/display";
 import { cx } from "./cx";
 
 /** 토큰 값 읽기(지도·캔버스·PNG 는 CSS 변수를 못 쓴다) */
@@ -18,7 +18,7 @@ export function useRamp() {
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "class"] });
     return () => mo.disconnect();
   }, []);
-  return useMemo(() => (stops ? makeRamp(stops) : null), [stops]);
+  return useMemo(() => (stops ? shellRamp(stops) : null), [stops]);
 }
 
 /** 12px 자료 상태 표지(목업 EM.ST_SHAPES) */
