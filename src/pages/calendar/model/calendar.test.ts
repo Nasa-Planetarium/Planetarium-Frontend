@@ -9,9 +9,9 @@ describe("캘린더 모델(E1–E4)", () => {
     expect(c.st).toBe("missing");
     expect(c.value).toBeNull();
   });
-  it("구간 밖 = 값 유지 · 구간 버림 · 플래그(E3), 실서버가 이미 비운 행의 flags 도 읽는다", () => {
+  it("구간 밖 = 값 유지 · 구간은 값까지 넓힘(F16) · 플래그(E3), 실서버가 이미 비운 행의 flags 도 읽는다", () => {
     const a = caseOf(row(2010, 3, { value: 20, value_lo: 8, value_hi: 12 }), "value");
-    expect([a.value, a.lo, a.hi, a.io]).toEqual([20, null, null, true]);
+    expect([a.value, a.lo, a.hi, a.io]).toEqual([20, 8, 20, true]);
     const b = caseOf(row(2010, 3, { value_lo: null, value_hi: null, flags: ["interval_out_of_range"] }), "value");
     expect(b.io).toBe(true);
   });
