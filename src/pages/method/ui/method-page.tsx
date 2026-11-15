@@ -490,27 +490,32 @@ function SecStatus(c: Ctx) {
   const iconOf: Record<string, string> = { interval_out: "low_sample", before_sensor: "out_of_range" };
   const wordOf = (id: string) => (id === "interval_out" || id === "low_sample" ? W("flag." + id) : W("st." + id));
   return (
-    <div className={cx("mt-grid mt-g3")}>
+    <div className={cx("mt-grid mt-g3")} data-g="status">
       <Panel title={T("p.status_aoi", { a: c.aoiName })} wide w1>
         <Table heads={[[T("t.status")], [T("t.months"), 1], [T("t.which")]]} rows={stRows} />
         <p className={cx("mt-foot num")}>
           {T("ui.range")} 2000-11 – 2026-11 · {nf(inR.length)} {T("ui.months")}
         </p>
       </Panel>
-      <Panel
-        title={
-          <>
-            {T("p.vs_aoi")}
-            {files.satellite_day_status ? <SatCsv c={c} /> : null}
-          </>
-        }
-        n={vsRows.length}
-      >
+      <Panel title={T("p.vs_aoi")} n={vsRows.length}>
         <Table heads={[[T("t.value")], [T("t.period")]]} rows={vsRows} />
-        {files.satellite_day_status ? <SatBlock c={c} /> : null}
       </Panel>
+      {/* 위성 일별 상태: 따로 한 판(웹 1280×800 에서 한 줄 높이를 줄여 세로 스크롤 0 — 값 출처 판 아래에 붙이면 30px 넘쳤다) */}
+      {files.satellite_day_status ? (
+        <Panel
+          title={
+            <>
+              {c.t("v12frs.sat_title")}
+              <SatCsv c={c} />
+            </>
+          }
+        >
+          <SatBlock c={c} />
+        </Panel>
+      ) : null}
       <Panel title={T("p.files")}>
         <Table
+          cls="mt-fwrap"
           heads={[[T("t.item")], [T("t.from")]]}
           rows={[
             fRow("aoi_month", files.aoi_month !== false),
@@ -742,7 +747,7 @@ function SatBlock({ c }: { c: Ctx }) {
         <None c={c} k="ui.not_provided" />
       ) : (
         <Table
-          heads={[[V("sat_title")], [<span key="p" title={`UTC · ${q.data?.through ?? "–"}`}>{T("t.period")} <span className={cx("mt-dim")}>UTC</span></span>], [V("st.low"), 1], [V("st.missing"), 1]]}
+          heads={[[T("t.sat")], [<span key="p" title={`UTC · ${q.data?.through ?? "–"}`}>{T("t.period")} <span className={cx("mt-dim")}>UTC</span></span>], [V("st.low"), 1], [V("st.missing"), 1]]}
           rows={spans.map((r) => (
             <tr key={r.satellite} data-sat={r.satellite}>
               <td className={cx("nw")}>{r.satellite}</td>

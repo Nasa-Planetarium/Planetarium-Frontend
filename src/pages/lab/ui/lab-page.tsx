@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { countryName, useCountry, type CountryInfo } from "@/entities/country";
+import { inPolys, polysOf } from "@/entities/world-grid";
 import { useSession } from "@/entities/session";
 import { ScopeButton, aoiOfIso3, useAoiScope, type Bbox } from "@/features/pick-aoi";
 import { api, unwrap } from "@/shared/api";
@@ -13,7 +14,7 @@ import { useT } from "@/shared/i18n";
 import { usePath, useQueryParams } from "@/shared/lib/nav";
 import { PageFrame } from "@/widgets/page-frame";
 import { aoiOccurrenceListQuery, aoiOccurrenceQuery, gridOccurrenceQuery, type AoiOccurrence, type GridCell } from "../api/occurrence";
-import { BAND_KEYS, bandOf, geomBounds, latLon, pct, ppDiff, shadeOf, sortOcc } from "../model/occ";
+import { BAND_KEYS, bandOf, geomBounds, latLon, pct, ppDiff, shadeOf, sortOcc, topCells } from "../model/occ";
 import { LabBand } from "./lab-band";
 import { LabMap } from "./lab-map";
 import { ForecastView } from "./forecast-view";
@@ -123,12 +124,28 @@ function LabScreen({ tabs }: { tabs: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [items, S.byId, S.nameOf, geomKey],
   );
-  /* 다른 나라: 고른 나라 격자 요약의 상위 칸(지속 열원 제외, 최대 10) */
+  /* 다른 나라: 고른 나라 격자 요약의 상위 칸(지속 열원 제외, 최대 10).
+     운영 서버는 grid_summary 에 top_cells(계약상 선택 필드)를 주지 않는다(2026-11-15 일본·미국·아르헨티나 응답에서 잼) →
+     표·CSV 가 비어 내려받기가 꺼져 있었다. 그때는 이미 받은 격자(/occurrence/grid)에서 서버 요약과 같은 규칙으로 고른다:
+     칸 중심이 지역 경계(/aois/{id}/boundary) 안 · 지속 열원 제외 · p_any 큰 순 10개(일본 154칸·미국 3,932칸 · 최댓값이 서버 요약과 같음을 잼) */
   const gs = sum.data?.grid_summary ?? null;
-  const cellRows: OccRow[] = useMemo(
-    () => (kor ? [] : (gs?.top_cells ?? []).map((c) => ({ id: String(c.cell_id), name: latLon(c.lat, c.lon), p_any: c.p_any, baseline_p: c.baseline_p, vs_normal: c.vs_normal, suspected_industrial: false, rank: null, cell: c }))),
-    [kor, gs],
-  );
+  const needTop = !kor && !!gs && !gs.top_cells && gs.n_cells > 0;
+  const bq = useQuery({
+    queryKey: ["lab", "boundary", scopeId] as const,
+    queryFn: ({ signal }) => api.GET("/aois/{aoiId}/boundary", { params: { path: { aoiId: scopeId } }, signal }).then(unwrap) as Promise<unknown>,
+    staleTime: Infinity,
+    retry: false,
+    enabled: needTop && !!scopeId,
+  });
+  const cellRows: OccRow[] = useMemo(() => {
+    if (kor) return [];
+    let top: GridCell[] = gs?.top_cells ?? [];
+    if (!gs?.top_cells && grid.data && bq.data) {
+      const polys = polysOf((bq.data as { geometry?: { type: string; coordinates: unknown } }).geometry);
+      top = polys.length ? topCells(grid.data.cells, (x, y) => inPolys(polys, x, y)) : [];
+    }
+    return top.map((c) => ({ id: String(c.cell_id), name: latLon(c.lat, c.lon), p_any: c.p_any, baseline_p: c.baseline_p, vs_normal: c.vs_normal, suspected_industrial: false, rank: null, cell: c }));
+  }, [kor, gs, grid.data, bq.data]);
   const rows = kor ? sggRows : cellRows;
 
   /* 고른 것: 한국 = 시군구 id(범위를 바꾸면 비움, ?aoi=SGG_… 로 들어오면 그 행) · 다른 나라 = 칸 id */
