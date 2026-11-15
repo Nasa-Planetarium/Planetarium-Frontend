@@ -350,7 +350,7 @@
    "r2_note": "상관(R²)만으로 우수성을 판단하지 않는다 — MAE·편향·계절·극값을 함께 본다",
    "reference": "기준값: 중첩기 VIIRS",
    "scope": "{aoi} {n}개 {u} · 중첩기 {a}–{b}",
-   "zero_note": "MODIS 0인 {u}·월 중 VIIRS가 1개 이상 본 비율 — 2012년 이전 0 칸에 판단 보류를 붙이는 근거"
+   "zero_note": "MODIS 0인 {u}·월 중 VIIRS가 1개 이상 본 비율 — 2012년 이전 0 칸에 판정 보류를 붙이는 근거"
   },
   "village_n": "{n, plural, other {{n}곳}}",
   "vs": {

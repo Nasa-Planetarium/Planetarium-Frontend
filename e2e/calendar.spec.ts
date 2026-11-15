@@ -15,7 +15,11 @@ test("캘린더: 개수 띠·상세 값·칸 고르기·보기 전환", async ({
   await expect(root.locator('[data-cnt="ok"]')).toContainText("308");
   await expect(root.locator('[data-cnt="partial"]')).toContainText("1");
   await expect(root.locator("[data-det]")).toContainText("2,353");
-  await expect(root.locator("[data-det]")).toContainText("109.1배");
+  await expect(root.locator("[data-det]")).toContainText("184.7배");
+  /* v1.2 비교 기준 기간(aoi_month_compare 새 판): 경북(SIDO_47)은 2012–2025 · 기준 연수 = 응답 n_baseline_years(13) */
+  await expect(root.locator("[data-det] [data-baseline]")).toHaveAttribute("data-baseline", "2012-2025");
+  await expect(root.locator("[data-det] [data-baseline]")).toHaveText("13년 · 2012–2025");
+  await expect(root.locator("[data-det] [data-baseline]")).toHaveAttribute("title", /연속성 점검.*비율 0\.47/);
   if (info.project.name === "web") {
     await root.locator('[role="gridcell"][data-y="2022"][data-m="3"]').click();
     await expect(page).toHaveURL(/ym=2022-03/);

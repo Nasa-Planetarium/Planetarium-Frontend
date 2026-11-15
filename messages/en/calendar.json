@@ -47,6 +47,8 @@
    "interval": "Interval",
    "n": "Baseline years",
    "n_v": "{n} yrs · {a}–{b}",
+   "cont_t": "Baseline period set by a continuity check · ratio {r} (0.85–1.15 → 2001–2025, otherwise 2012–2025)",
+   "cont_parent": " · too few records, uses the ratio of parent region {id}",
    "pct": "Percentile",
    "ratio": "vs median",
    "ratio_v": "{r}×",
