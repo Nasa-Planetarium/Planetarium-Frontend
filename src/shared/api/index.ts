@@ -6,5 +6,7 @@ export { listAllAois } from "./aois";
 export { CELLS_MAX, HOTSPOT_MAX_AREA, bboxSqDeg, cellsTooMany, hotspotsTooWide } from "./limits";
 export type { RangeAoi } from "./limits";
 export { dataReady, openDataGate } from "./ready";
+export { cellsTileQuery, pointsBoxQuery, POINT_PAGES } from "./view-data";
+export type { TileCells, TileCellProps, BoxPoint, BoxPoints } from "./view-data";
 export type { QueryParams } from "./query-keys";
 export type { components, paths } from "./schema";

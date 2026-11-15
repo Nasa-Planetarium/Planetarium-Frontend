@@ -1,0 +1,6 @@
+/* 지도 상태 줄 하나(표시 규칙서 R11) — 지도 왼쪽 위, 바탕 지도는 가리지 않는다. 색은 토큰만 */
+.bar{position:absolute;left:var(--sp-3);top:var(--sp-3);z-index:4;display:inline-flex;flex-wrap:wrap;align-items:center;gap:var(--sp-1) var(--sp-2);max-width:calc(100% - 2 * var(--sp-3) - 48px);padding:var(--sp-1) var(--sp-3);border-radius:var(--r-xs);background:color-mix(in srgb,var(--surface-2) 92%,transparent);border:1px solid var(--line-soft);font-size:var(--fs-1);color:var(--text-1)}
+.st{font-weight:var(--fw-medium)}
+.tail{color:var(--text-2)}
+.btn{font:inherit;color:var(--text-1);background:transparent;border:1px solid var(--line);border-radius:var(--r-xs);padding:0 var(--sp-2);min-height:24px;cursor:pointer}
+.btn:focus-visible{outline:2px solid var(--map-focus);outline-offset:1px}
