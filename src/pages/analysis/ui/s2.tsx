@@ -7,6 +7,7 @@ import { useCountry } from "@/entities/country";
 import { useCoarseCells } from "@/entities/world-grid";
 import { ApiError, cellsTooMany } from "@/shared/api";
 import { API_BASE, DATA_MODE } from "@/shared/config";
+import { displayInterval, hasSpread } from "@/shared/lib/interval";
 import { aoisQuery, cellsQuery, monthPointsQuery, summaryQuery, type CellsData } from "../api/queries";
 import {
   TRMAX,
@@ -331,7 +332,7 @@ function VerdictLine({ x }: { x: Ctx }) {
           <span>
             {view !== "value" ? `${T("g3.k_value_harm")} ` : ""}
             <b className={cx("num")}>{x.nf(c.value)}</b>
-            {c.value_lo != null && c.value_hi != null && c.value_lo !== c.value_hi ? <span className={cx("num")}> {T("g3.range_lohi", { lo: x.nf(c.value_lo), hi: x.nf(c.value_hi) })}</span> : null} <Status st={c.status} />
+            {((iv) => (hasSpread(iv) ? <span className={cx("num")}> {T("g3.range_lohi", { lo: x.nf(iv.lo), hi: x.nf(iv.hi) })}</span> : null))(displayInterval(c.value, c.value_lo, c.value_hi))} <Status st={c.status} />
           </span>
         ) : null}
         {mk ? (
@@ -372,7 +373,8 @@ export function Detail({ x, onBar, light, width }: { x: Ctx; onBar?: ((y: number
   const harm = light || view === "value";
   const lh = (yy: number) => {
     const r = monthRec(cal, yy, m);
-    return r && r.value_lo !== r.value_hi ? { value_lo: r.value_lo ?? null, value_hi: r.value_hi ?? null } : {};
+    const iv = r ? displayInterval(r.value, r.value_lo, r.value_hi) : null;
+    return hasSpread(iv) ? { value_lo: iv.lo, value_hi: iv.hi } : {};
   };
   const dist = harm ? distOf(c, y, lh) : distRaw(cal, view, y, m, x.base.to);
   return (

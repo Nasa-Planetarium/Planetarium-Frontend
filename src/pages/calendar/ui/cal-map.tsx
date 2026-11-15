@@ -7,6 +7,7 @@ import { boundaryQuery } from "@/entities/country";
 import { useCoarseCells, type CoarseAoi } from "@/entities/world-grid";
 import { ApiError, cellsTooMany, hotspotsTooWide } from "@/shared/api";
 import { useT } from "@/shared/i18n";
+import { displayInterval, hasSpread } from "@/shared/lib/interval";
 import { aoisQuery, boundaryApiQuery, cellsQuery, hotspotsMonthQuery, type CellsData } from "../api/queries";
 import type { CalView } from "../model/calendar";
 import { caseFor, cellCase, fmtNum, fmtVal, iso3OfAoi, monthIndex, ymIso } from "../model/calendar";
@@ -60,15 +61,18 @@ export function CalMap(o: { aoi: string; aois?: CoarseAoi[] | null; y: number; m
   const shown = useMemo(() => feats.filter((k) => k.value != null && k.value > 0 && k.p.cell_lon != null && k.p.cell_lat != null), [feats]);
   const cells: DotCell[] = useMemo(
     () =>
-      shown.map((k) => ({
-        lon: k.p.cell_lon as number,
-        lat: k.p.cell_lat as number,
-        value: k.value as number,
-        valueText: fmtVal(lang, k.value),
-        extra: [unit, k.lo != null && k.hi != null && k.lo !== k.hi ? `${t("calendar.k.interval")} ${fmtVal(lang, k.lo)} – ${fmtVal(lang, k.hi)}` : "", k.io ? t("calendar.flag.interval_out") : "", k.status && k.status !== "ok" ? t(`shell.st.${k.status}`) : ""]
-          .filter(Boolean)
-          .join(" · "),
-      })),
+      shown.map((k) => {
+        const iv = displayInterval(k.value, k.lo, k.hi);
+        return {
+          lon: k.p.cell_lon as number,
+          lat: k.p.cell_lat as number,
+          value: k.value as number,
+          valueText: fmtVal(lang, k.value),
+          extra: [unit, hasSpread(iv) ? `${t("calendar.k.interval")} ${fmtVal(lang, iv.lo)} – ${fmtVal(lang, iv.hi)}` : "", k.io ? t("calendar.flag.interval_out") : "", k.status && k.status !== "ok" ? t(`shell.st.${k.status}`) : ""]
+            .filter(Boolean)
+            .join(" · "),
+        };
+      }),
     [shown, lang, unit, t],
   );
   const outlines = useMemo(() => {

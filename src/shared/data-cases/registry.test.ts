@@ -26,13 +26,19 @@ describe("자료 케이스 레지스트리(E2·E3·E4)", () => {
     expect(judge(row({ value: null })).st).toBe("missing");
   });
 
-  it("E3: 값이 구간 밖이면 값은 그대로, 구간은 버리고 플래그", () => {
+  it("E3(F16): 값이 구간 밖이면 값은 그대로, 구간은 값까지 넓히고 플래그", () => {
     const r = judge(row({ value: 20, value_lo: 8, value_hi: 12 }));
     expect(r.value).toBe(20);
-    expect(r.lo).toBeNull();
-    expect(r.hi).toBeNull();
+    expect([r.lo, r.hi]).toEqual([8, 20]);
     expect(r.flags).toContain("interval_out");
     expect(r.st).toBe("ok");
+  });
+
+  it("F16: lo > hi 소수점 행(v1.2 cell 2475557 2010-10)은 셋의 최소·최대, lo null 행은 구간 없이 값만", () => {
+    const a = judge(row({ value: 0.000028610229, value_lo: 0.000004291534, value_hi: -0.000012397766 }));
+    expect([a.value, a.lo, a.hi]).toEqual([0.000028610229, -0.000012397766, 0.000028610229]);
+    const b = judge(row({ year: 2001, month: 7, value: 34199.33203125, value_lo: null, value_hi: null }));
+    expect([b.value, b.lo, b.hi, b.flags]).toEqual([34199.33203125, null, null, []]);
   });
 
   it("구간 안이면 구간을 그대로 둔다", () => {

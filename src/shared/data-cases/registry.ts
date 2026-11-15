@@ -4,6 +4,7 @@
  * 고르기 = 판정 순서 배열 ORDER 를 앞에서부터 test 하는 것 하나뿐. if/else 사슬·switch 를 쓰지 않는다
  * (switch 는 eslint no-restricted-syntax 가 막는다).
  * 결과: { id, st, flags, value, lo, hi, wordKey } — st 는 칸 표지 하나(우선순위 = ORDER), flags 는 title·상세용.
+ * lo·hi 는 화면 구간(F16, shared/lib/interval displayInterval) — 원값이 아니다(CSV 는 행의 value_lo·value_hi 를 쓴다).
  * 사전: 표지 낱말 shell.st.<st> · 예외 카드 shell.case.<id>.{why,what,how,opinion} (목업 사전 그대로).
  */
 import {
@@ -16,6 +17,7 @@ import {
   OutOfRangeCase,
   PartialCase,
 } from "./cases/handlers";
+import { displayInterval } from "@/shared/lib/interval";
 import { hiOf, loOf, valOf, viewOf } from "./rows";
 import type { CaseContext, CaseHandler, CaseId, CaseResult, CaseRow, CaseState } from "./types";
 
@@ -45,7 +47,10 @@ export function judge(row: CaseRow | null | undefined, ctx: CaseContext = {}): C
   const first = hits[0] ?? "ok";
   const used = get(first).stop ? [first] : hits;
   const isRaw = viewOf(ctx) !== "value";
-  const base = { value: valOf(r, ctx), lo: isRaw ? null : loOf(r), hi: isRaw ? null : hiOf(r) };
+  const value = valOf(r, ctx);
+  // F16: 화면 구간은 min/max(value_lo, value_hi, value) — 값을 자르지 않고 구간을 넓힌다(구간 열이 null 이면 값만)
+  const iv = isRaw ? null : displayInterval(value, loOf(r), hiOf(r));
+  const base = { value, lo: iv?.lo ?? null, hi: iv?.hi ?? null };
   const patched = used.reduce((o, id) => ({ ...o, ...get(id).apply(r, ctx) }), base);
   const st = (used.map((id) => get(id).st).find((s): s is CaseState => s != null) ?? "ok") as CaseState;
   return {
