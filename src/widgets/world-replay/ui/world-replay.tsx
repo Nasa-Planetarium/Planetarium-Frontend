@@ -5,24 +5,64 @@ import type { CanvasSource, Map as MlMap } from "maplibre-gl";
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
 import { useLocale } from "next-intl";
 import { ChevronRight, Play, Square, X } from "lucide-react";
-import { countryName, pickableIso3, useCountry } from "@/entities/country";
+import { continentOf, countryName, pickableIso3, useCountry, type Continent, type CountryInfo } from "@/entities/country";
 import { aoiIndexQuery } from "@/features/pick-aoi";
 import { worldGridQuery, type LatBand, type WorldMeta } from "@/entities/world-grid";
 import { useT } from "@/shared/i18n";
 import { aoiOfIso3 } from "@/shared/lib/adm0";
+import { contTok } from "@/shared/lib/map-color";
 import { MapLoading } from "@/shared/ui";
 import cj from "./continent-jump.module.css";
 
-/* 대륙 바로 가기(프런트 UI/UX, 2026-11-15): 지도 아래쪽에 한 줄로 고정. 누르면 그 대륙 상자로 이동하고 단추가 검게 바뀐다. 상자 = [서, 남, 동, 북] */
+/* 대륙 바로 가기(프런트 UI/UX, 2026-11-15 · F14 다듬기): 지도 아래쪽 한 줄. 누르면 그 대륙으로 이동하고 단추가 검게 바뀐다.
+   - 이름 = 사전 shell.cont.*(나라 고르기와 같은 낱말 · 남북 아메리카는 NA·SA 키), 견본 색 = 토큰 --map-cont-*.
+   - 상자 = 나라 고르기와 같은 대륙 묶음(entities/country continentOf)의 나라 범위 합집합. 아메리카는 남미 나라 표(SA_ISO3)로 남·북을 가른다.
+     renderWorldCopies:false 라 날짜 변경선 너머는 ±180 으로 자른다(USA 처럼 동경 쪽 조각이 있는 나라는 서경 쪽으로 옮겨 본다).
+   - 고정 상자(FALLBACK)는 나라 색인을 아직 못 받았을 때만 */
 const CONTINENTS = [
-  { id: "na", ko: "북아메리카", en: "North America", color: "#e63946", box: [-168, 7, -52, 72] },
-  { id: "sa", ko: "남아메리카", en: "South America", color: "#5cb85c", box: [-82, -56, -34, 13] },
-  { id: "eu", ko: "유럽", en: "Europe", color: "#3b8fe0", box: [-25, 34, 45, 71] },
-  { id: "af", ko: "아프리카", en: "Africa", color: "#f28c28", box: [-18, -35, 52, 38] },
-  { id: "as", ko: "아시아", en: "Asia", color: "#f5c518", box: [40, -11, 150, 60] },
-  { id: "oc", ko: "오세아니아", en: "Oceania", color: "#9b7fe6", box: [110, -48, 180, 0] },
-] as const;
+  { id: "na", key: "NA", of: "AM" },
+  { id: "sa", key: "SA", of: "AM" },
+  { id: "eu", key: "EU", of: "EU" },
+  { id: "af", key: "AF", of: "AF" },
+  { id: "as", key: "AS", of: "AS" },
+  { id: "oc", key: "OC", of: "OC" },
+] as const satisfies readonly { id: string; key: string; of: Continent }[];
 type ContinentId = (typeof CONTINENTS)[number]["id"];
+type Box4 = [number, number, number, number];
+const FALLBACK: Record<ContinentId, Box4> = { na: [-168, 7, -52, 83], sa: [-82, -56, -34, 13], eu: [-25, 34, 180, 82], af: [-18, -35, 52, 38], as: [25, -11, 150, 56], oc: [110, -48, 180, 0] };
+const SA_ISO3 = new Set(["ARG", "BOL", "BRA", "CHL", "COL", "ECU", "GUY", "PRY", "PER", "SUR", "URY", "VEN", "FLK", "SGS", "TTO"]);
+function contOf(c: CountryInfo): ContinentId {
+  const k = continentOf(c);
+  if (k === "AM") return SA_ISO3.has(c.iso3) ? "sa" : "na";
+  return (CONTINENTS.find((x) => x.of === k)?.id ?? "as") as ContinentId;
+}
+/** 나라 범위(본토 범위 우선)를 지도 한 벌(±180) 안으로 */
+function boxIn(c: CountryInfo & { bbox_main?: Box4 }): Box4 {
+  let [w, s, e, n] = (c.bbox_main ?? c.bbox) as Box4;
+  if (e > 180) {
+    if (c.c[0] < 0) {
+      w -= 360;
+      e -= 360;
+    } else e = 180;
+  }
+  s = Math.max(-58, s);
+  n = Math.min(83, n);
+  return [Math.max(-180, w), s, Math.min(180, e), n];
+}
+/** 대륙별 상자(나라 범위 합집합) */
+export function continentBoxes(list: readonly CountryInfo[]): Record<ContinentId, Box4> {
+  const out = { ...FALLBACK };
+  const acc = new Map<ContinentId, Box4>();
+  list.forEach((c) => {
+    if (!c.iso2 || c.iso3 === "ATA") return;
+    const id = contOf(c);
+    const b = boxIn(c);
+    const a = acc.get(id);
+    acc.set(id, a ? [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[2], b[2]), Math.max(a[3], b[3])] : b);
+  });
+  acc.forEach((b, id) => (out[id] = b));
+  return out;
+}
 
 /* 작은 도우미(화면 슬라이스 import 없이 — 캘린더 model/calendar 와 같은 규칙) */
 const p2 = (n: number) => String(n).padStart(2, "0");
@@ -111,13 +151,13 @@ function prep(meta: WorldMeta, buf: ArrayBuffer, band: LatBand): Prep {
   return { meta, band, n, bpm, u8, off, bx, by0, dq };
 }
 
-/** 램프 LUT(256 단계 · 투명도 0.62–0.98) */
+/** 램프 LUT(256 단계 · 투명도 0.9–1 — 밝은 바탕에서 적은 값도 3:1 을 지키게, F14 C3) */
 function makeLut(ramp: (t: number) => string) {
   const L = new Uint8ClampedArray(256 * 4);
   for (let k = 0; k < 256; k++) {
     const h = ramp(0.18 + 0.82 * (k / 255)).replace("#", "");
     const v = parseInt(h, 16) || 0;
-    L.set([(v >> 16) & 255, (v >> 8) & 255, v & 255, Math.round(255 * (0.62 + 0.36 * (k / 255)))], k * 4);
+    L.set([(v >> 16) & 255, (v >> 8) & 255, v & 255, Math.round(255 * (0.9 + 0.1 * (k / 255)))], k * 4);
   }
   return L;
 }
@@ -174,7 +214,8 @@ export function WorldReplay(o: WorldReplayProps) {
   const lbEl = useRef<HTMLCanvasElement>(null);
   const lbBase = useRef<ImageData | null>(null);
   const [map, setMap] = useState<MlMap | null>(null);
-  const [cont, setCont] = useState<ContinentId | null>(null);  /* 쓰는 화면이 달을 바꾸면(분석 S1 달 고르기 — 목업 wfApi.setMonth) 재생 위치도 그 달로 */
+  const [cont, setCont] = useState<ContinentId | null>(null);
+  const barEl = useRef<HTMLDivElement>(null);  /* 쓰는 화면이 달을 바꾸면(분석 S1 달 고르기 — 목업 wfApi.setMonth) 재생 위치도 그 달로 */
   const [seenMonth, setSeenMonth] = useState(o.month);
   if (o.month !== seenMonth) {
     setSeenMonth(o.month);
@@ -220,7 +261,9 @@ export function WorldReplay(o: WorldReplayProps) {
             { id: "land", type: "fill", source: "land", paint: { "fill-color": tok("map-land") } },
             { id: "wf", type: "raster", source: "wf", paint: { "raster-resampling": "linear", "raster-fade-duration": 0, "raster-opacity": 0.95 } },
             { id: "line", type: "line", source: "land", paint: { "line-color": tok("map-boundary"), "line-opacity": 0.32, "line-width": 0.6 } },
-            { id: "sel", type: "line", source: "land", filter: ["==", ["get", "iso3"], ""], paint: { "line-color": tok("accent"), "line-width": 1.6 } },
+            /* 고른 나라 = 지도 강조(map-sel 남색) + 흰 halo — accent(흰색)는 흰 땅에서 1.1:1(F14 C2·L2) */
+            { id: "sel-halo", type: "line", source: "land", filter: ["==", ["get", "iso3"], ""], paint: { "line-color": tok("map-halo"), "line-width": 4.4 } },
+            { id: "sel", type: "line", source: "land", filter: ["==", ["get", "iso3"], ""], paint: { "line-color": tok("map-sel"), "line-width": 2 } },
           ],
         },
       });
@@ -287,18 +330,22 @@ export function WorldReplay(o: WorldReplayProps) {
   }, [D, cv, i, lut, map]);
 
   /* 고른 나라 테두리 + 확대 (나라를 안 골랐으면 고른 대륙, 그것도 없으면 전 세계) */
+  const boxes = useMemo(() => continentBoxes(countries), [countries]);
   useEffect(() => {
     if (!map) return;
     map.setFilter("sel", ["==", ["get", "iso3"], sel ?? ""]);
+    map.setFilter("sel-halo", ["==", ["get", "iso3"], sel ?? ""]);
     if (!sel) {
-      const c = CONTINENTS.find((x) => x.id === cont);
-      if (c) map.fitBounds([[c.box[0], c.box[1]], [c.box[2], c.box[3]]], { padding: 24, duration: 600 });
+      const b = cont ? boxes[cont] : null;
+      /* 아래 대륙 줄 높이만큼 아래 여백(줄 밑으로 상자 남쪽이 들어가지 않게, F14 L4) */
+      const pb = (barEl.current?.offsetHeight ?? 0) + 8;
+      if (b) map.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: { top: 24, left: 24, right: 24, bottom: Math.max(24, pb) }, duration: 600 });
       else map.fitBounds([[-170, -50], [180, 72]], { padding: 4, duration: 500 });
       return;
     }
     const b = countries.find((c) => c.iso3 === sel)?.bbox;
     if (b) map.fitBounds([[b[0] as number, Math.max(-58, b[1] as number)], [b[2] as number, Math.min(78, b[3] as number)]], { padding: 24, maxZoom: 5, duration: 600 });
-  }, [map, sel, countries, cont]);
+  }, [map, sel, countries, cont, boxes]);
 
   /* 위도 5° 띠 × 달 */
   useEffect(() => {
@@ -397,7 +444,7 @@ export function WorldReplay(o: WorldReplayProps) {
       <div className={cx("wf-map")} ref={mapEl}>
         <MapLoading show={!map} />
         {map ? (
-          <div className={cj.bar} role="group" aria-label={lang === "ko" ? "대륙으로 이동" : "Jump to continent"}>
+          <div className={cj.bar} ref={barEl} role="group" aria-label={t("shell.map.jump")}>
             {CONTINENTS.map((c) => (
               <button
                 key={c.id}
@@ -410,8 +457,8 @@ export function WorldReplay(o: WorldReplayProps) {
                   setCont((x) => (x === c.id && !sel ? null : c.id));
                 }}
               >
-                <i className={cj.dot} style={{ background: c.color }} aria-hidden="true" />
-                {lang === "ko" ? c.ko : c.en}
+                <i className={cj.dot} style={{ background: `var(--${contTok(c.id)})` }} aria-hidden="true" />
+                {t(`shell.cont.${c.key}`)}
               </button>
             ))}
           </div>
@@ -459,7 +506,16 @@ export function WorldReplay(o: WorldReplayProps) {
           <div className={cx("wf-sel")}>
             <div className={cx("wf-sh")}>
               <b>{cname}</b>
-              <button type="button" className={cx("iconbtn")} aria-label={T("whole")} onClick={() => setSel(null)}>
+              <button
+                type="button"
+                className={cx("iconbtn")}
+                aria-label={T("whole")}
+                onClick={() => {
+                  /* 「전체 보기」 = 전 세계(고른 대륙도 푼다 — 이름과 동작을 맞춘다, F14 L3) */
+                  setSel(null);
+                  setCont(null);
+                }}
+              >
                 <X aria-hidden="true" />
               </button>
             </div>
