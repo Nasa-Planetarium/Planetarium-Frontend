@@ -693,7 +693,21 @@ function StepChart({ x }: { x: Ctx }) {
           {series.map((s) => (
             <li key={s.name} data-on={s.name === view ? "1" : "0"}>
               <svg width="22" height="8" aria-hidden="true">
-                <line x1="1" y1="4" x2="21" y2="4" stroke={s.color} strokeWidth={s.name === view ? 2.6 : 1.6} strokeDasharray={s.dash} />
+                {s.name === view ? (
+                  <>
+                    {/* 그림의 불꽃 강조 선과 같은 그라데이션 */}
+                    <defs>
+                      <linearGradient id={`stlg-${s.name}`} gradientUnits="userSpaceOnUse" x1="1" y1="0" x2="21" y2="0">
+                        <stop offset="0" style={{ stopColor: "var(--h3)" }} />
+                        <stop offset="0.5" style={{ stopColor: "var(--h4)" }} />
+                        <stop offset="1" style={{ stopColor: "var(--h5)" }} />
+                      </linearGradient>
+                    </defs>
+                    <line x1="1" y1="4" x2="21" y2="4" stroke={`url(#stlg-${s.name})`} strokeWidth={3} strokeLinecap="round" />
+                  </>
+                ) : (
+                  <line x1="1" y1="4" x2="21" y2="4" stroke={s.color} strokeWidth={1.6} strokeDasharray={s.dash} />
+                )}
               </svg>
               {T(`g6.st_lg_${s.name}`)}
             </li>
