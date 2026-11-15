@@ -275,7 +275,7 @@ export function HomeMap(c: Ctx) {
       status={wide ? c.t("map.level.L1") : hotErr?.status === 429 ? c.t("shell.err.rate_limited") : null}
     >
       <div ref={tlRef} className={cx("hm-ov hm-ov-tl")} style={{ pointerEvents: "none" }}>
-        <div className={cx("hm-search")} role="search">
+        <div className={cx("hm-search")} role="search" data-tick-avoid="">
           <Search className={cx("ic ic-btn")} aria-hidden="true" strokeWidth={1.9} />
           <input
             type="search"
@@ -364,7 +364,7 @@ export function HomeMap(c: Ctx) {
           </>
         ) : null}
       </div>
-      <div ref={blRef} className={cx("hm-ov hm-ov-bl")} style={{ pointerEvents: "none" }}>
+      <div ref={blRef} className={cx("hm-ov hm-ov-bl")} style={{ pointerEvents: "none" }} data-tick-avoid="">
         {outside.length ? (
           /* 과거 기간을 볼 때 지금 진행 중인 불(기간 밖) 안내(목업 renderOutside · L10) */
           <div className={cx("hm-outv")} role="note" data-outv="">

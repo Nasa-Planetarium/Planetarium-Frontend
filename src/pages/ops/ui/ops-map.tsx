@@ -601,7 +601,7 @@ export function OpsMap(p: OpsMapProps) {
       ) : null}
       <div className={cx("map-ui")} style={{ pointerEvents: "none" }}>
         {view ? <OffChips view={view} fires={fires} units={p.layers.units} onFit={() => setFitN((n) => n + 1)} /> : null}
-        <div className={cx("op-tr")}>
+        <div className={cx("op-tr")} data-tick-avoid="">
           <div className={cx("op-wind")} aria-label={t("ops.sel_alert.wind")}>
             <span className={cx("op-wind-dial")}>
               <svg viewBox="0 0 40 40" aria-hidden="true">
@@ -625,7 +625,7 @@ export function OpsMap(p: OpsMapProps) {
           </div>
           <OpsSwath sw={sw} />
         </div>
-        <div className={cx("op-legend")} aria-hidden="true">
+        <div className={cx("op-legend")} aria-hidden="true" data-tick-avoid="">
           <span>
             <i className={cx("op-pip standby")} />
             {t("ops.off.k.standby")}
@@ -644,7 +644,12 @@ export function OpsMap(p: OpsMapProps) {
           </span>
           <i className={cx("op-legend-br")} />
           <span className={cx("op-legend-fan")}>{t("ops.sel_alert.spread_1_2_3")}</span>
-          <span className={cx("op-legend-vil")}>{t("ops.sel_alert.evacuation_villages")}</span>
+          <span className={cx("op-legend-vil")}>
+            <svg width="14" height="14" viewBox="-7.5 -8.5 15 16" aria-hidden="true">
+              <path d="M 0 -7 L 6.5 -1.5 L 6.5 6 L -6.5 6 L -6.5 -1.5 Z" fill="var(--map-label-hi)" stroke="var(--map-halo)" strokeWidth={1.6} />
+            </svg>
+            {t("ops.sel_alert.evacuation_villages")}
+          </span>
           <span className={cx("op-legend-heat")}>{t("ops.sel_alert.today_last_3_days")}</span>
         </div>
         <div className={cx("mtools")} role="toolbar" aria-label={t("shell.map.tools")}>

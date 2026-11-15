@@ -184,9 +184,8 @@
 .hm-map .map-ui > .hm-ov{pointer-events: none;}
 .hm-ov > *{pointer-events: auto;}
 .hm-ov-tl{position: absolute; left: 12px; top: 12px; right: 64px; display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); z-index: 3;}
-.hm-map::before,.hm-map::after{content: ""; position: absolute; left: 0px; right: 0px; pointer-events: none; z-index: 1;}
-.hm-map::before{top: 0px; height: 62px; background: linear-gradient(180deg,color-mix(in srgb,var(--surface-0) 78%,transparent),transparent);}
-.hm-map::after{bottom: 0px; height: 96px; background: linear-gradient(0deg,color-mix(in srgb,var(--surface-0) 82%,transparent),transparent);}
+/* 위·아래 어두운 덧칠(surface-0 78–82%)은 어두운 지도 시절 것 — 밝은 지도(F14)에서는 바다·땅 가장자리를 회갈색으로 더럽히고
+   흰 halo 를 두른 어두운 눈금·출처 글자를 어두운 바탕 위에 올려 대비를 떨어뜨려 뺐다(다른 네 지도에는 원래 없음) */
 .hm-map .map-ui{z-index: 2;}
 .hm-map .tipbox{z-index: 9;}
 .hm-map .attrib{padding: var(--sp-1) var(--sp-2); border-radius: var(--r-xs); background: color-mix(in srgb,var(--map-land) 80%,transparent);}
@@ -210,6 +209,9 @@
 .hm-clock{font-size: var(--fs-2); color: var(--text-2);}
 .hm-feed-n{font-size: var(--fs-2); color: var(--text-2); white-space: nowrap;}
 .hm-feed-n b{color: var(--text-1);}
+/* 감지 목록 빈 상태(「확대하면 감지 점이 보입니다」 등) — 규칙이 없어 굵은 본문 글자가 왼쪽 가장자리에 붙어 있었다(F14 관점 밖 참고 항목) */
+.hm-empty{padding: var(--sp-6) var(--sp-4); text-align: center; color: var(--text-2); font-size: var(--fs-2);}
+.hm-empty b{color: var(--text-1); font-size: var(--fs-3); font-weight: var(--fw-medium);}
 .hm-feed-src{padding: 0 var(--sp-4) var(--sp-2); font-size: var(--fs-2); border-bottom: 1px solid var(--line-soft);}
 .hm-feed{flex: 1 1 auto; min-height: 120px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent;}
 .hm-al{position: relative; display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-3) var(--sp-4) var(--sp-3) var(--sp-5); border-bottom: 1px solid var(--line-soft); cursor: pointer; outline-offset: -2px; transition: background var(--dur-fast) var(--ease-out);}

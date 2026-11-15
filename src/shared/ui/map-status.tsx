@@ -22,7 +22,7 @@ export function MapStatus(o: MapStatusProps) {
   const t = useT();
   if (!o.kind && !o.tail && !o.action) return null;
   return (
-    <div className={s.bar} role="status" aria-live="polite" data-map-status={o.kind ?? ""}>
+    <div className={s.bar} role="status" aria-live="polite" data-map-status={o.kind ?? ""} data-tick-avoid="">
       {o.kind ? <span className={s.st}>{t(STATUS_KEY[o.kind], o.vars)}</span> : null}
       {o.tail ? <span className={s.tail}>{o.tail}</span> : null}
       {o.action ? (

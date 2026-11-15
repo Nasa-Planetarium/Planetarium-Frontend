@@ -114,6 +114,8 @@
 .map-key i.k-dot{border-radius:var(--r-round)}
 .map-key i.k-ring{background:transparent;border:2px solid var(--c,var(--text-2));border-radius:var(--r-round)}
 .map-key i.k-dash{width:14px;height:0;background:none;border-top:2px dashed var(--c,var(--text-2));border-radius:0}
+/* 고른 불 소실 범위 = 지도 burn-sel(면 22% + 2px 선) 그대로 — 꽉 찬 적갈 네모는 지도의 옅은 분홍 면과 달라 보였다(F14) */
+.map-key i.k-sq{background:color-mix(in srgb,var(--c) 22%,var(--map-land));border:2px solid var(--c);border-radius:0}
 .map-key i.k-fmk{width:auto;height:auto;background:none;border-radius:0}
 :global(html[data-device="phone"]) .map-key{flex-wrap:wrap;row-gap:var(--sp-1);column-gap:var(--sp-2);max-width:calc(100% - 64px)}
 .mtools{position:absolute;right:var(--sp-3);top:var(--sp-3);z-index:3;display:flex;flex-direction:column;border:1px solid var(--line-strong);border-radius:var(--r-xs);overflow:hidden;background:var(--surface-2);box-shadow:var(--elev-2)}

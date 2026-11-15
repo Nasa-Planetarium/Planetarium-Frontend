@@ -37,6 +37,7 @@ export function MapKey(o: MapKeyProps) {
     <div
       className={o.inline ? `${s.key} ${s.inline}` : s.key}
       data-map-key=""
+      data-tick-avoid=""
       data-level={o.level ?? ""}
       data-steps={STEPS.join(",")}
       data-tokens={STEP_TOKENS.join(",")}
