@@ -106,7 +106,7 @@ export function buildStyle(T: Tok, iso3: string, worldUrl: string): StyleSpecifi
         "circle-stroke-width": 0.8,
       },
     },
-    { id: "hotpx", type: "fill", source: "hotpx", filter: ["==", ["get", "sensor"], "VIIRS"], minzoom: 10.6, paint: { "fill-color": T("map-viirs"), "fill-opacity": 0.6, "fill-outline-color": T("mh5") } },
+    { id: "hotpx", type: "fill", source: "hotpx", filter: ["==", ["get", "sensor"], "VIIRS"], minzoom: 10.6, paint: { "fill-color": T("map-viirs"), "fill-opacity": 0.85, "fill-outline-color": T("mh5") } },
     { id: "hotpx-modis", type: "line", source: "hotpx", filter: ["!=", ["get", "sensor"], "VIIRS"], minzoom: 10.6, paint: { "line-color": T("map-modis"), "line-opacity": 0.95, "line-width": 1.6 } },
     // 지도 강조(관심 영역·그리기)는 map-sel(어두운 남색) + 흰 halo 선 — UI accent(흰색)는 흰 땅에서 1.1:1
     { id: "aoi-fill", type: "fill", source: "aoi", paint: { "fill-color": T("map-sel"), "fill-opacity": 0.1 } },

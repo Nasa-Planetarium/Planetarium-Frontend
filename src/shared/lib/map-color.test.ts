@@ -25,9 +25,9 @@ describe("대비 계산", () => {
 });
 
 describe("밝은 지도 토큰(base.css) — 데이터 표지 3:1 · 글자 4.5:1", () => {
-  it("감지량 램프 mh1–mh6: 땅 대비 3:1 이상, 많을수록 진하다(휘도 단조 감소)", () => {
-    const L = [1, 2, 3, 4, 5, 6].map((i) => luminance(hexRgb(tok(`mh${i}`))));
-    [1, 2, 3, 4, 5, 6].forEach((i) => expect(contrast(tok(`mh${i}`), land), `mh${i}`).toBeGreaterThanOrEqual(3));
+  it("감지량 램프 mh0–mh6: 땅 대비 3:1 이상, 많을수록 진하다(휘도 단조 감소)", () => {
+    const L = [0, 1, 2, 3, 4, 5, 6].map((i) => luminance(hexRgb(tok(`mh${i}`))));
+    [0, 1, 2, 3, 4, 5, 6].forEach((i) => expect(contrast(tok(`mh${i}`), land), `mh${i}`).toBeGreaterThanOrEqual(3));
     for (let i = 1; i < L.length; i++) expect(L[i] as number).toBeLessThan(L[i - 1] as number);
   });
   it("월 감지량 칸(기본 확대 불투명도 .88)도 땅 대비 3:1", () => {
