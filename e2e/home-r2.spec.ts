@@ -10,7 +10,7 @@ test.beforeEach(async ({ page }, info) => {
   test.skip(info.project.name !== "web", "웹 폭만");
   await page.addInitScript(() => {
     localStorage.setItem("em.lang", "ko");
-    localStorage.setItem("em.role", "responder");
+    sessionStorage.setItem("em.role", "responder");
   });
 });
 

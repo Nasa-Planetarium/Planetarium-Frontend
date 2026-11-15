@@ -57,7 +57,7 @@ test("분석 넘김: 출동에서 온 조건 칩(이름 · 달) · 닫기", asyn
 test("분석 상태 em.an.v3: 메뉴로 다시 들어오면 지난 단계·지역·달·보기", async ({ page }) => {
   await page.goto("/ko/analysis/?step=2&aoi=SIDO_47&ym=2024-04&view=raw_viirs");
   await expect(page.locator('[data-testid="analysis"][data-ready="1"]')).toBeVisible({ timeout: 30000 });
-  await expect.poll(() => page.evaluate(() => localStorage.getItem("em.an.v3"))).toContain('"month":4');
+  await expect.poll(() => page.evaluate(() => sessionStorage.getItem("em.an.v3"))).toContain('"month":4');
   await page.goto("/ko/analysis/");
   const root = page.locator('[data-testid="analysis"][data-ready="1"]');
   await expect(root).toBeVisible({ timeout: 30000 });
@@ -68,7 +68,7 @@ test("분석 상태 em.an.v3: 메뉴로 다시 들어오면 지난 단계·지�
 
 test("lab: 표가 다 안 보이면 「N개 중 M개 보임」", async ({ page }, info) => {
   test.skip(info.project.name === "phone", "표 칸 높이는 web 폭에서만 잰다");
-  await page.addInitScript(() => localStorage.setItem("em.role", "scientist"));
+  await page.addInitScript(() => sessionStorage.setItem("em.role", "scientist"));
   await page.setViewportSize({ width: 1440, height: 640 });
   await page.goto("/ko/lab/");
   await expect(page.locator('[data-testid="lab"][data-ready="1"]')).toBeVisible({ timeout: 30000 });
