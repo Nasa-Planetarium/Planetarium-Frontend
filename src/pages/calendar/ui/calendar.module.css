@@ -72,6 +72,13 @@
 .pghd .ph-1{display:flex;align-items:center;flex-wrap:wrap;column-gap:var(--sp-3);row-gap:var(--sp-1);min-height:var(--ctl-h);min-width:0}
 .pghd h1{font-size:var(--fs-page);font-weight:var(--fw-bold);line-height:1.2;text-wrap:nowrap}
 .pghd .ph-scope{font-size:var(--fs-3);color:var(--text-2);min-width:0}
+/* 제목 밑에 회색 범위 줄(프런트 UI/UX 2026-11-15): [제목 / 범위] 두 줄 + 오른쪽 도구 */
+.pghd .ph-1{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"t tools" "s tools";align-items:center;padding:var(--sp-1) 0}
+.pghd .ph-1>h1{grid-area:t}
+.pghd .ph-1>.ph-scope{grid-area:s}
+.pghd .ph-1>.ph-tools{grid-area:tools}
+:global(html:is([data-device="phone"],[data-device="tablet"])) .pghd .ph-1{grid-template-columns:minmax(0,1fr);grid-template-areas:"t" "s" "tools"}
+:global(html:is([data-device="phone"],[data-device="tablet"])) .pghd .ph-1>.ph-tools{margin-left:0}
 .pghd .ph-tools{display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-2);margin-left:auto;min-width:0}
 .pghd .ph-alert{display:flex;align-items:center;gap:var(--sp-3);min-height:var(--ctl-h);margin:0 calc(-1 * var(--gutter)) var(--sp-2);padding:0 var(--gutter);background:var(--alert-4-strong);color:var(--on-alert-strong);font-size:var(--fs-3);font-weight:var(--fw-strong)}
 .pghd .ph-alert .btn{margin-left:auto;background:var(--on-alert-strong);color:var(--alert-4-strong);height:var(--ctl-h-sm)}
@@ -172,7 +179,7 @@
 .cl-empty{display:flex;align-items:center;justify-content:center;gap:var(--sp-3);min-height:calc(var(--sp-8) * 3);color:var(--text-2);font-size:var(--fs-3)}
 .cl-empty.sm{min-height:calc(var(--sp-8) * 2)}
 /* g9 배치(사용자 요청 「지도 왼쪽 · 캘린더는 예전 상황판처럼 작게」): 웹 = [왼쪽 큰 지도] + [오른쪽 열: 작은 연×월 캘린더 → 고른 달 상세] */
-.cl-grid{display:grid;grid-template-columns:minmax(0,1fr) clamp(380px,32vw,520px);grid-template-areas:"map cal" "map det";gap:var(--sp-4);padding:var(--sp-4) var(--gutter);align-items:start;min-width:0}
+.cl-grid{display:grid;grid-template-columns:minmax(0,1fr) clamp(380px,32vw,520px);grid-template-areas:"map cal" "map det";gap:var(--gap-panel);padding:var(--sp-4) var(--gutter);align-items:start;min-width:0}
 .cl-calp{grid-area:cal}
 .cl-det{grid-area:det}
 .cl-mapp{grid-area:map;position:sticky;top:var(--sp-4)}
@@ -249,7 +256,7 @@
 .cl-pr .cp-r{flex:1;min-width:0;border-bottom:0}
 .cl-pr .cl-sgg{align-self:center;margin-right:var(--sp-1)}
 .cl-pr .cl-sgg[aria-pressed="true"]{color:var(--accent);background:var(--surface-3)}
-:global(html:is([data-device="tablet"],[data-device="foldable"])) .cl-grid{grid-template-columns:minmax(0,1fr);grid-template-areas:"map" "cal" "det";gap:0;padding:0}
+:global(html:is([data-device="tablet"],[data-device="foldable"])) .cl-grid{grid-template-columns:minmax(0,1fr);grid-template-areas:"map" "cal" "det";gap:var(--gap-panel);padding:var(--sp-3) var(--gutter)}
 :global(html:is([data-device="tablet"],[data-device="foldable"],[data-device="phone"])) .cl-mapp{position:static}
 :global(html:is([data-device="tablet"],[data-device="foldable"])) .cl-dmmap{height:clamp(300px,46vh,460px)}
 :global(html:is([data-device="tablet"],[data-device="foldable"])) .cl-det{position:static}
@@ -261,7 +268,7 @@
   :global(html[data-device="foldable"]) .cl-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"map cal" "map det";column-gap:var(--hinge-gap)}
   :global(html[data-device="foldable"]) .cl-det>.panel-b{display:block}
 }
-:global(html[data-device="phone"]) .cl-grid{grid-template-columns:minmax(0,1fr);grid-template-areas:"map" "cal" "det";gap:0;padding:0}
+:global(html[data-device="phone"]) .cl-grid{grid-template-columns:minmax(0,1fr);grid-template-areas:"map" "cal" "det";gap:var(--gap-panel);padding:var(--sp-3) var(--gutter)}
 :global(html[data-device="phone"]) .cl-det{position:static}
 :global(html[data-device="phone"]) .cl-view,:global(html[data-device="phone"]) .cl-mode{display:flex;width:100%}
 :global(html[data-device="phone"]) .cl-view button,:global(html[data-device="phone"]) .cl-mode button{flex:1;white-space:normal;padding:0 var(--sp-2)}
@@ -338,3 +345,14 @@
 .cl-dmz .iconbtn svg{width:var(--ic-map);height:var(--ic-map)}
 /* 목업 index.html 의 옛 크기 별칭(셸 tokens.css 에 없음) — 이 화면 안에서만 */
 .cl,.cpick{--fs-5:var(--fs-page);--fs-num-l:var(--fs-count)}
+
+/* 전 세계 재생 아래 조작(프런트 UI/UX 2026-11-15) — 재생 단추·고른 배속·지나온 구간 = 주황→산호 포인트 그라데이션(--grad-flame) */
+.wf-bar .wf-play{border:0;border-radius:var(--r-m);background:var(--grad-flame);color:#fff;box-shadow:var(--glow-flame);transition:transform var(--dur-fast) var(--ease-out),filter var(--dur-fast) var(--ease-out)}
+.wf-bar .wf-play:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.wf-bar .wf-play.on{box-shadow:var(--glow-flame),inset 0 0 0 2px rgb(255 255 255 / .55)}
+.wf-bar .wf-spd{border-radius:var(--r-m)}
+.wf-bar .wf-spd button[aria-pressed="true"]{background:var(--grad-flame);color:#fff;box-shadow:none;font-weight:var(--fw-strong)}
+.wf-bar .wf-range.cm-range::-webkit-slider-runnable-track{height:var(--sp-3);background:var(--grad-flame-x) left center/var(--p,0%) 4px no-repeat,linear-gradient(var(--line-strong),var(--line-strong)) center/100% var(--sp-half) no-repeat}
+.wf-bar .wf-range.cm-range::-moz-range-progress{height:4px;border-radius:999px;background:var(--grad-flame-x)}
+.wf-bar .wf-range.cm-range::-webkit-slider-thumb{width:6px;height:var(--sp-3);border-radius:999px;background:#fff;box-shadow:0 0 0 2px var(--flame-b),var(--glow-flame)}
+.wf-bar .wf-range.cm-range::-moz-range-thumb{width:6px;height:var(--sp-3);border-radius:999px;background:#fff;box-shadow:0 0 0 2px var(--flame-b),var(--glow-flame)}

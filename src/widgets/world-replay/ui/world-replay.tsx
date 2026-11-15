@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ComponentType } from "react";
+import { useEffect, useMemo, useRef, useState, type ComponentType, type CSSProperties } from "react";
 import type { GeoJSONSource, Map as MlMap } from "maplibre-gl";
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
 import { useLocale } from "next-intl";
@@ -13,6 +13,7 @@ import { aoiOfIso3 } from "@/shared/lib/adm0";
 import { MapLoading } from "@/shared/ui";
 import cj from "./continent-jump.module.css";
 import lbl from "./map-labels.module.css";
+import hud from "./map-hud.module.css";
 
 /* 대륙 바로 가기(프런트 UI/UX, 2026-11-15): 지도 아래쪽에 한 줄로 고정. 누르면 그 대륙 상자로 이동하고 단추가 검게 바뀐다. 상자 = [서, 남, 동, 북] */
 const CONTINENTS = [
@@ -543,6 +544,30 @@ export function WorldReplay(o: WorldReplayProps) {
       <div className={`${cx("wf-map")} ${lbl.host}`} ref={mapEl}>
         <MapLoading show={!map} />
         {map ? (
+          <>
+            {/* 지도 위 안내: 지금 달 · 그 달 합계(왼쪽 위) · 색 범례(오른쪽 위) */}
+            <div className={hud.now} data-testid="wf-hud-month" aria-hidden="true">
+              <b className={hud.ym}>{ymS(i)}</b>
+              <span className={hud.tot}>
+                {T("total")}
+                <b>{isError ? "–" : tot == null ? "–" : fmtCompact(lang, tot)}</b>
+              </span>
+            </div>
+            <div className={hud.leg} aria-hidden="true">
+              <div className={hud.ramp}>
+                {Array.from({ length: 9 }, (_, k) => (
+                  <i key={k} style={{ background: o.ramp(0.18 + 0.82 * (k / 8)) }} />
+                ))}
+              </div>
+              <div className={hud.ticks}>
+                {["1", "10", "100", "1k", "10k"].map((x) => (
+                  <span key={x}>{x}</span>
+                ))}
+              </div>
+            </div>
+          </>
+        ) : null}
+        {map ? (
           <div className={cj.bar} role="group" aria-label={lang === "ko" ? "대륙으로 이동" : "Jump to continent"}>
             {CONTINENTS.map((c) => (
               <button
@@ -670,6 +695,8 @@ export function WorldReplay(o: WorldReplayProps) {
             max={NM - 1}
             step={1}
             value={i}
+            /* 지나온 구간 채움(그라데이션) 길이 */
+            style={{ "--p": `${((i / (NM - 1)) * 100).toFixed(2)}%` } as CSSProperties}
             aria-label={T("month")}
             onChange={(e) => {
               setPlaying(false);

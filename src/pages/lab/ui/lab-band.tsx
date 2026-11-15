@@ -18,7 +18,7 @@ const HAN = /[가-힣]/;
 /** SVG 글자(목업 lab.js T): 한글이면 fs-2, 숫자는 fs-1 · 서체는 본문 서체 하나 */
 function SvgT({ x, y, s, anchor, fill, weight, sz, fs, fsk, muted }: { x: number; y: number; s: string | number; anchor?: "end" | "middle"; fill?: string; weight?: number; sz?: number; fs: number; fsk: number; muted: string }) {
   return (
-    <text x={x.toFixed(1)} y={y.toFixed(1)} fill={fill ?? muted} fontFamily="IBM Plex Sans KR, Malgun Gothic, sans-serif" fontSize={sz ?? (HAN.test(String(s)) ? fsk : fs)} textAnchor={anchor} fontWeight={weight}>
+    <text x={x.toFixed(1)} y={y.toFixed(1)} fill={fill ?? muted} fontFamily="Pretendard Variable, Pretendard, Malgun Gothic, sans-serif" fontSize={sz ?? (HAN.test(String(s)) ? fsk : fs)} textAnchor={anchor} fontWeight={weight}>
       {s}
     </text>
   );

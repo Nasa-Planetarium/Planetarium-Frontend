@@ -54,7 +54,7 @@ export async function exportCalendarPng(o: PngInput) {
     };
     const ink = tok("text-1");
     const muted = tok("text-2");
-    const out = el("svg", { xmlns: NS, "font-family": "'IBM Plex Sans KR', 'Noto Sans KR', sans-serif" });
+    const out = el("svg", { xmlns: NS, "font-family": "'Pretendard Variable', Pretendard, 'Noto Sans KR', sans-serif" });
     out.appendChild(el("rect", { x: 0, y: 0, width: "100%", height: "100%", fill: tok("surface-0") }));
     out.appendChild(el("text", { x: pad, y: 24, fill: ink, "font-size": 16, "font-weight": 700 }, o.title));
     out.appendChild(el("text", { x: pad, y: 42, fill: muted, "font-size": 12 }, o.sub));
