@@ -10,6 +10,7 @@ import { useSession } from "@/entities/session";
 import { useClockMs, useSituation } from "@/entities/situation";
 import { methodQuery } from "@/entities/release";
 import { calendarQuery } from "@/entities/month-value";
+import { FWI_REL_LEVEL, fwiQuery, hasFwi, mdOf } from "@/entities/fire-weather";
 import { nextPass } from "@/entities/satellite-pass";
 import { AccountDialog } from "@/features/account-menu";
 import { AlertBell, AlertToaster } from "@/features/alert-drawer";
@@ -31,7 +32,7 @@ import { useFitLevel } from "../model/use-fit-level";
  * 머리줄 — 목업 core.js renderTop(r8 관제 콘솔)을 그대로 옮긴 것. 모양은 목업 index.html 「셸: 머리줄」 규칙을 토큰 유틸로.
  * ① 위치: 로고 표지 · 탭 무리([캘린더][비교 분석][방법·검증] ¦ 로그인 뒤 [상황판][역할 탭]) · 나라 칩
  *    로그인 전에는 뒤 무리가 비므로 가운데 구분선도 그리지 않는다(결정 F12).
- * ② 상황: 위험지수(한국) | 이번 달 배수(다른 나라) · 다음 통과 · 기상(한국) · 연결·시계 — 모든 화면 같은 칸·같은 순서
+ * ② 상황: 산불 기상 위험도 FWI(기관 역할 · 한국·아르헨티나, release v1.2) | 이번 달 배수(그 밖) · 다음 통과 · 기상(한국) · 연결·시계 — 모든 화면 같은 칸·같은 순서
  * ③ 나: 언어(웹) · 알림(로그인) · 계정 | 로그인(웹) | 사람 메뉴(그 밖 기기)
  * 좁아지면 우선순위 낮은 칸부터 통째로 뺀다(data-tf, model/fit-level.ts). 말줄임 없음.
  * 폰은 두 줄(목업 g5 · CALENDAR-PIVOT §3.3): 줄 1 = 나라 · 상황 · 나, 줄 2(--strip-h) = 탭. ① 묶음은 폰에서 display:contents 로 풀린다.
@@ -109,6 +110,14 @@ export function TopBar() {
   const doneM = months.filter((m) => (m.status === "ok" || m.status === "nrt") && m.value != null && m.ratio_to_median != null).pop();
   const anomLv = doneM?.verdict ? (VD_LV[doneM.verdict] ?? 2) : 2;
   const anomYm = doneM ? `${doneM.year}-${String(doneM.month).padStart(2, "0")}` : "–";
+
+  // 산불 기상 위험도 FWI(release fwi_aoi_day, 결정 F15) — 기관 역할 · 한국·아르헨티나만. 마지막 자료일(약 4일 늦음)을 함께 쓴다
+  const fwiAoi = role && hasFwi(iso3) ? aoiOfIso3(iso3) : null;
+  const { data: fwi } = useQuery(fwiQuery(fwiAoi, mv));
+  const fwiDay = fwi?.coverage.available ? fwi.day : null;
+  const fwiLv = fwiDay?.fwi_rel_class ? FWI_REL_LEVEL[fwiDay.fwi_rel_class] : null;
+  const fwiMd = mdOf(fwi?.as_of_date);
+  const fwiAsOf = fwiMd ? t("shell.fwi.asof", { m: fwiMd.m, d: fwiMd.d }) : "–";
 
   // 다음 위성 통과 — 분이 바뀔 때만 다시 센다
   const nowMin = nowMs != null ? Math.floor(nowMs / 60000) : null;
@@ -249,24 +258,32 @@ export function TopBar() {
 
         {/* ② 상황 */}
         <div ref={sitRef} role="group" aria-label={t("shell.top.sit")} className="ml-auto flex min-w-0 flex-[0_1_auto] items-center overflow-hidden phone:h-[calc(var(--bar-h)-env(safe-area-inset-top,0px))] phone:flex-[1_1_0] phone:justify-end">
-          {/* 위험 지수는 기관 자료(목) — 기관 역할 안에서만. 공개 화면은 나라와 같은 release 배수 */}
-          {KOR && sit && role ? (
+          {/* 위험 칸(결정 F15): 기관 역할 안 · 한국·아르헨티나 = 실제 산불 기상 위험도 FWI(상대 등급 기본 + 기준 날짜). 예전 목 「위험 지수」를 대신한다.
+              그 밖 나라·공개 화면 = 나라와 같은 release 「최근 달」 배수 */}
+          {fwiAoi ? (
             <span
-              title={tl("risk", "basis", null, sit.risk_index.basis)}
+              title={fwiDay ? t("shell.fwi.title", { v: fwiDay.fwi_mean != null ? fwiDay.fwi_mean.toFixed(1) : "–", rel: fwiDay.fwi_rel_class ? t(`shell.fwi.rel.${fwiDay.fwi_rel_class}`) : "–", abs: fwiDay.fwi_class ? t(`shell.fwi.abs.${fwiDay.fwi_class}`) : "–", d: fwiAsOf }) : t("shell.fwi.label")}
               data-sc="risk"
-              className={cn(SC, LV_C[sit.risk_index.level], "rounded-xs bg-[color-mix(in_srgb,var(--c,var(--text-3))_16%,transparent)]")}
+              data-fwi={fwiDay?.fwi_rel_class ?? (fwi && !fwi.coverage.available ? "none" : "")}
+              className={cn(SC, fwiLv ? LV_C[fwiLv] : null, "rounded-xs bg-[color-mix(in_srgb,var(--c,var(--text-3))_16%,transparent)]")}
             >
               <span className="text-fs2 text-t2 tf5:hidden">
-                <span className="phone:hidden">{t("shell.top.risk")}</span>
-                <span className="hidden phone:inline">{t("shell.top.risk.short")}</span>
+                <span className="phone:hidden">{t("shell.fwi.label")}</span>
+                <span className="hidden phone:inline">{t("shell.fwi.short")}</span>
               </span>
-              <b className="mono text-stat font-medium leading-none text-t1">{sit.risk_index.value}</b>
-              <span className="text-fs3 font-strong text-(--c,var(--text-1)) tf7:hidden">{t(`shell.risk.${sit.risk_index.level}`)}</span>
-              <span aria-hidden="true" className="hidden h-1 w-10 overflow-hidden bg-line-strong web:wide:block">
-                <i className="block h-full bg-(--c,var(--text-2))" style={{ width: `${sit.risk_index.value}%` }} />
-              </span>
+              {fwi && !fwi.coverage.available ? (
+                <span className="text-fs2 text-t2">{t("shell.fwi.none")}</span>
+              ) : (
+                <>
+                  <b className="mono text-stat font-medium leading-none text-t1">{fwiDay?.fwi_mean != null ? fwiDay.fwi_mean.toFixed(1) : "–"}</b>
+                  <span className="text-fs3 font-strong text-(--c,var(--text-1)) tf7:hidden">{fwiDay?.fwi_rel_class ? t(`shell.fwi.rel.${fwiDay.fwi_rel_class}`) : "–"}</span>
+                  <span className="mono text-fs2 text-t2 tf3:hidden phone:hidden" data-fwi-asof="">
+                    {fwiAsOf}
+                  </span>
+                </>
+              )}
             </span>
-          ) : !(KOR && role) ? (
+          ) : (
             <span data-sc="risk" title={t("shell.anom.title", { ym: anomYm })} className={cn(SC, LV_C[anomLv], "rounded-xs bg-[color-mix(in_srgb,var(--c,var(--text-3))_16%,transparent)]")}>
               <span className="text-fs2 text-t2 tf5:hidden">
                 <span className="phone:hidden">{t("shell.top.anom")}</span>
@@ -275,7 +292,7 @@ export function TopBar() {
               <b className="mono text-stat font-medium leading-none text-t1">{doneM?.ratio_to_median != null ? `${doneM.ratio_to_median.toFixed(1)}×` : "–"}</b>
               <span className="text-fs3 font-strong text-(--c,var(--text-1)) tf7:hidden">{doneM?.verdict ? t(`shell.verdict.${doneM.verdict}`) : "–"}</span>
             </span>
-          ) : null}
+          )}
           {nx ? (
             <span
               data-sc="pass"
@@ -404,6 +421,7 @@ export function TopBar() {
         onSwitchLang={go}
         pass={nx}
         anom={doneM ? { ratio: doneM.ratio_to_median ?? null, verdict: doneM.verdict ?? null, ym: anomYm } : null}
+        fwi={fwiAoi ? { value: fwiDay?.fwi_mean ?? null, rel: fwiDay?.fwi_rel_class ?? null, abs: fwiDay?.fwi_class ?? null, asOf: fwiAsOf, none: !!fwi && !fwi.coverage.available } : null}
       />
     </header>
   );

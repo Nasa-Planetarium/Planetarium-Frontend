@@ -76,9 +76,10 @@ export interface MapRegion {
   geometry: Geom | null;
 }
 
-export type LayerKey = "relief" | "boundaries" | "labels" | "rivers" | "roads" | "cells" | "heat" | "hotspots" | "fires" | "units" | "routes" | "burns" | "aoi";
+/** nowcast = 화면이 onReady 로 얹는 확산 nowcast 층(features/spread-nowcast-layer) — 공통 지도는 메뉴 칸만 그리고 켜고 끄기는 화면이 onLayers 로 받는다 */
+export type LayerKey = "relief" | "boundaries" | "labels" | "rivers" | "roads" | "cells" | "heat" | "hotspots" | "fires" | "units" | "routes" | "burns" | "aoi" | "nowcast";
 export type Layers = Record<LayerKey, boolean>;
-export const DEFAULT_LAYERS: Layers = { relief: true, boundaries: true, labels: true, rivers: true, roads: true, cells: true, heat: true, hotspots: true, fires: true, units: true, routes: true, burns: true, aoi: true };
+export const DEFAULT_LAYERS: Layers = { relief: true, boundaries: true, labels: true, rivers: true, roads: true, cells: true, heat: true, hotspots: true, fires: true, units: true, routes: true, burns: true, aoi: true, nowcast: true };
 
 export type ToolKey = "layers" | "bbox" | "polygon" | "point";
 

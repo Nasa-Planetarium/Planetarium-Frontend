@@ -17,6 +17,7 @@ import {
   type CountriesSnap,
   type KoreaSnap,
 } from "./snapshot";
+import { createV12FwiSpreadHandlers } from "./v12-fwi-spread";
 
 const SNAP = "/data/snap";
 let korea: Promise<KoreaSnap> | null = null;
@@ -78,6 +79,9 @@ export function createHandlers(base: string) {
   }
 
   return [
+    /* v1.2 새 층: FWI · 확산 nowcast(public/data/snap/v12 — release v1.2 에서 자른 값) */
+    ...createV12FwiSpreadHandlers(base, () => getKorea().then((k) => k.method_version)),
+
     http.get(at("/aois"), async ({ request }) => {
       const [k, c] = await Promise.all([getKorea(), getCountries()]);
       const u = new URL(request.url);

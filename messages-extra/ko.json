@@ -1,6 +1,8 @@
 {
  "_note": "목업 사전에 아직 없는 키만 둔다. 목업에 같은 키가 생기면 목업 값이 이긴다(src/shared/i18n/messages.ts). 쓰이는 키는 README 「사전」 절 참고.",
  "shell": {
+  "fwi": {"label": "산불 기상 위험도", "short": "기상 위험", "asof": "{m}.{d} 기준", "none": "이 지역 자료 없음", "abs_k": "절대 등급", "title": "산불 기상 위험도(캐나다 FWI) {v} · 평년 대비 {rel} · 절대 등급 {abs} · {d}(NASA POWER 일 자료, 약 4일 늦음). 기상으로 본 위험도이며 실제 발화·확산을 예측하지 않음", "rel": {"below_normal": "평년보다 낮음", "normal": "평년", "above_normal": "높음", "well_above_normal": "매우 높음"}, "abs": {"low": "낮음", "moderate": "보통", "high": "높음", "very_high": "매우 높음", "extreme": "극심"}},
+  "nowcast": {"layer": "내일 확산 가능성(위성)", "title": "내일 확산 가능성", "dates": "{a} 감지 → {b}", "n": "후보 {n}칸", "none": "이 지역 자료 없음", "empty": "오늘 감지 없음 — 확산 후보 칸 없음", "error": "확산 가능성 자료를 받지 못함", "lv": {"low": "낮음", "moderate": "보통", "high": "높음"}, "tip_p": "확산 가능성 {p}%", "tip_active": "오늘 감지된 칸", "tip_cand": "후보 칸(오늘 감지 반경 약 7.5 km)", "notice_k": "안내", "notice": "위성 감지 기반 단기 확산 가능성입니다. 물리 시뮬레이션이 아니며, 오늘 감지 지점에서 반경 약 7.5 km 밖으로 번지는 경우와 새로 발생하는 불은 예측 대상이 아닙니다."},
   "err": { "rate_limited": "요청이 많음 — 잠시 뒤 다시 시도" },
   "det": { "partial": "점 일부만 받음(조각 {n}/{m}) — 서버 요청 한도" },
   "map": { "cells_wide": "넓은 범위 — 월 감지량 1° 칸({p}, {n}칸). 확대하면 감지 점", "cells_wide_year": "넓은 범위 — {p}년 월 감지량 1° 칸 합({n}칸). 지역을 좁히면 감지 점", "cells_key": "월 감지량 1° 칸", "cells_month": "{m} 감지량 1° 칸", "real_n": "실제 {n}개" },
