@@ -702,7 +702,8 @@ function StepChart({ x }: { x: Ctx }) {
    목(MSW)은 503 data_not_loaded → 「자료 준비 중」, 그 밖 오류는 통신 오류 낱말 */
 function CellPanel({ x }: { x: Ctx }) {
   const { T, W, view, y, m } = x;
-  const ramp = useRamp();
+  /* 칸 지도는 밝은 지도 위 — 지도 램프(F14) · 범례 견본도 같은 램프(땅색 칩 위) */
+  const ramp = useRamp("mh");
   const ym = ymIso(y, m);
   const mv = x.M?.method_version ?? null;
   const q0 = useQuery(cellsQuery(x.aoi, ym, mv, true));
@@ -794,7 +795,7 @@ function CellPanel({ x }: { x: Ctx }) {
           <div className={cx("an-clr")}>
             <span className={cx("an-ramp")}>
               <em>{T("ui.low")}</em>
-              <span className={cx("an-rsw")}>{ramp ? Array.from({ length: 7 }, (_, i) => <i key={i} style={{ background: ramp(i / 6) }} />) : null}</span>
+              <span className={cx("an-rsw an-rsw-map")}>{ramp ? Array.from({ length: 7 }, (_, i) => <i key={i} style={{ background: ramp(i / 6) }} />) : null}</span>
               <em>{T("ui.high")}</em>
             </span>
             <span className={cx("an-cmeta")}>

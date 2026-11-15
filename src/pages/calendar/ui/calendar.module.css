@@ -311,6 +311,9 @@
 .cl-dmlg{display:inline-flex;align-items:center;flex-wrap:wrap;gap:var(--sp-1) var(--sp-3)}
 .cl-dmlg em{font-style:normal;color:var(--text-1)}
 .cl-dmlg>span{display:inline-flex;align-items:center;gap:var(--sp-1)}
+/* 지도 범례 견본은 땅색 칩 위에(지도에서 보이는 그대로 — 어두운 패널 위 크림색이 가장 튀던 것과 반대로 읽히지 않게, F14 L1) */
+.cl-dmlg .cl-dot{box-shadow:0 0 0 3px var(--map-land)}
+.wf-ramp{box-shadow:0 0 0 2px var(--map-land)}
 .cl-dot{display:inline-block;width:var(--d);height:var(--d);border-radius:50%;background:var(--c);opacity:.85}
 .cl-dmnote{color:var(--text-3)}
 .cl-pop :global(.maplibregl-popup-content){font-family:var(--font-body);background:var(--surface-2);padding-right:36px!important;color:var(--text-1);border-radius:var(--r-s);box-shadow:var(--seam-ring);padding:var(--sp-3) var(--sp-4) var(--sp-2) var(--sp-3);font-size:var(--fs-2)}

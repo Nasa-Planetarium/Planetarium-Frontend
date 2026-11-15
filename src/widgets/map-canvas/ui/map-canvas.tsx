@@ -136,7 +136,7 @@ const UNIT_ICON: Record<string, string> = {
   command: SVG('<path d="M4 22V4"/><path d="M4 4h12l-2 4 2 4H4"/>'),
 };
 const unitIcon = (type?: string) => UNIT_ICON[type ?? ""] ?? UNIT_ICON.truck!;
-const unitColor: Record<string, string> = { standby: "data-unit-standby", enroute: "data-route", onscene: "alert-3", return: "data-unit-return" };
+const unitColor: Record<string, string> = { standby: "data-unit-standby", enroute: "map-route", onscene: "alert-3", return: "data-unit-return" };
 
 export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function MapCanvas(p, ref) {
   const t = useT();
@@ -293,10 +293,31 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
     if (m?.getLayer(id)) m.setLayoutProperty(id, "visibility", on ? "visible" : "none");
   }, []);
 
-  /* ── 나라 바뀜: 다른 나라 가림 ── */
+  /* ── 나라 바뀜: 다른 나라 가림 ──
+     카메라(fitBounds 500ms)보다 가림이 먼저 바뀌면 옛 나라가 1–4 프레임 가려져 번쩍인다(LF-5) → 가림을 잠시 0 으로 두고 이동이 끝나면 220ms 에 걸쳐 되살린다 */
+  const maskIso = useRef<string | null>(null);
   useEffect(() => {
-    map?.setFilter("world-mask", ["!=", ["get", "iso3"], p.iso3] as FilterSpecification);
-    map?.setFilter("land-world", ["!=", ["get", "iso3"], p.iso3] as FilterSpecification);
+    if (!map) return;
+    map.setFilter("land-world", ["!=", ["get", "iso3"], p.iso3] as FilterSpecification);
+    const first = maskIso.current == null;
+    maskIso.current = p.iso3;
+    map.setFilter("world-mask", ["!=", ["get", "iso3"], p.iso3] as FilterSpecification);
+    if (first || !map.getLayer("world-mask")) return;
+    map.setPaintProperty("world-mask", "fill-opacity", 0);
+    let done = false;
+    const back = () => {
+      if (done) return;
+      done = true;
+      if (map.getLayer("world-mask")) map.setPaintProperty("world-mask", "fill-opacity", 0.55);
+    };
+    const tm = window.setTimeout(back, 900);
+    const onEnd = () => window.setTimeout(back, 0);
+    map.once("moveend", onEnd);
+    return () => {
+      window.clearTimeout(tm);
+      map.off("moveend", onEnd);
+      back();
+    };
   }, [map, p.iso3]);
 
   /* ── 지금 나라 육지 면(나라 1급 — 바다와 색이 갈린다). 파일이 없으면 세계 윤곽으로 */
@@ -1148,6 +1169,11 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
             const q = m.project([f.lon, f.lat]);
             const fm = fireMarkOf(f);
             const col = fm.state === "closed" ? T("text-3") : T(`alert-${fm.level}`);
+            x.strokeStyle = T("map-label-hi");
+            x.lineWidth = 6;
+            x.beginPath();
+            x.arc(q.x, q.y, 9, 0, Math.PI * 2);
+            x.stroke();
             x.strokeStyle = T("map-halo");
             x.lineWidth = 4;
             x.beginPath();
@@ -1305,6 +1331,7 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
       data-aoi={aoi ? JSON.stringify(aoi) : ""}
       data-n-hot={map ? String(hot?.length ?? 0) : ""}
       data-n-cells={map ? String(cells?.filter((c) => c.value > 0).length ?? 0) : ""}
+      data-state={p.status ? "1" : undefined}
     >
       <div ref={glEl} className={s.gl} />
       <MapLoading show={!ready} />
@@ -1449,7 +1476,7 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
           </div>
         ) : null}
         {p.status ? (
-          <div className={s.state} role="status">
+          <div className={s.state} role="status" title={p.status}>
             {p.status}
           </div>
         ) : null}

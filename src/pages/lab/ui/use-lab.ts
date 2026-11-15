@@ -33,7 +33,7 @@ export function useTv(vars: TParams) {
   }, [t, key]);
 }
 
-const TOKS = ["text-1", "text-2", "text-3", "line-soft", "line-strong", "surface-0", "data-harm", "data-viirs", "map-void", "map-halo", "cosmo-star", "hatch-bg", "lv-low", "lv-normal", "lv-high", "fs-1", "fs-2"] as const;
+const TOKS = ["text-1", "text-2", "text-3", "line-soft", "line-strong", "surface-0", "data-harm", "data-viirs", "map-void", "map-halo", "cosmo-star", "hatch-bg", "lv-low", "lv-normal", "lv-high", "map-lv-na", "map-lv-low", "map-lv-normal", "map-lv-high", "map-sel", "map-boundary", "fs-1", "fs-2"] as const;
 export type Tok = Record<(typeof TOKS)[number], string>;
 /** CSS 토큰 값(차트·지도 색). 서버 그리기에서는 null */
 export function useTok(): Tok | null {
