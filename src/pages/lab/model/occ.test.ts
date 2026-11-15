@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CARD, bandOf, cardRows, cellRing, geomBounds, pct, ppDiff, shadeOf, sortOcc } from "./occ";
+import { CARD, bandOf, cardRows, cellRing, geomBounds, pct, ppDiff, shadeOf, sortOcc, topCells } from "./occ";
 
 describe("다음 달 발생 확률 화면 규칙", () => {
   it("색 단계 경계: 10%·40%·70% 는 위 단계", () => {
@@ -40,5 +40,16 @@ describe("다음 달 발생 확률 화면 규칙", () => {
       expect(row.model.brier).toBeLessThan(row.same_month.brier);
     }
     expect(cardRows("FRA", "Europe").map((r) => r.row.group)).toEqual(["ALL", "Europe"]);
+  });
+});
+
+describe("상위 칸(top_cells 가 응답에 없을 때)", () => {
+  const c = (lon: number, lat: number, p: number, ps = false) => ({ lon, lat, p_any: p, persistent_source: ps });
+  it("경계 안 · 지속 열원 제외 · p_any 큰 순 · 최대 n", () => {
+    const inBox = (x: number, y: number) => x >= 0 && x <= 10 && y >= 0 && y <= 10;
+    const cells = [c(1, 1, 0.2), c(2, 2, 0.9, true), c(3, 3, 0.5), c(20, 20, 0.99), c(4, 4, 0.7)];
+    expect(topCells(cells, inBox, 2).map((x) => x.p_any)).toEqual([0.7, 0.5]);
+    expect(topCells(cells, inBox).length).toBe(3);
+    expect(topCells([], inBox)).toEqual([]);
   });
 });
