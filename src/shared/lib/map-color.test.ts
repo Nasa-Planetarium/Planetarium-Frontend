@@ -57,6 +57,13 @@ describe("밝은 지도 토큰(base.css) — 데이터 표지 3:1 · 글자 4.5:
   it("덮개·지도 칸 바탕 = 바다색(남색 번쩍임 0)", () => {
     expect(tok("map-void").toLowerCase()).toBe(sea.toLowerCase());
   });
+  it("전 세계 재생 고른 나라 테두리(sel-line): 회색 계열 유지 · 육지·바다·흐린 막(#F9F9F9 45%) 위 3:1", () => {
+    const [r, g, b] = hexRgb(tok("map-sel-line"));
+    expect(r).toBe(g);
+    expect(g).toBe(b);
+    [land, sea].forEach((bg) => expect(contrast(tok("map-sel-line"), bg), bg).toBeGreaterThanOrEqual(3));
+    expect(contrast(tok("map-sel-line"), over("#F9F9F9", 0.45, land))).toBeGreaterThanOrEqual(3);
+  });
   it("대륙 견본: 흰 알약(땅색) 위 3:1", () => {
     ["na", "sa", "eu", "af", "as", "oc"].forEach((c) => expect(contrast(tok(`map-cont-${c}`), land), c).toBeGreaterThanOrEqual(3));
   });

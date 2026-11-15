@@ -42,6 +42,8 @@ html[data-device="phone"] { --strip-h: calc(var(--hit) + var(--hair)); }
   --map-road: #8a939e; --map-boundary: #5d6b7a; --map-grid: rgba(13,59,102,.16);
   /* 지도 강조(UI accent 와 분리 — accent 는 흰색이라 흰 땅에서 1.1:1): 고른 지역·관심 영역·그리기·고른 나라 · 지도 위 조작부 포커스 고리 */
   --map-sel: #0d3b66; --map-focus: #0b1724;
+  /* 전 세계 재생 고른 나라 테두리(QA #15 의 sel-line·dim 디자인 유지): 연회색 #c4c4c4 는 밝은 육지 1.7:1 → 같은 회색 계열로 진하게만(육지·바다·흐린 막 3:1) */
+  --map-sel-line: #767676;
   /* 지도 위 데이터 잉크: 출동 경로 · 확산 예측 시간 · 소실 범위 · 센서 점(VIIRS/MODIS) · 작은 점 테두리 */
   --map-route: #0b6e86; --map-warn-ink: #b4410c; --map-burn: #b3300f; --map-burn-sel: #8f1f12;
   --map-viirs: #c4470f; --map-modis: #a86c00; --map-dot-edge: #0b1724;
