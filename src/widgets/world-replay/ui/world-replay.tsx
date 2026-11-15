@@ -12,6 +12,7 @@ import { useT } from "@/shared/i18n";
 import { aoiOfIso3 } from "@/shared/lib/adm0";
 import { MapLoading } from "@/shared/ui";
 import cj from "./continent-jump.module.css";
+import lbl from "./map-labels.module.css";
 
 /* 대륙 바로 가기(프런트 UI/UX, 2026-11-15): 지도 아래쪽에 한 줄로 고정. 누르면 그 대륙 상자로 이동하고 단추가 검게 바뀐다. 상자 = [서, 남, 동, 북] */
 const CONTINENTS = [
@@ -23,6 +24,20 @@ const CONTINENTS = [
   { id: "oc", ko: "오세아니아", en: "Oceania", color: "#9b7fe6", box: [110, -48, 180, 0] },
 ] as const;
 type ContinentId = (typeof CONTINENTS)[number]["id"];
+
+/* 지도 이름표(프런트 UI/UX, 2026-11-15): 대륙(굵게)·바다(기울임) 이름을 그 중앙 [경도, 위도]에 MapLibre Marker 로 붙인다.
+   Marker 는 지도를 그리는 같은 프레임에 정수 픽셀 transform 으로 움직여서 떨리지 않는다. 한국어 화면 = 한국어, 그 밖 = 영어. 누름은 지도로 통과 */
+const MAP_LABELS = [
+  { id: "na", kind: "land", ko: "북아메리카", en: "North America", at: [-100, 47] },
+  { id: "sa", kind: "land", ko: "남아메리카", en: "South America", at: [-60, -12] },
+  { id: "eu", kind: "land", ko: "유럽", en: "Europe", at: [18, 52] },
+  { id: "af", kind: "land", ko: "아프리카", en: "Africa", at: [20, 6] },
+  { id: "as", kind: "land", ko: "아시아", en: "Asia", at: [90, 48] },
+  { id: "oc", kind: "land", ko: "오세아니아", en: "Oceania", at: [134, -25] },
+  { id: "pac", kind: "sea", ko: "태평양", en: "Pacific Ocean", at: [-118, -8] },
+  { id: "atl", kind: "sea", ko: "대서양", en: "Atlantic Ocean", at: [-38, 22] },
+  { id: "ind", kind: "sea", ko: "인도양", en: "Indian Ocean", at: [78, -22] },
+] as const;
 
 /* 작은 도우미(화면 슬라이스 import 없이 — 캘린더 model/calendar 와 같은 규칙) */
 const p2 = (n: number) => String(n).padStart(2, "0");
@@ -174,7 +189,24 @@ export function WorldReplay(o: WorldReplayProps) {
   const lbEl = useRef<HTMLCanvasElement>(null);
   const lbBase = useRef<ImageData | null>(null);
   const [map, setMap] = useState<MlMap | null>(null);
-  const [cont, setCont] = useState<ContinentId | null>(null);  /* 쓰는 화면이 달을 바꾸면(분석 S1 달 고르기 — 목업 wfApi.setMonth) 재생 위치도 그 달로 */
+  const [cont, setCont] = useState<ContinentId | null>(null);
+  /* 이름표 = MapLibre Marker(지도와 같은 프레임에 움직임). 화면 언어가 바뀌면 다시 붙인다 */
+  const mlLib = useRef<typeof import("maplibre-gl") | null>(null);
+  useEffect(() => {
+    const lib = mlLib.current;
+    if (!map || !lib) return;
+    const marks = MAP_LABELS.map((l) => {
+      const el = document.createElement("span");
+      el.className = (l.kind === "sea" ? lbl.sea : lbl.land) ?? "";
+      el.dataset.mapLabel = l.id;
+      el.setAttribute("aria-hidden", "true");
+      const b = document.createElement("b");
+      b.textContent = lang === "ko" ? l.ko : l.en;
+      el.appendChild(b);
+      return new lib.Marker({ element: el, anchor: "center" }).setLngLat([l.at[0], l.at[1]]).addTo(map);
+    });
+    return () => marks.forEach((m) => m.remove());
+  }, [map, lang]);  /* 쓰는 화면이 달을 바꾸면(분석 S1 달 고르기 — 목업 wfApi.setMonth) 재생 위치도 그 달로 */
   const [seenMonth, setSeenMonth] = useState(o.month);
   if (o.month !== seenMonth) {
     setSeenMonth(o.month);
@@ -193,6 +225,7 @@ export function WorldReplay(o: WorldReplayProps) {
     let ro: ResizeObserver | null = null;
     void import("maplibre-gl").then((ml) => {
       if (dead || !mapEl.current) return;
+      mlLib.current = ml;
       const m = new ml.Map({
         container: mapEl.current,
         attributionControl: false,
@@ -251,6 +284,8 @@ export function WorldReplay(o: WorldReplayProps) {
       dead = true;
       ro?.disconnect();
       made?.remove();
+      /* 지운 지도를 다른 effect 가 계속 쓰지 않게(개발 중 핫 리로드 때 getSource 오류) */
+      setMap(null);
     };
   }, [cv]);
 
@@ -394,7 +429,7 @@ export function WorldReplay(o: WorldReplayProps) {
 
   return (
     <div className={cx("wf")} data-month={ymS(i)}>
-      <div className={cx("wf-map")} ref={mapEl}>
+      <div className={`${cx("wf-map")} ${lbl.host}`} ref={mapEl}>
         <MapLoading show={!map} />
         {map ? (
           <div className={cj.bar} role="group" aria-label={lang === "ko" ? "대륙으로 이동" : "Jump to continent"}>
