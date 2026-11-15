@@ -1,0 +1,31 @@
+/* 화재 사건(위성, F15) — 색·간격·글자는 토큰만 */
+.fev{display:flex;flex-direction:column;gap:var(--sp-2);min-width:0}
+.fev-h{display:flex;align-items:baseline;gap:var(--sp-2);flex-wrap:wrap;min-width:0}
+.fev-h h3,.fev-h h2{font-size:var(--fs-sec);font-weight:var(--fw-strong);line-height:1.3;margin:0}
+.fev-tag{display:inline-flex;align-items:center;height:var(--badge-h);padding:0 var(--sp-2);border-radius:var(--r-pill);border:var(--hair) solid var(--line-strong);color:var(--text-2);font-size:var(--fs-1);white-space:nowrap}
+.fev-n{font-family:var(--font-data);font-variant-numeric:tabular-nums;color:var(--text-2);font-size:var(--fs-2)}
+.fev-n b{color:var(--text-1);font-weight:var(--fw-strong)}
+.fev-line{margin:0;color:var(--text-2);font-size:var(--fs-2);line-height:var(--lh-body)}
+.fev-line b{color:var(--text-1);font-family:var(--font-data);font-variant-numeric:tabular-nums;font-weight:var(--fw-strong)}
+.fev-na{margin:0;color:var(--text-2);font-size:var(--fs-2)}
+.fev-list{display:flex;flex-direction:column;min-width:0;margin:0;padding:0;list-style:none}
+.fev-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;column-gap:var(--sp-2);row-gap:2px;width:100%;min-height:var(--hit);padding:var(--sp-1) var(--sp-2);border:0;border-bottom:var(--hair) solid var(--line-soft);background:transparent;color:var(--text-1);font-size:var(--fs-2);text-align:left;cursor:pointer;border-radius:0}
+.fev-row:hover{background:var(--surface-3)}
+.fev-row:focus-visible{outline:var(--ring-w) solid var(--focus-ring);outline-offset:-2px}
+.fev-row[aria-pressed="true"]{background:var(--surface-3);box-shadow:inset 3px 0 0 var(--h5)}
+.fev-dot{width:8px;height:8px;border-radius:var(--r-round);background:var(--h4);grid-row:span 2}
+.fev-t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:var(--fw-medium)}
+.fev-d{font-family:var(--font-data);font-variant-numeric:tabular-nums;color:var(--text-2);white-space:nowrap}
+.fev-m{grid-column:2 / span 2;display:flex;gap:var(--sp-3);flex-wrap:wrap;color:var(--text-2);font-size:var(--fs-1)}
+.fev-m b{color:var(--text-1);font-family:var(--font-data);font-variant-numeric:tabular-nums;font-weight:var(--fw-medium)}
+.fev-card{display:flex;flex-direction:column;gap:var(--sp-3);min-width:0}
+.fev-card h2{font-size:var(--fs-title);font-weight:var(--fw-strong);margin:0;line-height:1.3}
+.fev-hero{display:flex;flex-direction:column;gap:2px}
+.fev-hero-k{color:var(--text-2);font-size:var(--fs-2)}
+.fev-big{margin:0;display:flex;align-items:baseline;gap:var(--sp-1)}
+.fev-big b{font-family:var(--font-data);font-variant-numeric:tabular-nums;font-size:var(--fs-stat);font-weight:var(--fw-heavy);color:var(--text-1)}
+.fev-big span{color:var(--text-2);font-size:var(--fs-3)}
+.fev-note{margin:0;color:var(--text-3);font-size:var(--fs-1);line-height:var(--lh-body)}
+.fev-dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--sp-1) var(--sp-3);margin:0;font-size:var(--fs-2)}
+.fev-dl dt{color:var(--text-2)}
+.fev-dl dd{margin:0;color:var(--text-1);font-family:var(--font-data);font-variant-numeric:tabular-nums;min-width:0;overflow-wrap:anywhere}

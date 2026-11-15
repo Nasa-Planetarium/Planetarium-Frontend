@@ -6,6 +6,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Image as ImageIcon, Layers } from "lucide-react";
 import { useLocale } from "next-intl";
 import { methodQuery } from "@/entities/release";
+import { eventView, type FireEvent } from "@/entities/fire-event";
+import { useEventLayer } from "@/widgets/fire-events";
 import { adm1RegionsQuery, childRegionsQuery, downloadMapPng, MapCanvas, type Bbox, type MapCanvasHandle, type MapHotspot } from "@/widgets/map-canvas";
 import { api, heavyRetry, heavyRetryDelay, unwrap } from "@/shared/api";
 import { useT } from "@/shared/i18n";
@@ -50,6 +52,10 @@ export interface LandMapProps {
   placeLabel: string;
   pngName: string;
   className?: string;
+  /** 실제 화재 사건(F15 fire_events — 위성 확인 연소 목록) · 고른 사건 · 사건 누름 */
+  events?: readonly FireEvent[];
+  evSel?: string | null;
+  onEvent?: (id: string) => void;
 }
 
 const tok = (name: string) => (typeof window === "undefined" ? "" : getComputedStyle(document.documentElement).getPropertyValue(`--${name}`).trim());
@@ -121,6 +127,14 @@ export function LandMap(p: LandMapProps) {
     m.addLayer({ id: "burn-sel-line", type: "line", source: "burn-sel", paint: { "line-color": tok("h5"), "line-width": 2 } });
     setMap(m);
   }, []);
+
+  /* 실제 화재 사건 층(상자 + 중심 원) — 고르면 그 사건으로 날아간다 */
+  const getMap = useCallback(() => ref.current?.map() ?? null, []);
+  useEventLayer(getMap, p.events ?? [], p.evSel ?? null, p.onEvent);
+  const evSelE = useMemo(() => (p.events ?? []).find((e) => e.event_id === p.evSel) ?? null, [p.events, p.evSel]);
+  useEffect(() => {
+    if (evSelE) ref.current?.fitBounds(eventView(evSelE), 48);
+  }, [evSelE]);
 
   /* 소실 범위 */
   useEffect(() => {
@@ -262,9 +276,10 @@ export function LandMap(p: LandMapProps) {
       items.push({ label: t("land.sync_key.selected_burn_extent_est"), kind: "sq", c: "var(--h4)" });
       if (view?.others.length) items.push({ label: t("land.sync_key.other_burn_extents"), kind: "dash", c: "var(--h4)" });
     }
+    if (p.events?.length) items.push({ label: t("events.land.map"), kind: "sq", c: "var(--h5)" });
     if (p.layers.hot) items.push({ label: `${t("land.sync_key.hotspot_detections")} ${hotN == null ? (hq.error ? t((hq.error as { status?: number }).status === 429 ? "shell.err.rate_limited" : "shell.err.request") : "…") : t("shell.map.real_n", { n: hotN })}`, kind: "dot", c: "var(--data-viirs)" });
     return items;
-  }, [view, p.layers, t, hotN, hq.error]);
+  }, [view, p.layers, t, hotN, hq.error, p.events?.length]);
 
   return (
     <MapCanvas

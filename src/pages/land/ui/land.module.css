@@ -333,3 +333,12 @@
 .ptick i.m{background:transparent;border:var(--hair) solid var(--cosmo-orbit)}
 .ptick .mono{color:var(--text-1);font-family:var(--font-data)}
 @media print{.ptick i{display:none}}
+/* 한국 밖: 감지 묶음 + 위성 확인 연소(F15) */
+.ld-dw{display:grid;grid-template-rows:minmax(0,1fr) auto;height:100%;min-height:0}
+.ld-dw>.dp{min-height:0}
+.ld-dev{margin:0 var(--gutter) var(--gutter);max-height:38dvh;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.ld-dev-b{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--sp-4);padding:var(--sp-2) var(--sp-3);overflow:auto;min-height:0}
+:global(html[data-device="phone"]) .ld-dev-b{grid-template-columns:minmax(0,1fr)}
+:global(html[data-device="phone"]) .ld-dev{max-height:none}
+.ld-evd{padding:var(--sp-4) var(--sp-5)}
+:global(html[data-device="phone"]) .ld-evd{padding:var(--sp-4)}

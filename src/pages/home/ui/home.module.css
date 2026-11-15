@@ -810,3 +810,9 @@ button.hm-scr-i:focus-visible{outline-offset: -2px;}
 .hm-kpis-aoi,.hm-kpi-d,.hm-ysub,.hm-fchip-n,.hm-fc-name,.hm-fc-k,.hm-offv span,.hm-outv span,.hm-dbtn-v{white-space:normal}
 .hm-kpis:not(.is-yoy) .hm-kpi:first-child .hm-kpi-v{font-size:var(--fs-big);font-weight:var(--fw-bold);letter-spacing:-.03em;line-height:1.05}
 .hm-kpis:not(.is-yoy) .hm-kpi:first-child .hm-kpi-v :is(small,.hm-tag){letter-spacing:0}
+/* 기간 안 위성 사건(F15) */
+.hm-ev{display:flex;flex-direction:column;gap:var(--sp-1);padding:var(--sp-2) var(--sp-4) var(--sp-3);border-top:var(--hair) solid var(--line-soft);flex:0 0 auto;min-width:0}
+.hm-ev-h{display:flex;align-items:baseline;justify-content:space-between;gap:var(--sp-2)}
+.hm-ev-h h2{font-size:var(--fs-body);font-weight:var(--fw-strong)}
+.hm-ev-h b{font-size:var(--fs-3)}
+.hm-ev-s{margin:0;color:var(--text-2);font-size:var(--fs-2)}

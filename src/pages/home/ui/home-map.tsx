@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Check, Info, Search, Truck, X } from "lucide-react";
 import { focusBoundaryQuery, geomMainBounds, linesQuery, MapCanvas, type Bbox, type LayerKey, type MapCanvasHandle, type MapHotspot } from "@/widgets/map-canvas";
 import { useCoarseSum } from "@/entities/world-grid";
+import { useEventLayer } from "@/widgets/fire-events";
 import { iso3OfAoi } from "@/features/pick-aoi";
 import { inbox, type Alert, type Fire } from "@/shared/agency";
 import { ApiError } from "@/shared/api";
@@ -235,6 +236,10 @@ export function HomeMap(c: Ctx) {
   /* 지도 손잡이를 화면(home-page)에 넘긴다 — PNG 내려받기·날아가기 */
   const { setMapH } = c;
   const takeHandle = useCallback((h: MapCanvasHandle | null) => setMapH(h), [setMapH]);
+  /* 실제 화재 사건 층(F15): 상자 + 중심 원. 누르면 상황 패널 줄과 같은 사건을 고른다 */
+  const mapH = c.mapH;
+  const getMap = useMemo(() => (mapH ? () => mapH.map() : null), [mapH]);
+  useEventLayer(getMap, c.events.data?.events ?? [], c.evSel, c.setEvSel);
   /* 감지 목록·검색에서 고른 불로 날아가기 */
   useEffect(() => {
     if (c.flyTo) c.mapH?.flyTo(c.flyTo.lat, c.flyTo.lon, c.flyTo.z ?? 9.6);
