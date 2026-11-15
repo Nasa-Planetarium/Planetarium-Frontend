@@ -199,10 +199,6 @@ function AnalysisScreen() {
             <h1 tabIndex={-1} ref={h1}>
               {T("ui.comparison")}
             </h1>
-            <span className={cx("ph-scope")}>
-              {inScope ? aoiName(rec) : aoiName(null)}
-              {month && inScope ? `, ${ym}` : ""} · {T("g3.baseline_fixed", { a: base.from, b: base.to })}
-            </span>
             <span className={cx("an-hst")}>
               {!inScope && cal ? <Status st="out_of_range" /> : step > 1 && c ? c.verdict ? <VdMark v={c.verdict} p={c.percentile ?? null} /> : <Status st={c.status} /> : null}
             </span>
