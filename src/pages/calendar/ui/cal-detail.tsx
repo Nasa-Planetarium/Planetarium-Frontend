@@ -13,6 +13,7 @@ import { caseOf, fmtVal, inRange, monthWord, partialOf, Y0, Y1, ymIso } from "..
 import { Status, Verdict } from "./bits";
 import { partialLine, unitWord } from "./cal-grid";
 import { cx } from "./cx";
+import { displayInterval, hasSpread } from "@/shared/lib/interval";
 import { DistChart, type DistItem } from "./dist-chart";
 
 /**
@@ -40,8 +41,15 @@ export function CalDetail({ cal, aoi, view, y, m, mv, onPick, touch }: { cal: Ca
   const cr = caseOf(r, "raw_viirs");
   const stWord = (st: string) => t(`shell.st.${st}`);
   const valNode = (k: ReturnType<typeof caseOf>) => (k.value == null ? <span className={cx("cl-na")}>{stWord(k.st)}</span> : <b className={cx("num")}>{nf(k.value)}</b>);
+  /* 구간(F16): 값까지 넓힌 화면 구간 · 구간 열 null 이면 「–」(값만) · 폭 0(S-NPP 실측)이면 「실측 · 구간 없음」 · 구간 밖 플래그는 덧붙임 */
+  const civ = displayInterval(cv.value, cv.lo, cv.hi);
   const ivl =
-    cv.value == null ? "–" : cv.io ? <span className={cx("cl-flag")}>{T("flag.interval_out")}</span> : cv.lo != null && cv.hi != null ? (cv.lo === cv.hi ? <span className={cx("cl-na")}>{T("ui.no_interval")}</span> : <span className={cx("num")}>{`${nf(cv.lo)} – ${nf(cv.hi)}`}</span>) : "–";
+    civ == null ? "–" : !hasSpread(civ) ? <span className={cx("cl-na")}>{T("ui.no_interval")}</span> : (
+      <>
+        <span className={cx("num")}>{`${nf(civ.lo)} – ${nf(civ.hi)}`}</span>
+        {cv.io ? <> <span className={cx("cl-flag")}>{T("flag.interval_out")}</span></> : null}
+      </>
+    );
   const p = view === "value" ? partialOf(r) : null;
   const partLine = partialLine(t, lang, p);
   const kv = (k: string, v: React.ReactNode) => (
@@ -59,7 +67,8 @@ export function CalDetail({ cal, aoi, view, y, m, mv, onPick, touch }: { cal: Ca
   /* 같은 달 연도별 막대 */
   const lh = (yy: number) => {
     const k = caseOf(rec(yy, m), "value", yy, m);
-    return k.lo != null && k.hi != null && k.lo !== k.hi ? { value_lo: k.lo, value_hi: k.hi } : {};
+    const iv = displayInterval(k.value, k.lo, k.hi);
+    return hasSpread(iv) ? { value_lo: iv.lo, value_hi: iv.hi } : {};
   };
   const dist: DistItem[] = [];
   /* 통합 보기 + 비교 응답: 기준 분포(p25–p75·중앙값). 막대는 baseline[] 이 있으면 그것(실서버), 없으면(목) 같은 기준 기간(2001–2025)의 /calendar 행 */

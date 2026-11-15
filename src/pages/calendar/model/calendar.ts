@@ -1,7 +1,7 @@
 /**
  * 캘린더 화면 순수 모델(목업 pages/calendar.js 의 계산 없는 몫) — 화면·DOM 을 모른다.
  * 규칙: E1 실제 행 값 그대로(다시 계산 없음 — 출처 띠도 행의 value_source 로) · E2 결측 = null(0 아님) ·
- *       E3 구간 밖 = 값 유지 · 구간 버림 · 플래그 · E4 경우 가르기 = shared/data-cases judgeMonth(switch 없음).
+ *       E3 구간 밖 = 값 유지 · 구간은 값까지 넓힘(F16) · 플래그 · E4 경우 가르기 = shared/data-cases judgeMonth(switch 없음).
  */
 import { judgeMonth, type CaseResult, type CaseRow, type View } from "@/shared/data-cases";
 import { aoiOfIso3, iso3OfAdm0 } from "@/shared/lib/adm0";
@@ -65,7 +65,8 @@ export interface MonthCase extends CaseResult {
   io: boolean;
 }
 
-/** E4: 한 달 행 → 경우(judgeMonth). 실서버가 이미 E3 를 적용해 구간을 비운 행도 플래그를 잃지 않게 합친다 */
+/** E4: 한 달 행 → 경우(judgeMonth). 실서버가 이미 E3 를 적용해 구간을 비운 행도 플래그를 잃지 않게 합친다.
+ *  lo·hi 는 화면 구간(F16 displayInterval — 값까지 넓힘, 구간 열 null 이면 값만). 구간 밖이어도 버리지 않는다 */
 export function caseOf(r: MonthRow | null | undefined, view: CalView, y?: number, m?: number): MonthCase {
   const yy = r?.year ?? y ?? 0;
   const mm = r?.month ?? m ?? 1;
@@ -74,7 +75,7 @@ export function caseOf(r: MonthRow | null | undefined, view: CalView, y?: number
   const k = judgeMonth(row, { view: v });
   const srvIo = v === "value" && Array.isArray(row.flags) && row.flags.some((f) => IO_FLAGS.includes(f));
   const io = k.flags.includes("interval_out") || srvIo;
-  return { ...k, lo: io ? null : k.lo, hi: io ? null : k.hi, io };
+  return { ...k, io };
 }
 
 /** 칸(/cells 속성) 경우: 같은 처리기, 보기 열을 value 자리에 */
@@ -93,7 +94,7 @@ export function cellCase(p: CellProps, view: CalView, y: number, m: number) {
   const v = caseView(view, y, m);
   const k = judgeMonth({ ...p, year: y, month: m, status: p.status === "missing" ? "missing" : "ok" }, { view: v });
   const io = k.flags.includes("interval_out") || (v === "value" && p.interval_out_of_range === true);
-  return { value: k.value, lo: io ? null : k.lo, hi: io ? null : k.hi, io, status: p.status ?? null };
+  return { value: k.value, lo: k.lo, hi: k.hi, io, status: p.status ?? null };
 }
 
 /** value_source → 띠 모양: d Terra 추정(점선 빗금) · a MODIS 추정(빗금) · b S-NPP 실측(채움) · c NOAA-20/21 연결(테두리) */
