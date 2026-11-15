@@ -5,6 +5,7 @@ import type { GeoJSONSource, Map as MlMap } from "maplibre-gl";
 import { useLocale } from "next-intl";
 import { Minus, Play, Plus, Square, Target, X } from "lucide-react";
 import { useT } from "@/shared/i18n";
+import { MapLoading } from "@/shared/ui";
 import type { MonthPoints } from "../api/queries";
 import { fmtLat, fmtLon, fmtNum, kst, SAT_NAME, stepOf } from "../model/calendar";
 import { tok } from "./bits";
@@ -294,6 +295,7 @@ export function DotMap(o: DotMapProps) {
     <div className={cx("cl-dm", k && "has-case")} data-ready={map ? "1" : "0"} data-t={k ? String(tNow) : undefined}>
       <div className={cx("cl-dmw")}>
         <div className={cx("cl-dmmap")} ref={host} role="region" aria-label={o.label} />
+        <MapLoading show={!map} />
         {pop && popXY && popBody ? (
           <div className={cx("cl-popbox")} style={{ left: popXY.x, top: popXY.y }}>
             <button type="button" className={cx("cl-popx")} aria-label={t("calendar.act.close")} onClick={() => setPop(null)}>

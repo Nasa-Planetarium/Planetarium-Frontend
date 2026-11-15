@@ -47,11 +47,13 @@ export function inspect(dir, { mode } = {}) {
   const files = walk(dir);
   let bytes = 0;
   let largest = null;
+  // 경로는 운영체제와 상관없이 리눅스식(/)으로 적는다 — Windows 에서도 CI·Pages 와 같은 문구가 나오게
+  const rel = (f) => path.relative(dir, f).split(path.sep).join("/");
   for (const f of files) {
     const n = fs.statSync(f).size;
     bytes += n;
-    if (!largest || n > largest[1]) largest = [path.relative(dir, f), n];
-    if (n > LIMITS.fileBytes) problems.push(`파일 25 MiB 초과: ${path.relative(dir, f)} (${(n / 1048576).toFixed(1)} MiB)`);
+    if (!largest || n > largest[1]) largest = [rel(f), n];
+    if (n > LIMITS.fileBytes) problems.push(`파일 25 MiB 초과: ${rel(f)} (${(n / 1048576).toFixed(1)} MiB)`);
   }
   if (files.length > LIMITS.files) problems.push(`파일 수 ${files.length} > ${LIMITS.files}`);
 

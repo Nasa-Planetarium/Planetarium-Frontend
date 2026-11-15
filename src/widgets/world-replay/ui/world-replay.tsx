@@ -10,6 +10,19 @@ import { aoiIndexQuery } from "@/features/pick-aoi";
 import { worldGridQuery, type LatBand, type WorldMeta } from "@/entities/world-grid";
 import { useT } from "@/shared/i18n";
 import { aoiOfIso3 } from "@/shared/lib/adm0";
+import { MapLoading } from "@/shared/ui";
+import cj from "./continent-jump.module.css";
+
+/* 대륙 바로 가기(프런트 UI/UX, 2026-11-15): 지도 아래쪽에 한 줄로 고정. 누르면 그 대륙 상자로 이동하고 단추가 검게 바뀐다. 상자 = [서, 남, 동, 북] */
+const CONTINENTS = [
+  { id: "na", ko: "북아메리카", en: "North America", color: "#e63946", box: [-168, 7, -52, 72] },
+  { id: "sa", ko: "남아메리카", en: "South America", color: "#5cb85c", box: [-82, -56, -34, 13] },
+  { id: "eu", ko: "유럽", en: "Europe", color: "#3b8fe0", box: [-25, 34, 45, 71] },
+  { id: "af", ko: "아프리카", en: "Africa", color: "#f28c28", box: [-18, -35, 52, 38] },
+  { id: "as", ko: "아시아", en: "Asia", color: "#f5c518", box: [40, -11, 150, 60] },
+  { id: "oc", ko: "오세아니아", en: "Oceania", color: "#9b7fe6", box: [110, -48, 180, 0] },
+] as const;
+type ContinentId = (typeof CONTINENTS)[number]["id"];
 
 /* 작은 도우미(화면 슬라이스 import 없이 — 캘린더 model/calendar 와 같은 규칙) */
 const p2 = (n: number) => String(n).padStart(2, "0");
@@ -161,7 +174,7 @@ export function WorldReplay(o: WorldReplayProps) {
   const lbEl = useRef<HTMLCanvasElement>(null);
   const lbBase = useRef<ImageData | null>(null);
   const [map, setMap] = useState<MlMap | null>(null);
-  /* 쓰는 화면이 달을 바꾸면(분석 S1 달 고르기 — 목업 wfApi.setMonth) 재생 위치도 그 달로 */
+  const [cont, setCont] = useState<ContinentId | null>(null);  /* 쓰는 화면이 달을 바꾸면(분석 S1 달 고르기 — 목업 wfApi.setMonth) 재생 위치도 그 달로 */
   const [seenMonth, setSeenMonth] = useState(o.month);
   if (o.month !== seenMonth) {
     setSeenMonth(o.month);
@@ -273,17 +286,19 @@ export function WorldReplay(o: WorldReplayProps) {
     onMonth.current?.(i);
   }, [D, cv, i, lut, map]);
 
-  /* 고른 나라 테두리 + 확대 */
+  /* 고른 나라 테두리 + 확대 (나라를 안 골랐으면 고른 대륙, 그것도 없으면 전 세계) */
   useEffect(() => {
     if (!map) return;
     map.setFilter("sel", ["==", ["get", "iso3"], sel ?? ""]);
     if (!sel) {
-      map.fitBounds([[-170, -50], [180, 72]], { padding: 4, duration: 500 });
+      const c = CONTINENTS.find((x) => x.id === cont);
+      if (c) map.fitBounds([[c.box[0], c.box[1]], [c.box[2], c.box[3]]], { padding: 24, duration: 600 });
+      else map.fitBounds([[-170, -50], [180, 72]], { padding: 4, duration: 500 });
       return;
     }
     const b = countries.find((c) => c.iso3 === sel)?.bbox;
     if (b) map.fitBounds([[b[0] as number, Math.max(-58, b[1] as number)], [b[2] as number, Math.min(78, b[3] as number)]], { padding: 24, maxZoom: 5, duration: 600 });
-  }, [map, sel, countries]);
+  }, [map, sel, countries, cont]);
 
   /* 위도 5° 띠 × 달 */
   useEffect(() => {
@@ -379,7 +394,29 @@ export function WorldReplay(o: WorldReplayProps) {
 
   return (
     <div className={cx("wf")} data-month={ymS(i)}>
-      <div className={cx("wf-map")} ref={mapEl} />
+      <div className={cx("wf-map")} ref={mapEl}>
+        <MapLoading show={!map} />
+        {map ? (
+          <div className={cj.bar} role="group" aria-label={lang === "ko" ? "대륙으로 이동" : "Jump to continent"}>
+            {CONTINENTS.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                className={cj.btn}
+                aria-pressed={!sel && cont === c.id}
+                data-continent={c.id}
+                onClick={() => {
+                  setSel(null);
+                  setCont((x) => (x === c.id && !sel ? null : c.id));
+                }}
+              >
+                <i className={cj.dot} style={{ background: c.color }} aria-hidden="true" />
+                {lang === "ko" ? c.ko : c.en}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
       <div className={cx("wf-side")}>
         <div className={cx("wf-now")}>
           <b className={cx("num")}>{ymS(i)}</b>
