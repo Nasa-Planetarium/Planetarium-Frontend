@@ -389,8 +389,8 @@
 .hm-search{border-radius: var(--r-xs);}
 .hm-legend,.hm-pass{border: 0px; border-radius: 0px; background: color-mix(in srgb,var(--surface-0) 72%,transparent);}
 .hm-lgs{display: inline-flex; align-items: center; gap: var(--sp-1); color: var(--text-2);}
-.hm-lgd{display: inline-block; width: 8px; height: 8px; border-radius: var(--r-round); background: var(--data-viirs); box-shadow: var(--mk-halo);}
-.hm-lgd.m{background: var(--data-modis);}
+/* 감지 점 범례 = 지도 위 점과 같은 한 색(센서 구분 없음, 표시 규칙서 R6) */
+.hm-lgd{display: inline-block; width: 8px; height: 8px; border-radius: var(--r-round); background: var(--h4); box-shadow: var(--mk-halo);}
 .hm-pass-k{font-family: var(--font-body);}
 .hm-map .attrib{border-radius: 0px;}
 .hm-aoibadge,.hm-flash,.hm-offv,.hm-outv,.hm-status{border-radius: var(--r-xs);}

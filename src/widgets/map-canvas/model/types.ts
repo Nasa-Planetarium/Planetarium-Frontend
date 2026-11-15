@@ -30,6 +30,8 @@ export interface MapCell {
   lon: number;
   size: number;
   value: number;
+  /** 여러 달 합이면 달 수(범례 단위 「월 감지량」으로 나눈다). 없으면 1 */
+  months?: number;
 }
 
 export interface MapFire {

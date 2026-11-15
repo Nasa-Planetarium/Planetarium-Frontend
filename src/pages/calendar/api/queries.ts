@@ -155,8 +155,12 @@ export interface MonthPoints {
   frp: number[];
   ref: number[];
   sat: string[];
+  /** 산업 열원 표지(1 = 합계 제외 · 회색 빈 점, 표시 규칙서 R6). 운영 응답에 아직 없으면 비어 있음 */
+  st?: number[];
   note: string | null;
   truncated: boolean;
+  /** 서버가 센 전체 점 수(잘렸을 때 「N개 중 앞 M개」) */
+  total?: number | null;
 }
 interface HotspotRow {
   latitude: number;

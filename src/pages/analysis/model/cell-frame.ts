@@ -113,9 +113,6 @@ export function cellFrame(o: FrameIn): Frame | null {
   };
 }
 
-/** 원 반지름: 칸 간격 × 단계 비율(단계 0–4), 2.2–13px */
-const FR = [0.2, 0.27, 0.34, 0.42, 0.5] as const;
-export const cellRadius = (cs: number, step: number) => Math.max(2.2, Math.min(13, cs * (FR[Math.max(0, Math.min(4, step))] ?? 0.2)));
 
 /** 고리들 → SVG path d(경도 접기는 frame.X 가 한다) */
 export const ringsPath = (f: Pick<Frame, "X" | "Y">, rings: Ring[]) =>

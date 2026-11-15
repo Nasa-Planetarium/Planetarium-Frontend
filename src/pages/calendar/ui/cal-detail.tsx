@@ -13,7 +13,7 @@ import { caseOf, fmtVal, inRange, monthWord, partialOf, Y0, Y1, ymIso } from "..
 import { Status, Verdict } from "./bits";
 import { partialLine, unitWord } from "./cal-grid";
 import { cx } from "./cx";
-import { displayInterval, hasSpread } from "@/shared/lib/interval";
+import { displayInterval, hasSpread } from "@/shared/lib/display";
 import { baselineOf, continuityParent } from "@/shared/lib/baseline-period";
 import { DistChart, type DistItem } from "./dist-chart";
 

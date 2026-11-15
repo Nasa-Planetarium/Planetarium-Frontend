@@ -5,9 +5,8 @@ import { CellDots } from "./charts";
 
 /* 칸 지도 SVG(2026-11-15 「비교 분석에서 지도 잘 안 나와」 회귀) — 바다 바탕 · 땅 면 · 고른 면 테두리 · 원 반지름이 칸 간격을 따른다 */
 const sq = (w: number, s: number, e: number, n: number) => [[w, s], [e, s], [e, n], [w, n], [w, s]] as [number, number][];
-const ramp = () => "#f00";
 const render = (o: Partial<Parameters<typeof CellDots>[0]>) =>
-  renderToStaticMarkup(createElement(CellDots, { cells: [{ lat: 36.05, lon: 128.05, value: 5, title: "a" }], ramp, scaleMax: 5, width: 560, label: "칸 지도", ...o }));
+  renderToStaticMarkup(createElement(CellDots, { cells: [{ lat: 36.05, lon: 128.05, value: 5, title: "a" }], width: 560, label: "칸 지도", ...o }));
 
 describe("CellDots 칸 지도", () => {
   it("땅이 있으면 바다 바탕 + 땅 면 + 고른 면 테두리", () => {
@@ -25,7 +24,7 @@ describe("CellDots 칸 지도", () => {
   });
   it("1° 칸 큰 나라: 원 반지름이 칸 간격의 절반을 넘지 않아 서로 덮지 않는다", () => {
     const cells = Array.from({ length: 30 }, (_, i) => ({ lat: 30 + (i % 6), lon: -110 + Math.floor(i / 6) * 10, value: 5000, title: "" }));
-    const html = render({ cells, cellDeg: 1, scaleMax: 5000 });
+    const html = render({ cells, cellDeg: 1 });
     const rs = [...html.matchAll(/ r="([\d.]+)"/g)].map((m) => Number(m[1]));
     const vb = /viewBox="0 0 (\d+) (\d+)"/.exec(html);
     expect(vb).not.toBeNull();
