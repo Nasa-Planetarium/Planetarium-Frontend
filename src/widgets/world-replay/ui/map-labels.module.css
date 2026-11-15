@@ -1,0 +1,8 @@
+/* 지도 이름표(프런트 UI/UX, 2026-11-15) — MapLibre Marker 로 붙인 대륙(굵게)·바다(기울임, 물 색) 이름.
+   이 화면은 maplibre-gl.css 를 싣지 않으므로 Marker 자리 규칙(왼쪽 위 기준 + transform)을 여기서 준다(공통 지도 map-canvas.module.css 와 같은 규칙).
+   글자 테두리(halo)는 --map-halo 로 불 점 위에서도 읽히게. 누름은 지도로 통과 */
+.host :global(.maplibregl-marker){position:absolute;left:0;top:0;will-change:transform}
+.land,.sea{line-height:1.15;white-space:nowrap;text-align:center;pointer-events:none}
+.land b,.sea b{text-shadow:0 0 2px var(--map-halo),0 0 3px var(--map-halo),0 0 5px var(--map-halo),0 0 8px var(--map-halo)}
+.land b{font:var(--fw-strong) 12px var(--font-body);color:var(--map-label-hi);letter-spacing:.04em}
+.sea b{font:italic var(--fw-medium) 10px var(--font-body);color:var(--map-water-label);letter-spacing:.12em}
