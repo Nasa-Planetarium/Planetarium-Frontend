@@ -62,7 +62,7 @@
   /* r4 셸: 지도 바탕도 따뜻한 무채(물만 b 의 채도 뺀 청회색 유지 — 물이 땅과 갈려야 한다) */
   --map-void:#070605; --map-bg:#100e0c; --map-shade-dark:#060504; --map-shade-light:#2e2b27; --map-shade-accent:#12100e; --map-mask:#050403;
   /* 바다·육지 면: 바탕(background)은 바다, 나라 면(world·나라 1급)은 육지 — 둘이 같은 검정이던 것(일본 등) 해결. 바다는 물 선(map-water)과 같은 청회 계열을 아주 어둡게 */
-  --map-sea:#0a1016; --map-land:var(--map-bg);
+  --map-sea:#08131d; --map-land:#1a1612;
   --map-water:#34495c; --map-water-label:var(--text-3); --map-road:#8a857e; --map-boundary:#8f887f; --map-boundary-w:1.1px; /* 시군 경계: 색·굵기 모두 이 둘만(분석 S1 포함 모든 지도) */
   --map-label:var(--text-2); --map-label-hi:#f1e9e0; --map-halo:#070605; --map-grid:rgba(171,164,156,.06);
   --marker-bg:rgba(13,11,9,.92);
