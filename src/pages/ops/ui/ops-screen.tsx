@@ -1010,7 +1010,6 @@ export function OpsScreen({ role }: { role: Role }) {
         <header className={cx("pghd")}>
           <div className={cx("ph-1")}>
             <h1>{t("ops.head.name")}</h1>
-            <span className={cx("ph-scope")}>{t("ops.head.scope")}</span>
           </div>
           <div className={cx("cntbar")} role="group" aria-label={t("shell.counts.aria")}>
             {cnts.map((c) => (

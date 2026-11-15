@@ -50,6 +50,9 @@
 :global(html:not([data-device="web"])) .seg button,:global(html[data-touch="1"]) .seg button{min-width:var(--hit)}
 .chart svg{display:block;width:100%;height:auto;overflow:visible}
 .chart text{fill:var(--text-2);font-family:var(--font-data);font-size:var(--fs-1);font-variant-numeric:tabular-nums}
+/* 같은 달 연도별: 분석 연도 값·연도 = 굵은 주황(2026-11-15) */
+.chart text.ds-ev-v{fill:var(--yb-eval-ink);font-size:var(--fs-3);font-weight:700}
+.chart text.ds-ev-y{fill:var(--yb-eval-ink);font-size:var(--fs-2);font-weight:700}
 .chart text.t-ko{font-family:var(--font-body)}
 .cal-wrap{overflow-x:auto;scroll-behavior:smooth}
 .chart .cal-c:focus:not(:focus-visible),.chart .cal-x:focus:not(:focus-visible){outline:none}
@@ -239,8 +242,8 @@
 .cl-dleg{display:flex;flex-wrap:wrap;gap:var(--sp-1) var(--sp-4);font-size:var(--fs-2);color:var(--text-2);margin-top:var(--sp-1)}
 .cl-dleg span{display:inline-flex;align-items:center;gap:var(--sp-2)}
 .cl-dleg i{display:inline-block;width:var(--sp-3);height:var(--sp-2);border-radius:var(--r-2xs)}
-.cl-dleg i.b{background:var(--data-base)}
-.cl-dleg i.e{background:var(--data-viirs)}
+.cl-dleg i.b{background:linear-gradient(180deg,var(--yb-base-top),var(--yb-base-bot))}
+.cl-dleg i.e{background:linear-gradient(180deg,var(--yb-eval-a),var(--yb-eval-b) 45%,var(--yb-eval-c));box-shadow:0 0 4px color-mix(in srgb,var(--yb-eval-glow) 55%,transparent)}
 .cl-dleg i.x{background:var(--hatch);outline:1px solid var(--text-3);outline-offset:-1px}
 .cl-dleg i.band{background:color-mix(in srgb,var(--accent) 18%,transparent)}
 .cl-dleg i.med{height:0;border-top:var(--sp-half) dashed var(--text-1);border-radius:0}

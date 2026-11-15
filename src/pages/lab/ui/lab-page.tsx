@@ -212,9 +212,6 @@ function LabScreen({ tabs }: { tabs: ReactNode }) {
       <header className={cx("pghd")}>
         <div className={cx("ph-1")}>
           <h1>{t("lab.ui.forecast2")}</h1>
-          <span className={cx("ph-scope")} data-scope="">
-            {t("occ.scope", { a: areaName, m: ym(tm), d: asOf ?? "–" })}
-          </span>
           <div className={cx("ph-tools")}>
             {tabs}
             {kor ? <ScopeButton s={S} size="sm" /> : null}

@@ -20,8 +20,6 @@ test("예측 분석(한국): 시군구 252 확률·산업 열원 회색·고르�
   await page.goto("/ko/lab/?view=occ");
   const root = page.locator('[data-testid="lab"][data-ready="1"]');
   await expect(root).toBeVisible({ timeout: 20000 });
-  await expect(root.locator("[data-scope]")).toContainText("2026.12");
-  await expect(root.locator("[data-scope]")).toContainText("2026-11-14");
   await expect(root.locator('[data-cnt="tot"]')).toContainText("252");
   await expect(root.locator('[data-cnt="higher"]')).toContainText("7");
   const rows = root.locator("[data-ft] tbody tr");

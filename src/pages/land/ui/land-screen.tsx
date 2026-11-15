@@ -222,7 +222,6 @@ export function LandScreen() {
         <header className={cx("pghd")}>
           <div className={cx("ph-1")}>
             <h1>{t("land.head.name")}</h1>
-            <span className={cx("ph-scope")}>{t("land.head.scope")}</span>
           </div>
           <div className={cx("cntbar")} role="group" aria-label={t("shell.counts.aria")}>
             {counts.map((c) => (

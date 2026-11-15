@@ -22,6 +22,7 @@ export const C = {
   hatchBg: "var(--hatch-bg)",
   base: "var(--data-base)",
   viirs: "var(--data-viirs)",
+  ybEvalInk: "var(--yb-eval-ink)",
 };
 const MONO = "Pretendard Variable, Pretendard, Malgun Gothic, sans-serif";
 const SANS = "Pretendard Variable, Pretendard, Malgun Gothic, sans-serif";
@@ -34,10 +35,10 @@ const SATS = [
   { sat: "NOAA-21", short: "N21", sensor: "VIIRS", start: "2023-02-10" },
 ];
 
-export function Tx({ x, y, s, anchor, fill = C.muted, weight }: { x: number; y: number; s: string | number; anchor?: "start" | "middle" | "end"; fill?: string; weight?: string }) {
+export function Tx({ x, y, s, anchor, fill = C.muted, weight, cls }: { x: number; y: number; s: string | number; anchor?: "start" | "middle" | "end"; fill?: string; weight?: string; cls?: string }) {
   const ko = KO.test(String(s));
   return (
-    <text x={x} y={y} textAnchor={anchor} fill={fill} fontFamily={ko ? SANS : MONO} className={ko ? cx("t-ko") : undefined} fontSize="11" fontWeight={weight}>
+    <text x={x} y={y} textAnchor={anchor} fill={fill} fontFamily={ko ? SANS : MONO} className={cx(ko ? "t-ko" : null, cls ?? null) || undefined} fontSize="11" fontWeight={weight}>
       {s}
     </text>
   );

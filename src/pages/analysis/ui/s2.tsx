@@ -420,7 +420,7 @@ export function Detail({ x, onBar, light, width }: { x: Ctx; onBar?: ((y: number
           bandLo={harm ? (c.baseline_p25 ?? null) : null}
           bandHi={harm ? (c.baseline_p75 ?? null) : null}
           unit={harm ? x.W("unit.snpp_equiv") : unitOf(x)}
-          width={width ?? Math.round(Math.max(340, Math.min(520, hw)))}
+          width={width ?? Math.round(Math.max(300, hw))}
           height={light ? 200 : 240}
           label={T(light ? "ui.harmonized_by_year_same_mont" : "ui.same_month_harmonized_distri")}
           whiskerLabel={T("g3.lohi")}
@@ -559,7 +559,8 @@ function Trend({ x }: { x: Ctx }) {
       </>
     );
     note = part && part.value != null ? T("g6.partial", { d: part.as_of_date ?? "", v: x.nf(part.value), p: x.nf(part.value_projected) }) : "";
-    chart = ms.length ? <Bars items={items} width={wid} height={200} label={T("g6.tr_title")} /> : <div className={cx("an-empty sm")}><span>{T("ui.no_data_to_plot")}</span></div>;
+    const hk = ymIso(y, m);
+    chart = ms.length ? <Bars items={items} width={wid} height={200} label={T("g6.tr_title")} hi={(k) => k === hk} hiValue={items.some((d) => d.key === hk) ? hk : null} /> : <div className={cx("an-empty sm")}><span>{T("ui.no_data_to_plot")}</span></div>;
   } else if (sq.isPending) {
     chart = (
       <div className={cx("an-empty sm")}>
@@ -616,7 +617,11 @@ function Trend({ x }: { x: Ctx }) {
     /* 월 추정분 종류(release residual_type): 2012-01 까지 modis_unseen · 2012-02 부터 missing_day_fill */
     const rn = resid ? [R.start.slice(0, 7) < "2012-02" ? T("g6.tr_rnote") : "", R.end.slice(0, 7) >= "2012-02" ? T("g6.tr_rnote_fill") : ""].filter(Boolean).join(" · ") : "";
     note = [rn, part && part.value != null ? T("g6.partial", { d: part.as_of_date ?? "", v: x.nf(part.value), p: x.nf(part.value_projected) }) : ""].filter(Boolean).join(" · ");
-    chart = n ? <Bars items={items} width={wid} height={200} ticks={n <= 31 ? 16 : 12} allLabels={n > 31 && n <= 400} label={T("g6.tr_title")} /> : <div className={cx("an-empty sm")}><span>{T("ui.no_data_to_plot")}</span></div>;
+    /* 분석 달이 범위 안이면 그 달의 날 막대를 고른 색으로, 값은 그 달 가장 큰 날 하나에만 */
+    const hm = ymIso(y, m);
+    const inM = R.series.filter((d) => d.date.slice(0, 7) === hm && d.value != null);
+    const peak = inM.length ? inM.reduce((a, b) => ((b.value ?? 0) > (a.value ?? 0) ? b : a)) : null;
+    chart = n ? <Bars items={items} width={wid} height={200} ticks={n <= 31 ? 16 : 12} allLabels={n > 31 && n <= 400} label={T("g6.tr_title")} hi={(k) => k.slice(0, 7) === hm} hiValue={peak && peak.value ? peak.date : null} /> : <div className={cx("an-empty sm")}><span>{T("ui.no_data_to_plot")}</span></div>;
   }
   const csv = () => {
     if (freq === "month") return saveText(`emberline_summary_${safeName(x.aoi)}_${tr.start}_${tr.end}_month.csv`, trendCSVMonth(x, tr));

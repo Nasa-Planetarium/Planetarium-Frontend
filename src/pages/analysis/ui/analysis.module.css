@@ -60,6 +60,9 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 .chart svg{display:block;width:100%;height:auto;overflow:visible}
 .chart text{fill:var(--text-2);font-family:var(--font-data);font-size:var(--fs-1);font-variant-numeric:tabular-nums}
 .chart text.t-ko{font-family:var(--font-body)}
+/* 날짜 범위 추이: 분석 달 값 = 굵은 주황(캘린더 연도별과 같은 모양, 2026-11-15) */
+.chart text.an-ev-v,.chart text.ds-ev-v{fill:var(--yb-eval-ink);font-size:var(--fs-3);font-weight:700}
+.chart text.ds-ev-y{fill:var(--yb-eval-ink);font-size:var(--fs-2);font-weight:700}
 .chart .grid line{stroke:var(--line-soft);stroke-width:1;stroke-dasharray:2 3}
 .cal-wrap{overflow-x:auto;scroll-behavior:smooth}
 .chart .cal-c:focus:not(:focus-visible),.chart .cal-x:focus:not(:focus-visible),.chart .ds-b:focus:not(:focus-visible){outline:none}
@@ -187,7 +190,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 .an-dleg span{display:inline-flex;align-items:center;gap:var(--sp-2)}
 .an-dleg i{display:inline-block;width:12px;height:10px;border-radius:var(--r-2xs)}
 /* 같은 달 연도별 막대와 같은 포인트색 그라데이션(dist-chart) */
-.an-dleg i.b{background:linear-gradient(180deg,color-mix(in srgb,var(--h4) 62%,transparent),color-mix(in srgb,var(--h3) 14%,transparent))} .an-dleg i.e{background:linear-gradient(180deg,var(--h5),var(--h4) 55%,var(--h3))}
+.an-dleg i.b{background:linear-gradient(180deg,var(--yb-base-top),var(--yb-base-bot))} .an-dleg i.e{background:linear-gradient(180deg,var(--yb-eval-a),var(--yb-eval-b) 45%,var(--yb-eval-c));box-shadow:0 0 4px color-mix(in srgb,var(--yb-eval-glow) 55%,transparent)}
 .an-dleg i.o{border:1px dashed var(--line-strong)}
 .an-dleg i.band{background:color-mix(in srgb,var(--text-1) 18%,transparent)}
 .an-dleg i.med{height:0;border-top:var(--sp-half) dashed var(--text-1);border-radius:0}
