@@ -1,0 +1,39 @@
+{
+ "release": "data-v1.2-2026-11-15",
+ "script": "scripts/snap-v12-fwi-spread.py",
+ "sources": {
+  "fwi_aoi_day.parquet": {
+   "bytes": 29052686,
+   "sha256": "bcd2c6cd4a81ae186d8b1dd1f833c6bafac4cb9f0b89ca3a1188e016f2ba6bc4"
+  },
+  "spread_nowcast_latest.parquet": {
+   "bytes": 119521,
+   "sha256": "d4e4657b1b6a30917c6a6aeb1a5c98810f74b5ec2994fa3d7f76a9cc8d8ee84a"
+  },
+  "aoi_boundaries.geojson": {
+   "bytes": 12931911,
+   "sha256": "97f3adc0ef8f3711cbb94f270c50cf51346f87879ce739867d2bfe3e23719dac"
+  }
+ },
+ "files": {
+  "fwi.json": {
+   "bytes": 379431,
+   "sha256": "8ea85bc581a79a920fc99e0e6f8dcc92ef82f3134facd250c2e45a30ddd58853"
+  },
+  "spread.json": {
+   "bytes": 531839,
+   "sha256": "3ebb90585a5917d6db371730578c219d072212b4e98fc6b50ffbc868319d6a07"
+  }
+ },
+ "counts": {
+  "fwi_aois": 295,
+  "fwi_rows": 4130,
+  "fwi_last_date": "2026-11-11",
+  "spread_cells": 10189,
+  "spread_member": {
+   "KR": 73,
+   "ADM0_ARG": 9945
+  },
+  "spread_member_aois": 29
+ }
+}

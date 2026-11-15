@@ -70,7 +70,7 @@ test("lab: 표가 다 안 보이면 「N개 중 M개 보임」", async ({ page }
   test.skip(info.project.name === "phone", "표 칸 높이는 web 폭에서만 잰다");
   await page.addInitScript(() => sessionStorage.setItem("em.role", "scientist"));
   await page.setViewportSize({ width: 1440, height: 640 });
-  await page.goto("/ko/lab/");
+  await page.goto("/ko/lab/?view=occ");
   await expect(page.locator('[data-testid="lab"][data-ready="1"]')).toBeVisible({ timeout: 30000 });
   const more = page.locator("[data-more]");
   await expect(more).toBeVisible({ timeout: 10000 });

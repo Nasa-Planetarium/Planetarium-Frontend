@@ -1,30 +1,32 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import { useQueries, useQuery } from "@tanstack/react-query";
-import { boundaryQuery, countryName, useCountry } from "@/entities/country";
+import { countryName, useCountry, type CountryInfo } from "@/entities/country";
 import { useSession } from "@/entities/session";
-import { ScopeButton, bboxCenter, rowWordKey, useAoiScope, type Bbox } from "@/features/pick-aoi";
+import { ScopeButton, aoiOfIso3, useAoiScope, type Bbox } from "@/features/pick-aoi";
 import { api, unwrap } from "@/shared/api";
 import { PAGES } from "@/shared/config";
 import { useT } from "@/shared/i18n";
-import { aoiOfIso3 } from "@/shared/lib/adm0";
-import { useDevice } from "@/shared/lib/use-device";
+import { usePath, useQueryParams } from "@/shared/lib/nav";
 import { PageFrame } from "@/widgets/page-frame";
-import { LV_RANK, dimYM, lvOf, olRow, type LvKey, type Outlook, type Row } from "../model/outlook";
+import { aoiOccurrenceListQuery, aoiOccurrenceQuery, gridOccurrenceQuery, type AoiOccurrence, type GridCell } from "../api/occurrence";
+import { BAND_KEYS, bandOf, geomBounds, latLon, pct, ppDiff, shadeOf, sortOcc } from "../model/occ";
 import { LabBand } from "./lab-band";
 import { LabMap } from "./lab-map";
+import { ForecastView } from "./forecast-view";
 import { cx } from "./cx";
-import { downloadText, toCSV, useFmt, useTv } from "./use-lab";
+import { downloadText, toCSV } from "./use-lab";
 
 /**
- * 예측 분석(lab, 과학자) — 원천: 목업 pages/lab.js · lab.css(g6 확정본).
- * 숫자: 평년 기반 전망 스냅숏 /data/snap/outlook.json(결정 F8 — 실서버에 전망 경로 없음, 두 모드 같은 정적 파일) ·
- * 과거 관측은 /aois/{id}/calendar · 보정 검증은 /methods/current. 화면은 다시 계산하지 않는다.
- * 지도 = MapLibre 2D: 지역 경계 면을 수준 3단 색으로 채움(목업 lb-fc — 경계를 못 받으면 지역 중심 원, 결정 F9) + 이름·중앙값 표지.
- * 범위(2026-11-15 사용자 지적 「경북 북부 11개 시군만」): 한국은 고른 지역(?aoi=, 기본 대한민국)의 아래 단 전부 — 대한민국 → 17 시도, 시도 → 시군구.
- * 전망 스냅숏에 519 지역(세계·나라·시도·시군구)이 이미 있다(잰 것) — 그 par(위 단) 그대로 고른다.
+ * 예측 분석(lab, 과학자) — 두 보기(주소 ?view=):
+ *  - 기본: FireOutlook Planner 30일 전망(결정 F17, POST /api/v1/forecast) — forecast-view.tsx
+ *  - occ: 모델팀 「다음 달 발생 확률」(결정 F15, release data-v1.2-2026-11-15) — 아래 LabScreen
+ * 자료: /api/v1 /occurrence/grid(전 세계 0.5° 격자) · /occurrence/aois(한국 시군구 252) · /aois/{id}/occurrence(고른 지역 — 시군구는 모델 값, 그 밖은 격자 요약).
+ * 화면은 확률을 다시 계산하지 않는다(A1). 지역 확률은 시군구만 있다 — 나라·시도는 칸 분포(격자 요약)로만 말한다(계약 Q2).
+ * 한국: 고른 범위(?aoi=, 기본 대한민국)의 시군구 면 · 그 밖: 0.5° 칸 색. 지속·산업 열원 의심은 회색, 순위·강조에서 뺀다.
  */
 export function LabPage() {
   return (
@@ -39,112 +41,109 @@ function LabGate() {
   const { data: session, isPending } = useSession();
   const ok = !isPending && !!session && (PAGES.lab.roles ?? []).includes(session.role);
   if (!ok) return <PageFrame page="lab" />;
-  return <LabScreen />;
+  return <LabViews />;
 }
 
-const outlookQuery = {
-  queryKey: ["static", "data/snap/outlook.json"],
-  queryFn: ({ signal }: { signal: AbortSignal }) =>
-    fetch(new URL("/data/snap/outlook.json", window.location.origin), { signal }).then((r) => {
-      if (!r.ok) throw new Error(`outlook ${r.status}`);
-      return r.json() as Promise<Outlook>;
-    }),
-  staleTime: Infinity,
-};
-
-interface AdmRegion {
-  id: string;
-  name_en: string;
-  name_ko?: string;
-  c: [number, number];
-  area_km2: number;
-}
-export interface Region {
-  id: string;
-  name: string;
-  lat: number;
-  lon: number;
-  aoi: string | null;
-  area: number;
-  /** 경계(계약 /aois/{id}/boundary — 한국 지역만, 못 받으면 null → 원) */
-  geom?: unknown;
-}
-export type TV = (k: string, p?: Record<string, string | number>) => string;
-export interface Sel {
-  sel: string | null;
-  select: (id: string | null) => void;
-}
-
-function LabScreen() {
+/** 보기 고르기: 30일 전망(기본) · 다음 달 발생 확률(?view=occ) */
+function LabViews() {
   const t = useT();
   const lang = useLocale();
-  const device = useDevice();
+  const sp = useQueryParams();
+  const router = useRouter();
+  const pathname = usePath();
+  const view = sp.get("view") === "occ" ? "occ" : "fc";
+  const go = (v: "fc" | "occ") => {
+    const q = new URLSearchParams(sp.toString());
+    if (v === "occ") q.set("view", "occ");
+    else q.delete("view");
+    const qs = q.toString();
+    router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
+  };
+  const tabs = (
+    <div className={cx("lb-views")} role="tablist" aria-label={t("fc30.views_aria")}>
+      {(["fc", "occ"] as const).map((v) => (
+        <button key={v} type="button" role="tab" aria-selected={view === v} className={cx("lb-view", view === v && "on")} data-view={v} onClick={() => go(v)}>
+          {t(`fc30.view.${v}`)}
+        </button>
+      ))}
+    </div>
+  );
+  return view === "occ" ? <LabScreen tabs={tabs} /> : <ForecastView t={t} lang={lang} tabs={tabs} />;
+}
+
+export type TV = (k: string, p?: Record<string, string | number>) => string;
+/** 표·지도가 함께 쓰는 행(시군구 하나 또는 0.5° 칸 하나) */
+export interface OccRow {
+  id: string;
+  name: string;
+  p_any: number | null;
+  baseline_p: number | null;
+  vs_normal: string | null;
+  suspected_industrial: boolean | null;
+  rank: number | null;
+  /** 시군구 면(경계 받기 전 null) */
+  geom?: unknown;
+  cell?: GridCell;
+  item?: AoiOccurrence;
+}
+type Filter = "ge70" | "higher" | null;
+
+function LabScreen({ tabs }: { tabs: ReactNode }) {
+  const t = useT();
+  const lang = useLocale();
   const { iso3, info } = useCountry();
   const kor = iso3 === "KOR";
-  const F = useFmt(kor);
-  const oq = useQuery(outlookQuery);
-  const O = oq.data ?? null;
-  const { data: boundary } = useQuery({ ...boundaryQuery(iso3), enabled: !kor });
-  const cname = countryName(info, lang, iso3);
-
-  /* 한국: 고른 범위의 아래 단(전망 스냅숏 par) · 위치는 /aois bbox 가운데 · 면은 /aois/{id}/boundary */
   const S = useAoiScope();
   const scopeId = kor ? S.scope : aoiOfIso3(iso3);
-  const krRows = useMemo(() => (kor && O ? O.aoi.filter((a) => a.par === scopeId) : []), [kor, O, scopeId]);
+  const cname = countryName(info, lang, iso3);
+  const areaName = kor ? S.nameOf(scopeId) : cname;
+
+  const grid = useQuery({ ...gridOccurrenceQuery(), enabled: !kor });
+  const list = useQuery({ ...aoiOccurrenceListQuery(scopeId), enabled: kor && !!scopeId });
+  const sum = useQuery({ ...aoiOccurrenceQuery(scopeId), enabled: !!scopeId });
+
+  /* 한국: 시군구 행 + 면(/aois/{id}/boundary — 못 받으면 면 없이 표만) */
+  const items = useMemo(() => (kor ? (list.data?.items ?? []) : []), [kor, list.data]);
   const geoms = useQueries({
-    queries: krRows.map((a) => ({
-      queryKey: ["lab", "boundary", a.id, S.mv],
-      queryFn: ({ signal }: { signal: AbortSignal }) => api.GET("/aois/{aoiId}/boundary", { params: { path: { aoiId: a.id } }, signal }).then(unwrap) as Promise<unknown>,
-      enabled: !!S.mv,
+    queries: items.map((a) => ({
+      queryKey: ["lab", "boundary", a.aoi_id] as const,
+      queryFn: ({ signal }: { signal: AbortSignal }) => api.GET("/aois/{aoiId}/boundary", { params: { path: { aoiId: a.aoi_id } }, signal }).then(unwrap) as Promise<unknown>,
       staleTime: Infinity,
       retry: false,
     })),
   });
   const geomKey = geoms.map((g) => (g.data ? 1 : 0)).join("");
-  const regions: Region[] = useMemo(() => {
-    if (kor)
-      return krRows.map((a, i) => {
-        const rec = S.byId.get(a.id);
-        const c = bboxCenter(rec?.bbox);
-        return { id: a.id, name: rec ? S.nameOf(rec) : a.name, lat: c?.lat ?? NaN, lon: c?.lon ?? NaN, aoi: a.id, area: 0, geom: geoms[i]?.data ?? null };
-      });
-    const adm = ((boundary as { regions?: AdmRegion[] } | undefined)?.regions ?? []).slice();
-    return adm.map((r) => ({ id: r.id, name: (lang === "ko" && r.name_ko) || r.name_en, lat: r.c[1], lon: r.c[0], aoi: null, area: r.area_km2 }));
+  const sggRows: OccRow[] = useMemo(
+    () =>
+      items.map((a, i) => {
+        const g = geoms[i]?.data as { geometry?: unknown } | undefined;
+        return { id: a.aoi_id, name: S.byId.has(a.aoi_id) ? S.nameOf(a.aoi_id) : (a.name_ko ?? a.aoi_id), p_any: a.p_any, baseline_p: a.baseline_p, vs_normal: a.vs_normal ?? null, suspected_industrial: a.suspected_industrial, rank: a.rank ?? null, geom: g?.geometry ?? null, item: a };
+      }),
     // geoms 는 쿼리마다 새 배열이라 받은 여부(geomKey)로만 다시 만든다
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kor, krRows, S.byId, S.nameOf, boundary, lang, geomKey]);
-  const fitBbox: Bbox | null = kor ? ((S.byId.get(scopeId)?.bbox as Bbox | undefined) ?? null) : null;
+    [items, S.byId, S.nameOf, geomKey],
+  );
+  /* 다른 나라: 고른 나라 격자 요약의 상위 칸(지속 열원 제외, 최대 10) */
+  const gs = sum.data?.grid_summary ?? null;
+  const cellRows: OccRow[] = useMemo(
+    () => (kor ? [] : (gs?.top_cells ?? []).map((c) => ({ id: String(c.cell_id), name: latLon(c.lat, c.lon), p_any: c.p_any, baseline_p: c.baseline_p, vs_normal: c.vs_normal, suspected_industrial: false, rank: null, cell: c }))),
+    [kor, gs],
+  );
+  const rows = kor ? sggRows : cellRows;
 
-  const rowLevel = kor ? (S.byId.get(krRows[0]?.id ?? "")?.level ?? (scopeId === "KR" ? "kr_sido" : "kr_sgg")) : "adm1";
-  const aoiLabel = kor ? S.nameOf(scopeId) : cname;
-  const rw = t(rowWordKey(rowLevel));
-  const T_ = useTv({ rw, rw1: rw, Rw1: rw, aoi: aoiLabel, tz: kor ? "KST" : "UTC" });
-  const totId = scopeId;
-
-  const FC = useMemo(() => {
-    if (!O) return null;
-    const ix = new Map(O.aoi.map((a) => [a.id, a]));
-    const tm = O.method.targets[0] as string;
-    const rows: Row[] = regions.map((r) => olRow(r.aoi ? (ix.get(r.aoi) ?? null) : null, 0, r.id, r.name));
-    const total = olRow(ix.get(totId) ?? null, 0, "all", aoiLabel);
-    return { ix, rows, total, issued: O.method.computed_at.slice(0, 10), month: tm, days: dimYM(tm), targets: O.method.targets.slice(), m: O.method };
-  }, [O, regions, totId, aoiLabel]);
-
-  /* 고른 행: 범위가 바뀌면 비운다 · 시군구 하나를 골라 들어왔으면(?aoi=SGG_…) 그 행 */
+  /* 고른 것: 한국 = 시군구 id(범위를 바꾸면 비움, ?aoi=SGG_… 로 들어오면 그 행) · 다른 나라 = 칸 id */
   const [sel, setSel] = useState<{ iso: string; scope: string; id: string | null } | null>(null);
   const selId = sel && sel.iso === iso3 && sel.scope === scopeId ? sel.id : kor ? S.focus : null;
   const select = (id: string | null) => setSel({ iso: iso3, scope: scopeId, id });
-  const [lvf, setLvf] = useState<LvKey | null>(null);
-  const [sort, setSort] = useState<{ k: string; dir: number }>({ k: "median", dir: -1 });
+  const cellIx = useMemo(() => new Map((grid.data?.cells ?? []).map((c) => [String(c.cell_id), c] as const)), [grid.data]);
+  const selRow: OccRow | null = selId ? (rows.find((r) => r.id === selId) ?? (() => {
+    const c = cellIx.get(selId);
+    return c ? { id: selId, name: latLon(c.lat, c.lon), p_any: c.p_any, baseline_p: c.baseline_p, vs_normal: c.vs_normal, suspected_industrial: c.persistent_source, rank: null, cell: c } : null;
+  })()) : null;
 
-  const rowOf = (id: string | null) => (FC ? (id ? (FC.rows.find((r) => r.region_id === id) ?? null) : FC.total) : null);
-  const selRow = rowOf(selId);
-  const regLabel = selId ? (regions.find((r) => r.id === selId)?.name ?? selId) : (FC?.total.region_name ?? aoiLabel);
-  const selAoi = selId ? (regions.find((r) => r.id === selId)?.aoi ?? null) : totId;
-  /* 고른 시군과 상관없이 권역 전체 이름(목업 ALL — 불러오기 전 「권역 전체」, 뒤 total.region_name) */
-  const allLabel = FC?.total.region_name ?? (kor ? T_("lab.ui.whole_area") : aoiLabel);
-
-  /* 표 아래 「{권역} N개 중 M개 보임, 표를 내려 더 보기」(목업 lab.js tblMore) — 행이 다 보이면 숨김 */
+  const [flt, setFlt] = useState<Filter>(null);
+  const [sort, setSort] = useState<{ k: "name" | "p" | "b" | "d"; dir: number }>({ k: "p", dir: -1 });
+  /* 표 아래 「N개 중 M개 보임, 표를 내려 더 보기」(목업 lab.js tblMore) — 행이 다 보이면 숨김 */
   const sideRef = useRef<HTMLElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [more, setMore] = useState<{ n: number; seen: number } | null>(null);
@@ -183,120 +182,188 @@ function LabScreen() {
       wrap.removeEventListener("scroll", later);
       ro.disconnect();
     };
-  }, [FC, lvf, sort]);
-  const ph = device === "phone";
+  }, [rows, flt, sort, list.data, grid.data, sum.data]);
 
-  /* ── 머리: 화면 이름 + 범위 + 개수 띠(권역 예측 · 평년보다 높음 시군 수) ── */
+  const ready = kor ? !!list.data && !!sum.data : !!grid.data && !!sum.data;
+  const failed = (kor ? list.isError : grid.isError) || sum.isError;
+  const tm = (kor ? list.data?.target_month : grid.data?.target_month) ?? sum.data?.target_month ?? null;
+  const asOf = (kor ? list.data?.as_of_date : grid.data?.as_of_date) ?? sum.data?.as_of_date ?? null;
+  const ym = (s: string | null | undefined) => (!s ? "–" : lang === "ko" ? `${s.slice(0, 4)}.${s.slice(5, 7)}` : new Intl.DateTimeFormat(lang, { month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${s}-01T00:00:00Z`)));
+  const nf = useMemo(() => new Intl.NumberFormat(lang), [lang]);
+  const VSW: Record<string, string> = { higher: t("occ.vs.higher"), similar: t("occ.vs.similar"), lower: t("occ.vs.lower") };
+
+  /* ── 머리: 화면 이름 · 범위 · 개수 띠 ── */
+  const ok = rows.filter((r) => !r.suspected_industrial);
+  const nGe70 = kor ? ok.filter((r) => bandOf(r.p_any) === 3).length : (gs?.bands.ge70 ?? 0);
+  const nHigher = ok.filter((r) => r.vs_normal === "higher").length;
   const head = () => {
-    const tt = FC?.total;
-    const b = tt?.baseline;
-    const nHigh = FC ? FC.rows.filter((r) => lvOf(r) === "high").length : 0;
-    const ratio = tt && tt.median != null && b?.p50 ? tt.median / b.p50 : null;
-    const C = [
-      { key: "tot", label: ph ? T_("lab.ui.forecast") : T_("lab.ui.area_forecast"), value: tt?.median == null ? "–" : F.n1(tt.median), delta: ratio == null ? null : T_("lab.ui.vs_normal") + ratio.toFixed(1) + T_("lab.ui.s101"), unit: null as string | null, pressed: !lvf && !selId },
-      { key: "high", label: t("data.fc.level.high"), value: String(nHigh), delta: null, unit: T_(nHigh === 1 ? "lab.ui.s324_one" : "lab.ui.s324"), pressed: lvf === "high" },
-    ];
+    const C: { key: string; label: string; value: string; unit: string; f?: Filter }[] = kor
+      ? [
+          { key: "tot", label: t("occ.head.sgg"), value: nf.format(rows.length), unit: t("occ.u.places"), f: null },
+          { key: "ge70", label: t("occ.head.ge70"), value: nf.format(nGe70), unit: t("occ.u.places"), f: "ge70" },
+          { key: "higher", label: t("occ.head.higher"), value: nf.format(nHigher), unit: t("occ.u.places"), f: "higher" },
+        ]
+      : [
+          { key: "tot", label: t("occ.head.cells"), value: gs ? nf.format(gs.n_cells) : "–", unit: t("occ.u.cells") },
+          { key: "ge70", label: t("occ.head.ge70_cells"), value: gs ? nf.format(nGe70) : "–", unit: t("occ.u.cells") },
+          { key: "ps", label: t("occ.head.persistent"), value: gs ? nf.format(gs.n_persistent) : "–", unit: t("occ.u.cells") },
+        ];
     return (
       <header className={cx("pghd")}>
         <div className={cx("ph-1")}>
-          <h1>{T_("lab.ui.forecast2")}</h1>
-          {kor ? (
-            <div className={cx("ph-tools")}>
-              <ScopeButton s={S} size="sm" />
-            </div>
-          ) : null}
+          <h1>{t("lab.ui.forecast2")}</h1>
+          <div className={cx("ph-tools")}>
+            {tabs}
+            {kor ? <ScopeButton s={S} size="sm" /> : null}
+          </div>
         </div>
         <div className={cx("cntbar")} role="group" aria-label={t("shell.counts.aria")}>
-          {C.map((c) => (
-            <button
-              key={c.key}
-              type="button"
-              className={cx("cb")}
-              data-cnt={c.key}
-              aria-pressed={c.pressed}
-              onClick={() => {
-                if (c.key === "tot") {
-                  setLvf(null);
-                  select(null);
-                } else setLvf((v) => (v === "high" ? null : "high"));
-              }}
-            >
-              <span className={cx("cb-k")}>{c.label}</span>
-              <span className={cx("cb-vw")}>
-                <b className={cx("cb-v")}>{c.value}</b>
-                {c.unit ? <span className={cx("cb-u")}>{c.unit}</span> : null}
-                {c.delta ? <span className={cx("cb-d")}>{c.delta}</span> : null}
-              </span>
-            </button>
-          ))}
+          {C.map((c) =>
+            kor ? (
+              <button key={c.key} type="button" className={cx("cb")} data-cnt={c.key} aria-pressed={flt === c.f && (c.f !== null || !selId)} onClick={() => (c.f === null ? (setFlt(null), select(null)) : setFlt((v) => (v === c.f ? null : (c.f ?? null))))}>
+                <span className={cx("cb-k")}>{c.label}</span>
+                <span className={cx("cb-vw")}>
+                  <b className={cx("cb-v")}>{c.value}</b>
+                  <span className={cx("cb-u")}>{c.unit}</span>
+                </span>
+              </button>
+            ) : (
+              <div key={c.key} className={cx("cb oc-cbs")} data-cnt={c.key}>
+                <span className={cx("cb-k")}>{c.label}</span>
+                <span className={cx("cb-vw")}>
+                  <b className={cx("cb-v")}>{c.value}</b>
+                  <span className={cx("cb-u")}>{c.unit}</span>
+                </span>
+              </div>
+            ),
+          )}
         </div>
       </header>
     );
   };
 
-  /* ── 권역 합계: 평년 대비 구간 그림 하나 ── */
-  const total = () => {
-    const tt = FC?.total;
-    if (!tt || tt.median == null || tt.hi80 == null || tt.baseline.p90 == null) return <p className={cx("lb-empty")}>{T_("lab.ui.insufficient_data")}</p>;
-    const b = tt.baseline;
-    const mx = Math.max(tt.hi80, b.p90 ?? 0) * 1.12;
-    const P = (v: number | null) => `${(((v ?? 0) / mx) * 100).toFixed(2)}%`;
+  /* ── 고른 지역 요약 ── */
+  const noData = <p className={cx("oc-nodata")} data-nodata="">{t("occ.no_data")}</p>;
+  const summary = () => {
+    if (failed) return <p className={cx("oc-nodata")}>{t("occ.load_failed")}</p>;
+    if (selRow) {
+      const grey = !!selRow.suspected_industrial;
+      const it = selRow.item;
+      return (
+        <div className={cx("oc-sum")} data-sum="sel">
+          <div className={cx("oc-sumh")}>
+            <span className={cx("oc-sumk")}>{selRow.cell ? t("occ.sum.cell") : selRow.name}</span>
+            <button type="button" className={cx("btn sm ghost")} data-x="clear" onClick={() => select(null)}>
+              {t("occ.sum.back", { a: areaName })}
+            </button>
+          </div>
+          {selRow.cell ? <span className={cx("oc-sub num")}>{selRow.name}</span> : null}
+          <div className={cx("oc-big", grey && "is-grey")}>
+            <b className={cx("num")} data-p="">
+              {pct(selRow.p_any)}
+            </b>
+            <span>{t("occ.sum.p_label", { m: ym(tm) })}</span>
+          </div>
+          <dl className={cx("sumlist")}>
+            <dt>{t("occ.col.base")}</dt>
+            <dd className={cx("num")}>{pct(selRow.baseline_p)}</dd>
+            <dt>{t("occ.col.diff")}</dt>
+            <dd>
+              <span className={cx("num")}>{ppDiff(selRow.p_any, selRow.baseline_p)}</span> · <span className={cx("oc-vs", "oc-vs-" + (grey ? "grey" : (selRow.vs_normal ?? "na")))}>{selRow.vs_normal ? VSW[selRow.vs_normal] : "–"}</span>
+            </dd>
+            {it?.rate_5y != null ? (
+              <>
+                <dt>{t("occ.sum.rate5y")}</dt>
+                <dd className={cx("num")}>{pct(it.rate_5y)}</dd>
+              </>
+            ) : null}
+            {it?.n_years != null ? (
+              <>
+                <dt>{t("occ.sum.years")}</dt>
+                <dd className={cx("num")}>{t("occ.sum.years_v", { n: it.n_years })}</dd>
+              </>
+            ) : null}
+            {selRow.rank != null ? (
+              <>
+                <dt>{t("occ.sum.rank")}</dt>
+                <dd className={cx("num")}>{t("occ.sum.rank_v", { r: selRow.rank, n: ok.length })}</dd>
+              </>
+            ) : null}
+          </dl>
+          {grey ? <p className={cx("oc-grey")} data-grey="">{selRow.cell ? t("occ.sum.persistent") : t("occ.sum.industrial")}</p> : null}
+          {it?.lag1_projected ? <p className={cx("lb-cap")}>{t("occ.sum.lag1")}</p> : null}
+        </div>
+      );
+    }
+    const d = sum.data;
+    if (!d) return <p className={cx("lb-empty")}>{t("occ.loading")}</p>;
+    if (!d.coverage.available) return noData;
+    if (d.unit === "aoi") return null;
+    const g = d.grid_summary;
+    if (!g) return noData;
+    const ncl = g.n_cells - g.n_persistent;
     return (
-      <>
-        <div className={cx("lb-toth")}>
-          <span className={cx("lb-totk")}>{T_("lab.ui.whole_area_vs_normal")}</span>
-          <span className={cx("lb-totu")}>{T_("lab.g6.unit")}</span>
+      <div className={cx("oc-sum")} data-sum="area">
+        <div className={cx("oc-sumh")}>
+          <span className={cx("oc-sumk")}>{t("occ.sum.area", { a: areaName })}</span>
         </div>
-        <div className={cx("lb-totbar")} role="img" aria-label={`${T_("lab.ui.normal_p10")}${F.n1(b.p10, b.p90)}–p90 ${F.n1(b.p90, b.p10)}${T_("lab.ui.vs_forecast_80_interval")}${F.n1(tt.lo80, tt.hi80)}–${F.n1(tt.hi80, tt.lo80)}`}>
-          <i className={cx("lb-tb-b")} style={{ left: P(b.p10), width: `calc(${P(b.p90)} - ${P(b.p10)})` }} />
-          <i className={cx("lb-tb-p")} style={{ left: P(b.p50) }} />
-          <i className={cx("lb-tb-f", "lb-lv-" + lvOf(tt))} style={{ left: P(tt.lo80), width: `calc(${P(tt.hi80)} - ${P(tt.lo80)})` }} />
-          <i className={cx("lb-tb-m")} style={{ left: P(tt.median) }} />
-          <span className={cx("lb-tbl-f")} style={{ left: P(((tt.lo80 ?? 0) + tt.hi80) / 2) }}>
-            {T_("lab.ui.forecast_80")}
-            <span className={cx("num")}>
-              {F.n1(tt.lo80, tt.hi80)}–{F.n1(tt.hi80, tt.lo80)}
+        <div className={cx("oc-big")}>
+          <b className={cx("num")}>{pct(g.p_any_max)}</b>
+          <span>{t("occ.sum.max")}</span>
+        </div>
+        <div className={cx("oc-bars")} role="img" aria-label={BAND_KEYS.map((k, i) => `${t("occ.band." + i)} ${g.bands[k] ?? 0}`).join(", ")}>
+          {BAND_KEYS.map((k, i) => {
+            const n = g.bands[k] ?? 0;
+            return n > 0 ? <i key={k} className={cx("oc-bar", "oc-b" + i)} style={{ flexGrow: n }} title={`${t("occ.band." + i)} ${n}`} /> : null;
+          })}
+        </div>
+        <p className={cx("oc-barkey")}>
+          {BAND_KEYS.map((k, i) => (
+            <span key={k}>
+              <i className={cx("oc-sw", "oc-b" + i)} />
+              {t("occ.band." + i)} <b className={cx("num")}>{nf.format(g.bands[k] ?? 0)}</b>
             </span>
-          </span>
-          <span style={{ left: P(b.p50) }}>{T_("lab.ui.normal")}</span>
-        </div>
-      </>
+          ))}
+        </p>
+        <dl className={cx("sumlist")}>
+          <dt>{t("occ.sum.median")}</dt>
+          <dd className={cx("num")}>{pct(g.p_any_median)}</dd>
+          <dt>{t("occ.sum.ncells")}</dt>
+          <dd className={cx("num")}>{t("occ.sum.ncells_v", { n: nf.format(ncl), p: nf.format(g.n_persistent) })}</dd>
+        </dl>
+        <p className={cx("lb-cap")}>{t("occ.sum.not_area_p")}</p>
+      </div>
     );
   };
 
-  /* ── 정렬 가능한 표 ── */
-  const LVW: Record<LvKey, string> = { high: T_("lab.ui.high"), normal: T_("lab.ui.normal"), low: T_("lab.ui.low"), na: T_("lab.ui.n_a") };
+  /* ── 표 ── */
+  const shown = sortOcc(
+    rows.filter((r) => !flt || (!r.suspected_industrial && (flt === "ge70" ? bandOf(r.p_any) === 3 : r.vs_normal === "higher"))),
+    sort.k,
+    sort.dir,
+    lang,
+  );
   const COLS = [
-    { k: "name", t: T_("lab.ui.s358"), get: (r: Row) => r.region_name as string | number | null },
-    { k: "median", t: T_("lab.ui.median"), r: true, get: (r: Row) => r.median },
-    { k: "range", t: T_("lab.ui.80_interval_vs_normal"), get: (r: Row) => r.hi80 },
-    { k: "p50", t: T_("lab.ui.normal_p502"), r: true, get: (r: Row) => r.baseline.p50, cls: "lb-c-p50" },
-    { k: "level", t: T_("lab.ui.level"), get: (r: Row) => LV_RANK[lvOf(r)] * 1000 + (r.median ?? 0) / Math.max(1, r.baseline.p50 ?? 1) },
+    { k: "name" as const, t: kor ? t("occ.col.sgg") : t("occ.col.cell") },
+    { k: "p" as const, t: t("occ.col.p"), r: true },
+    { k: "b" as const, t: t("occ.col.base"), r: true },
+    { k: "d" as const, t: t("occ.col.vs") },
   ];
   const table = () => {
-    if (!FC) return null;
-    const col = COLS.find((c) => c.k === sort.k) ?? COLS[1]!;
-    const rows = FC.rows
-      .filter((r) => !lvf || lvOf(r) === lvf)
-      .sort((a, b) => {
-        const x = col.get(a);
-        const y = col.get(b);
-        if (x == null && y == null) return 0;
-        if (x == null) return 1;
-        if (y == null) return -1;
-        return (typeof x === "string" ? x.localeCompare(String(y), lang) : (x as number) - (y as number)) * sort.dir;
-      });
-    const mx = Math.max(1e-9, ...FC.rows.map((r) => Math.max(r.hi80 ?? 0, r.baseline.p90 ?? 0))) * 1.06;
-    const P = (v: number | null) => `${(((v ?? 0) / mx) * 100).toFixed(2)}%`;
+    if (failed) return null;
+    if (kor && list.data && !list.data.coverage.available) return noData;
+    /* 위 요약이 이미 「이 지역 자료 없음」 한 줄을 말한다 — 표는 되풀이하지 않는다 */
+    if (!kor && sum.data && !sum.data.coverage.available) return null;
+    if (!rows.length) return ready ? noData : null;
     return (
-      <table className={cx("tbl is-row lb-ft", !(lang === "ko" && kor) && "lb-ft-wide")} data-ft="">
-        <caption className={cx("lb-sr")}>{T_("lab.ui.30_day_forecast_by_sort_by_c")}</caption>
+      <table className={cx("tbl is-row lb-ft oc-ft")} data-ft="">
+        <caption className={cx("lb-sr")}>{t("occ.table_cap")}</caption>
         <thead>
           <tr>
             {COLS.map((c) => {
               const on = sort.k === c.k;
               return (
-                <th key={c.k} className={cx(c.r && "r", c.cls) || undefined} aria-sort={on ? (sort.dir > 0 ? "ascending" : "descending") : "none"}>
+                <th key={c.k} className={cx(c.r && "r") || undefined} aria-sort={on ? (sort.dir > 0 ? "ascending" : "descending") : "none"}>
                   <button type="button" className={cx("lb-sort", on && "on")} data-k={c.k} onClick={() => setSort((s) => (s.k === c.k ? { k: c.k, dir: -s.dir } : { k: c.k, dir: c.k === "name" ? 1 : -1 }))}>
                     {c.t}
                     {on ? (
@@ -311,39 +378,20 @@ function LabScreen() {
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => {
-            const on = selId === r.region_id;
-            const k = lvOf(r);
+          {shown.map((r) => {
+            const on = selId === r.id;
+            const sh = shadeOf(r.p_any, r.suspected_industrial);
             return (
-              <tr key={r.region_id} className={on ? cx("on") : undefined} data-r={r.region_id} onClick={() => select(on ? null : r.region_id)}>
+              <tr key={r.id} className={cx(on && "on", r.suspected_industrial && "oc-greyrow") || undefined} data-r={r.id} data-grey={r.suspected_industrial ? "1" : undefined} onClick={() => select(on ? null : r.id)}>
                 <td>
-                  <button type="button" className={cx("lb-rbtn")} data-r={r.region_id} aria-pressed={on}>
-                    {r.region_name}
+                  <button type="button" className={cx("lb-rbtn")} data-r={r.id} aria-pressed={on}>
+                    <i className={cx("oc-sw", sh == null ? "oc-bna" : "oc-b" + sh)} aria-hidden="true" />
+                    {r.name}
                   </button>
                 </td>
-                <td className={cx("num r lb-c-med")}>{F.n1(r.median)}</td>
-                <td className={cx("lb-c-rng")}>
-                  <div className={cx("lb-rng")}>
-                    {r.median == null ? (
-                      <span className={cx("lb-rb lb-rb-na")}>{T_("lab.ui.insufficient_data")}</span>
-                    ) : (
-                      <>
-                        <span className={cx("lb-rb")} aria-hidden="true">
-                          <i className={cx("lb-rb-b")} style={{ left: P(r.baseline.p10), width: `calc(${P(r.baseline.p90)} - ${P(r.baseline.p10)})` }} />
-                          <i className={cx("lb-rb-f", "lb-lv-" + k)} style={{ left: `min(${P(r.lo80)},calc(${P(((r.lo80 ?? 0) + (r.hi80 ?? 0)) / 2)} - 5px))`, width: `max(10px,calc(${P(r.hi80)} - ${P(r.lo80)}))` }} />
-                          <i className={cx("lb-rb-m")} style={{ left: P(r.median) }} />
-                        </span>
-                        <span className={cx("lb-rt num")}>
-                          {F.n1(r.lo80, r.hi80)}–{F.n1(r.hi80, r.lo80)}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </td>
-                <td className={cx("num r lb-c-p50")}>{F.n1(r.baseline.p50)}</td>
-                <td>
-                  <span className={cx("lb-lvs", "lb-lv-" + k)}>{LVW[k]}</span>
-                </td>
+                <td className={cx("num r lb-c-med")}>{pct(r.p_any)}</td>
+                <td className={cx("num r lb-c-p50")}>{pct(r.baseline_p)}</td>
+                <td>{r.suspected_industrial ? <span className={cx("oc-vs oc-vs-grey")}>{t("occ.industrial_short")}</span> : <span className={cx("oc-vs", "oc-vs-" + (r.vs_normal ?? "na"))}>{r.vs_normal ? VSW[r.vs_normal] : "–"}</span>}</td>
               </tr>
             );
           })}
@@ -352,69 +400,57 @@ function LabScreen() {
     );
   };
 
-  const regionCSV = () => {
-    if (!FC) return;
-    const q2 = (v: number | string | null | undefined) => (v == null ? "" : v);
-    const rows = [FC.total, ...FC.rows];
+  const csv = () => {
+    if (!rows.length) return;
     downloadText(
-      `emberline_outlook_${FC.month}.csv`,
-      toCSV(rows, [
-        { label: "region_id", get: (r) => r.region_id },
-        { label: "aoi_id", get: (r) => q2(r.aoi_id) },
-        { label: "region_name", get: (r) => r.region_name },
-        { label: "issued", get: () => FC.issued },
-        { label: "target_month", get: () => FC.month },
-        { label: "unit", get: () => T_("lab.g6.unit") },
-        { label: "forecast_median", get: (r) => q2(r.median) },
-        { label: "forecast_lo80", get: (r) => q2(r.lo80) },
-        { label: "forecast_hi80", get: (r) => q2(r.hi80) },
-        { label: "forecast_verdict", get: (r) => q2(r.verdict) },
-        { label: "ratio_to_base_median", get: (r) => q2(r.ratio) },
-        { label: "baseline_p10", get: (r) => q2(r.baseline.p10) },
-        { label: "baseline_p50", get: (r) => q2(r.baseline.p50) },
-        { label: "baseline_p90", get: (r) => q2(r.baseline.p90) },
-        { label: "partial_value_to_date", get: (r) => (r.ol?.pt != null ? r.ol.pt / 10 : "") },
-        { label: "partial_value_projected", get: (r) => (r.ol?.ptp != null ? r.ol.ptp / 10 : "") },
-        { label: "partial_as_of", get: () => FC.m.partial_as_of },
-        { label: "loyo_cover80", get: (r) => (r.ol ? (r.ol.cov[0] ?? 0) / 1000 : "") },
-        { label: "loyo_mae_log", get: (r) => (r.ol ? (r.ol.mae[0] ?? 0) / 1000 : "") },
-        { label: "loyo_mae_log_climo", get: (r) => (r.ol ? (r.ol.mae0[0] ?? 0) / 1000 : "") },
-        { label: "method", get: () => FC.m.id },
-        { label: "input_release", get: () => FC.m.input?.release ?? "" },
+      `emberline_occurrence_${tm ?? "next"}_${scopeId}.csv`,
+      toCSV(shown, [
+        { label: kor ? "aoi_id" : "cell_id", get: (r) => r.id },
+        { label: "name", get: (r) => r.name },
+        { label: "target_month", get: () => tm ?? "" },
+        { label: "as_of_date", get: () => asOf ?? "" },
+        { label: "p_any", get: (r) => r.p_any },
+        { label: "baseline_p", get: (r) => r.baseline_p },
+        { label: "vs_normal", get: (r) => r.vs_normal },
+        { label: kor ? "suspected_industrial" : "persistent_source", get: (r) => (r.suspected_industrial ? "true" : "false") },
+        { label: "rank", get: (r) => r.rank },
+        { label: "model", get: (r) => (kor ? (r.item?.model ?? "") : (sum.data?.model ?? "")) },
+        { label: "data_release", get: () => (kor ? list.data?.data_release : sum.data?.data_release) ?? "" },
       ]),
     );
   };
-  const totalTxt = (() => {
-    const s = t("shell.list.total", { n: "\u0000", u: T_("lab.ui.s324") });
-    const [a, b] = s.split("\u0000");
-    return (
-      <>
-        {a}
-        <b>{F.num(FC?.rows.length ?? regions.length)}</b>
-        {b}
-      </>
-    );
-  })();
 
-  const ctx = { FC, O, F, T_, t, kor, regions, sel: selId, select, rowOf, selRow, regLabel, allLabel, selAoi, lang, device, fitBbox };
+  /* 지도 맞춤: 한국 = 고른 범위의 시군구 면 상자 · 그 밖 = 나라 본토 상자 */
+  const geomBox = useMemo(() => (kor ? geomBounds(sggRows.map((r) => r.geom).filter(Boolean)) : null), [kor, sggRows]);
+  const fit: Bbox | null = useMemo(() => {
+    if (kor) return (S.byId.get(scopeId)?.bbox as Bbox | undefined) ?? geomBox;
+    const inf = info as (CountryInfo & { bbox_main?: Bbox }) | undefined;
+    return inf?.bbox_main ?? inf?.bbox ?? null;
+  }, [kor, S.byId, scopeId, geomBox, info]);
+
+  const continent = (S.byId.get(scopeId)?.parent_id ?? "").replace(/^CONT_/, "").replace(/_/g, " ") || null;
+  const ctx = { t, kor, iso3, lang, rows, sel: selId, select, selRow, cells: grid.data?.cells ?? null, fit, ready, VSW, areaName, tm: ym(tm), asOf, continent, failed };
 
   return (
     <div className="min-h-0 min-w-0" data-page="lab">
-      <div className={cx("lb")} data-testid="lab" data-ready={FC ? "1" : "0"}>
+      <div className={cx("lb")} data-testid="lab" data-ready={ready ? "1" : "0"}>
         <div className={cx("lb-screen")}>
           <div className={cx("lb-head")}>{head()}</div>
-          <section className={cx("lb-stage")} aria-label={T_("lab.ui.30_day_outlook_map_by")}>
+          <section className={cx("lb-stage")} aria-label={t("occ.map_aria")}>
             <LabMap {...ctx} />
           </section>
-          <aside className={cx("lb-side")} aria-label={T_("lab.ui.outlook_table_by")} ref={sideRef}>
-            <section className={cx("panel lb-tot")}>{total()}</section>
+          <aside className={cx("lb-side")} aria-label={t("occ.side_aria")} ref={sideRef}>
+            <section className={cx("panel lb-tot")}>{summary()}</section>
             <section className={cx("panel lb-tblp")}>
               <div className={cx("listhead")}>
-                <h3 className={cx("lh-t")}>{T_("lab.ui.outlook_by")}</h3>
-                <span className={cx("lh-n")}>{totalTxt}</span>
+                <h3 className={cx("lh-t")}>{kor ? t("occ.list_sgg") : t("occ.list_cells")}</h3>
+                <span className={cx("lh-n")}>
+                  <b>{nf.format(shown.length)}</b>
+                  {kor ? t("occ.u.places") : t("occ.u.cells")}
+                </span>
                 <span className={cx("lh-a")}>
-                  <button type="button" className={cx("btn sm ghost")} data-x="reg" aria-label={T_("lab.ui.download_30_day_outlook_tabl")} onClick={regionCSV}>
-                    {T_("lab.ui.table_csv")}
+                  <button type="button" className={cx("btn sm ghost")} data-x="reg" aria-label={t("occ.csv_aria")} onClick={csv} disabled={!rows.length}>
+                    {t("occ.csv")}
                   </button>
                 </span>
               </div>
@@ -423,29 +459,10 @@ function LabScreen() {
               </div>
               {more ? (
                 <div className={cx("lb-more")} data-more="">
-                  <span>
-                    {T_("lab.ui.s451")}
-                    {more.n}
-                    {T_("lab.ui.rows")}
-                    <b className={cx("num")}>{more.seen}</b>
-                    {T_("lab.ui.shown_scroll_for_more")}
-                  </span>
+                  <span>{t("occ.more", { n: more.n, m: more.seen })}</span>
                 </div>
               ) : null}
-              <p className={cx("lb-cap lb-tcap")}>
-                <span className={cx("lb-rbk")}>
-                  <i className={cx("lb-rbk-b")} />
-                  {T_("lab.ui.normal_p10_p90")}
-                </span>
-                <span className={cx("lb-rbk")}>
-                  <i className={cx("lb-rbk-f")} />
-                  {T_("lab.ui.forecast_80_interval")}
-                </span>
-                <span className={cx("lb-rbk")}>
-                  <i className={cx("lb-rbk-m")} />
-                  {T_("lab.ui.forecast_median")}
-                </span>
-              </p>
+              {!kor && rows.length ? <p className={cx("lb-cap lb-tcap")}>{t("occ.top_cells_cap")}</p> : null}
             </section>
           </aside>
         </div>
@@ -455,30 +472,21 @@ function LabScreen() {
   );
 }
 export type LabCtx = {
-  FC: {
-    ix: Map<string, import("../model/outlook").OutlookAoi>;
-    rows: Row[];
-    total: Row;
-    issued: string;
-    month: string;
-    days: number;
-    targets: string[];
-    m: import("../model/outlook").OutlookMethod;
-  } | null;
-  O: Outlook | null;
-  F: ReturnType<typeof useFmt>;
-  T_: TV;
-  t: (k: string, p?: Record<string, string | number>) => string;
+  t: TV;
   kor: boolean;
-  regions: Region[];
+  iso3: string;
+  lang: string;
+  rows: OccRow[];
   sel: string | null;
   select: (id: string | null) => void;
-  rowOf: (id: string | null) => Row | null;
-  selRow: Row | null;
-  regLabel: string;
-  allLabel: string;
-  selAoi: string | null;
-  lang: string;
-  device: string;
-  fitBbox: Bbox | null;
+  selRow: OccRow | null;
+  cells: GridCell[] | null;
+  fit: Bbox | null;
+  ready: boolean;
+  VSW: Record<string, string>;
+  areaName: string;
+  tm: string;
+  asOf: string | null;
+  continent: string | null;
+  failed: boolean;
 };

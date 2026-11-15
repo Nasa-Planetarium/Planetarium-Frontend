@@ -11,7 +11,7 @@ const SCREENS = [
   { screen: "ops", role: "responder", map: "ops-map" },
   { screen: "land", role: "land", map: "land-map" },
   { screen: "cmd", role: "commander", map: "cmd-map" },
-  { screen: "lab", role: "scientist", map: "lab-map" },
+  { screen: "lab", role: "scientist", map: "fc-map" },
 ];
 
 for (const c of SCREENS) {

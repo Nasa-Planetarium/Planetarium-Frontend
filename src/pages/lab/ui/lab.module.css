@@ -202,7 +202,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 .lb-toth{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-2)}
 .lb-totk{font-size:var(--fs-2);color:var(--text-2)}
 .lb-totv{display:flex;align-items:baseline;flex-wrap:wrap;gap:var(--sp-1) var(--sp-3)}
-.lb-totv>b{font-family:var(--font-data);font-size:var(--fs-big);font-weight:var(--fw-bold);line-height:1.05;letter-spacing:-.02em}
+.lb-totv>b{font-family:var(--font-data);font-size:var(--fs-count);font-weight:var(--fw-bold);line-height:1.05;letter-spacing:-.02em}
 .lb-totv>span{font-size:var(--fs-3);color:var(--text-2)}
 .lb-totv>span b{color:var(--text-1);font-weight:var(--fw-strong)}
 .lb-totu{font-size:var(--fs-2);color:var(--text-2)}
@@ -405,3 +405,120 @@ table.lb-ft.lb-ft-wide th:nth-child(1){width:120px}
 .gl{position:absolute;inset:0}
 .map .scale i{display:block;height:5px;border:1px solid var(--text-2);border-top:0}
 .lb-fm{position:absolute}
+
+/* ── 다음 달 발생 확률(F15) — 색 토큰: 밝은 지도(F14 육지 #F5FEF4·바다 #B4DEF6) 위에서 단계가 갈리게 따뜻한 4단 + 회색. 파랑은 바다와 겹쳐 쓰지 않는다 ── */
+.lb{--occ-0:var(--h6);--occ-1:var(--h5);--occ-2:var(--h4);--occ-3:var(--h2);--occ-ps:var(--map-boundary);--occ-edge:var(--map-label);--occ-sel:var(--map-label-hi)}
+.oc-mapbox{flex:1;min-height:0;display:flex;flex-direction:column}
+.oc-mapbox>.map{flex:1;min-height:0}
+.oc-b0{background:var(--occ-0)}
+.oc-b1{background:var(--occ-1)}
+.oc-b2{background:var(--occ-2)}
+.oc-b3{background:var(--occ-3)}
+.oc-b4{background:var(--occ-ps)}
+.oc-bna{background:var(--hatch)}
+.oc-sw{display:inline-block;flex:none;width:10px;height:10px;border-radius:var(--r-2xs);box-shadow:inset 0 0 0 var(--hair) color-mix(in srgb,var(--text-1) 25%,transparent)}
+.map .map-key i.oc-none{background:var(--map-land);outline:1px solid var(--map-boundary);outline-offset:-1px}
+.oc-key{flex-wrap:wrap;row-gap:var(--sp-1)}
+.oc-sum{display:flex;flex-direction:column;gap:var(--sp-2);min-width:0}
+.oc-sumh{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-2);flex-wrap:wrap}
+.oc-sumk{font-size:var(--fs-4);font-weight:var(--fw-strong);color:var(--text-1)}
+.oc-sub{font-size:var(--fs-2);color:var(--text-2)}
+.oc-big{display:flex;align-items:baseline;flex-wrap:wrap;gap:var(--sp-1) var(--sp-3)}
+.oc-big>b{font-family:var(--font-data);font-size:var(--fs-count);font-weight:var(--fw-bold);line-height:1.05;letter-spacing:-.02em;color:var(--text-1)}
+.oc-big>span{font-size:var(--fs-3);color:var(--text-2)}
+.oc-big.is-grey>b{color:var(--text-3)}
+.oc-bars{display:flex;height:12px;border-radius:var(--r-2xs);overflow:hidden;gap:1px;background:var(--line-soft)}
+.oc-bar{display:block;flex-basis:0;min-width:2px}
+.oc-barkey{display:flex;flex-wrap:wrap;gap:var(--sp-1) var(--sp-3);font-size:var(--fs-2);color:var(--text-2)}
+.oc-barkey>span{display:inline-flex;align-items:center;gap:var(--sp-1);white-space:nowrap}
+.oc-barkey b{color:var(--text-1);font-weight:var(--fw-strong)}
+.oc-vs{white-space:nowrap;font-size:var(--fs-2);color:var(--text-2)}
+.oc-vs-higher{color:var(--text-1);font-weight:var(--fw-strong)}
+.oc-vs-lower,.oc-vs-grey,.oc-vs-na{color:var(--text-3)}
+.oc-grey{font-size:var(--fs-2);line-height:1.5;color:var(--text-2);padding:var(--sp-2) var(--sp-3);border-radius:var(--r-s);background:var(--surface-2);border-left:3px solid var(--occ-ps)}
+.oc-nodata{padding:var(--sp-4) 0;font-size:var(--fs-3);color:var(--text-2)}
+.oc-cbs{cursor:default}
+table.oc-ft th:nth-child(1){width:auto}
+table.oc-ft th:nth-child(2),table.oc-ft th:nth-child(3){width:64px}
+table.oc-ft th:nth-child(4){width:96px}
+.oc-ft .lb-rbtn{gap:var(--sp-2)}
+.oc-ft tbody tr.oc-greyrow td{color:var(--text-3)}
+.oc-ft tbody tr.oc-greyrow .lb-rbtn{color:var(--text-3)}
+.oc-vt td{vertical-align:top}
+.oc-vt td.r{white-space:nowrap}
+.oc-vsb{color:var(--text-2);font-size:var(--fs-2)}
+.oc-better{display:block;font-size:var(--fs-1)}
+.oc-better.ok{color:var(--ok)}
+.oc-better.no{color:var(--warn)}
+.oc-limit{font-size:var(--fs-3);color:var(--text-1);line-height:1.5;margin-bottom:var(--sp-3);padding-left:var(--sp-3);border-left:2px solid var(--line-strong)}
+.oc-how>dd{text-align:left}
+.oc-id{font-family:var(--font-data);font-size:var(--fs-2);color:var(--text-2);overflow-wrap:anywhere}
+
+/* ── 30일 전망(F17, forecast-view.tsx) ── */
+.lb-views{display:inline-flex;align-items:stretch;border-radius:var(--r-s);box-shadow:inset 0 0 0 var(--hair) var(--line-strong);overflow:hidden}
+.lb-view{height:var(--ctl-h-sm);min-height:var(--hit);padding:0 var(--sp-3);border:0;background:transparent;color:var(--text-2);font:inherit;font-size:var(--fs-2);cursor:pointer;white-space:nowrap}
+.lb-view+.lb-view{border-left:var(--hair) solid var(--line-strong)}
+.lb-view:hover{color:var(--text-1)}
+.lb-view.on{background:var(--surface-3);color:var(--text-1);font-weight:var(--fw-strong)}
+.lb-view:focus-visible{outline:var(--ring-w) solid var(--focus-ring);outline-offset:-2px}
+.fo-screen{display:grid;gap:0;height:calc(100dvh - var(--top));min-height:640px;
+  grid-template-columns:minmax(0,1fr) var(--panel-w);grid-template-rows:auto minmax(280px,1fr) auto;grid-template-areas:"head head" "stage side" "band side"}
+.fo-head{grid-area:head}
+.fo-title{font-size:var(--fs-title);font-weight:var(--fw-bold);color:var(--text-1);white-space:nowrap}
+.fo-stage{grid-area:stage}
+.fo-side{grid-area:side}
+.fo-band{grid-area:band;border-radius:0;box-shadow:none;border-top:var(--hair) solid var(--line-soft);padding:0 var(--sp-4) var(--sp-3)}
+.fo-band-empty{height:200px}
+.fo-pick,.fo-sum{padding:var(--sp-3) var(--sp-4)}
+.fo-h{font-size:var(--fs-4);font-weight:var(--fw-strong);margin:0 0 var(--sp-2)}
+.fo-lbl{display:flex;flex-direction:column;gap:var(--sp-1);font-size:var(--fs-2);color:var(--text-2)}
+.fo-sel{height:var(--ctl-h);min-height:var(--hit);padding:0 var(--sp-3);border-radius:var(--r-s);border:var(--hair) solid var(--line-strong);background:var(--surface-2);color:var(--text-1);font:inherit;font-size:var(--fs-3)}
+.fo-sel:focus-visible{outline:var(--ring-w) solid var(--focus-ring);outline-offset:1px}
+.fo-draw{display:flex;flex-wrap:wrap;gap:var(--sp-2);margin-top:var(--sp-2)}
+.fo-draw .on{box-shadow:inset 0 0 0 2px var(--accent)}
+.fo-big{display:flex;flex-direction:column;gap:var(--sp-1);margin-bottom:var(--sp-2)}
+.fo-bigv{display:flex;align-items:baseline;flex-wrap:wrap;gap:var(--sp-2);font-size:var(--fs-3);color:var(--text-2)}
+.fo-bigv b{font-family:var(--font-data);font-size:var(--fs-count);font-weight:var(--fw-bold);line-height:1.05;letter-spacing:-.02em;color:var(--text-1)}
+.fo-hint,.fo-basew{font-size:var(--fs-page);font-weight:var(--fw-bold);color:var(--text-1);line-height:1.35}
+.fo-chip{display:inline-flex;align-items:center;width:max-content;height:var(--chip-h);padding:0 var(--sp-2);border-radius:var(--r-pill);font-size:var(--fs-1);font-weight:var(--fw-medium);background:var(--surface-3);color:var(--text-2);white-space:nowrap}
+.fo-chip.sk-high{background:var(--accent-soft);color:var(--text-1)}
+.fo-chip.sk-low{background:var(--surface-3);color:var(--text-1)}
+.fo-chip.sk-none,.fo-chip.sk-grey{background:var(--surface-2);color:var(--text-3);box-shadow:inset 0 0 0 var(--hair) var(--line-strong)}
+.fo-sumb.is-grey .fo-bigv b,.fo-sumb.is-grey [data-count],.fo-sumb.is-grey .fo-hint{color:var(--text-3)}
+.fo-greyl{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-1);margin-top:var(--sp-2);font-size:var(--fs-2);color:var(--text-3)}
+.fo-basis{color:var(--text-3);word-break:break-word}
+.fo-notice{margin-top:var(--sp-3);padding:var(--sp-2) var(--sp-3);border-radius:var(--r-s);background:var(--surface-2);font-size:var(--fs-2);color:var(--text-1);font-weight:var(--fw-medium)}
+.fo-chart{position:relative;min-width:0}
+.fo-legend{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-3);font-size:var(--fs-1);color:var(--text-2);margin-bottom:var(--sp-1)}
+.fo-legend span{display:inline-flex;align-items:center;gap:var(--sp-1)}
+.fo-legnote{color:var(--text-3)}
+.fo-sw{display:inline-block;width:12px;height:10px;border-radius:2px}
+.fo-sw-m{background:var(--data-harm)}
+.fo-sw-p{background:color-mix(in srgb,var(--data-harm) 45%,var(--surface-1))}
+.fo-sw-b{height:0;border-top:2px dashed var(--text-2)}
+.fo-svg{display:block;overflow:visible}
+.fo-zone{fill:var(--surface-2)}
+.fo-zt{font-size:var(--fs-1);fill:var(--text-2);font-family:var(--font-body)}
+.fo-grid{stroke:var(--line-soft);stroke-width:1}
+.fo-ax{font-size:var(--fs-1);fill:var(--text-3);font-family:var(--font-data)}
+.fo-bar-m{fill:var(--data-harm)}
+.fo-bar-p{fill:color-mix(in srgb,var(--data-harm) 45%,var(--surface-1))}
+.fo-bar-m.on,.fo-bar-p.on{fill:var(--text-1)}
+.fo-base{fill:none;stroke:var(--text-2);stroke-width:1.5;stroke-dasharray:4 3}
+.fo-read{min-height:1.5em;margin:var(--sp-1) 0;font-size:var(--fs-2);color:var(--text-2);font-variant-numeric:tabular-nums}
+.fo-strip{display:grid;grid-template-columns:repeat(30,minmax(0,1fr));gap:2px;height:14px}
+.fo-cell{display:block;border-radius:2px;background:color-mix(in srgb,var(--data-harm) calc(var(--a) * 100%),var(--surface-2))}
+.fo-cell.k-p{opacity:.72}
+.fo-cell.on{outline:2px solid var(--text-1);outline-offset:0}
+:global(html[data-device="phone"]) .fo-screen{height:auto;min-height:0;grid-template-columns:minmax(0,1fr);grid-template-rows:auto max(320px,48dvh) auto auto;grid-template-areas:"head" "stage" "side" "band"}
+:global(html[data-device="phone"]) .lb-views{width:100%}
+:global(html[data-device="phone"]) .lb-view{flex:1}
+
+/* 카드(벤토) 배치(main #40, 모든 화면 공통) — 예측 분석 두 보기(다음 달 발생 확률 · 30일 전망)도 패널 = 둥근 카드(--r-l) · 카드 사이 틈(--gap-panel) */
+.lb-screen,.fo-screen{gap:var(--gap-panel);padding:0 var(--gutter) var(--gutter)}
+.lb-screen>.pghd,.fo-screen>.pghd{margin-inline:calc(-1 * var(--gutter))}
+.lb-side{border-radius:var(--r-l)}
+.lb-band{gap:var(--gap-panel);padding:0 var(--gutter) var(--gutter);margin-top:0}
+.lb-col{gap:var(--gap-panel)}
+.fo-band{border-radius:var(--r-l);box-shadow:var(--seam-ring);border-top:0}
+:global(html[data-device="phone"]) .lb-screen,:global(html[data-device="phone"]) .fo-screen{padding:0 var(--gutter) var(--gutter)}

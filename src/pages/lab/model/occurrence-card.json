@@ -1,0 +1,200 @@
+{
+ "_note": "scripts/snap-occurrence.py 가 release meta(grid_occurrence_meta.json · aoi_occurrence_meta.json)에서 옮긴 검증 수치. 소수 4자리 반올림 외에 바꾸지 않는다. 계약(/api/v1)에 검증 수치 경로가 아직 없어 화면 상수로 둔다.",
+ "release": "data-v1.2-2026-11-15",
+ "source_sha256": {
+  "grid_occurrence_meta.json": "b9d492d55c8880fc05719894d6f4b076a43ec2cf3c23d1deabd637e1521c305c",
+  "aoi_occurrence_meta.json": "c6148673ad6513679e8f5df98fca2e78d015767810d90d05234f83373cfc58f1"
+ },
+ "grid": {
+  "model": "grid_occurrence_xgb+isotonic",
+  "calibration": "isotonic",
+  "validation": "expanding window 2020-2025, train <= Y-2, early stop + calibration on Y-1",
+  "excl_persistent": true,
+  "table": [
+   {
+    "group": "ALL",
+    "rows": 3786912,
+    "pos_rate": 0.3526,
+    "model": {
+     "pr_auc": 0.8996,
+     "brier": 0.0958
+    },
+    "same_month": {
+     "pr_auc": 0.8689,
+     "brier": 0.104
+    },
+    "last_year": {
+     "pr_auc": 0.6478,
+     "brier": 0.1781
+    },
+    "beats": true
+   },
+   {
+    "group": "Africa",
+    "rows": 618192,
+    "pos_rate": 0.5271,
+    "model": {
+     "pr_auc": 0.9564,
+     "brier": 0.0931
+    },
+    "same_month": {
+     "pr_auc": 0.9406,
+     "brier": 0.1005
+    },
+    "last_year": {
+     "pr_auc": 0.7869,
+     "brier": 0.1726
+    },
+    "beats": true
+   },
+   {
+    "group": "Asia",
+    "rows": 838296,
+    "pos_rate": 0.3823,
+    "model": {
+     "pr_auc": 0.8819,
+     "brier": 0.1119
+    },
+    "same_month": {
+     "pr_auc": 0.8496,
+     "brier": 0.1207
+    },
+    "last_year": {
+     "pr_auc": 0.6386,
+     "brier": 0.2047
+    },
+    "beats": true
+   },
+   {
+    "group": "Europe",
+    "rows": 944856,
+    "pos_rate": 0.1649,
+    "model": {
+     "pr_auc": 0.7133,
+     "brier": 0.0795
+    },
+    "same_month": {
+     "pr_auc": 0.6598,
+     "brier": 0.0885
+    },
+    "last_year": {
+     "pr_auc": 0.3821,
+     "brier": 0.1488
+    },
+    "beats": true
+   },
+   {
+    "group": "North America",
+    "rows": 682848,
+    "pos_rate": 0.2815,
+    "model": {
+     "pr_auc": 0.8695,
+     "brier": 0.0878
+    },
+    "same_month": {
+     "pr_auc": 0.8347,
+     "brier": 0.0947
+    },
+    "last_year": {
+     "pr_auc": 0.5794,
+     "brier": 0.166
+    },
+    "beats": true
+   },
+   {
+    "group": "Oceania",
+    "rows": 254232,
+    "pos_rate": 0.314,
+    "model": {
+     "pr_auc": 0.8323,
+     "brier": 0.1117
+    },
+    "same_month": {
+     "pr_auc": 0.7967,
+     "brier": 0.1212
+    },
+    "last_year": {
+     "pr_auc": 0.5526,
+     "brier": 0.2069
+    },
+    "beats": true
+   },
+   {
+    "group": "South America",
+    "rows": 448488,
+    "pos_rate": 0.5817,
+    "model": {
+     "pr_auc": 0.948,
+     "brier": 0.1068
+    },
+    "same_month": {
+     "pr_auc": 0.9277,
+     "brier": 0.1145
+    },
+    "last_year": {
+     "pr_auc": 0.7851,
+     "brier": 0.1995
+    },
+    "beats": true
+   },
+   {
+    "group": "KOR",
+    "rows": 4320,
+    "pos_rate": 0.3185,
+    "model": {
+     "pr_auc": 0.6799,
+     "brier": 0.1552
+    },
+    "same_month": {
+     "pr_auc": 0.6502,
+     "brier": 0.165
+    },
+    "last_year": {
+     "pr_auc": 0.4563,
+     "brier": 0.281
+    },
+    "beats": true
+   },
+   {
+    "group": "ARG",
+    "rows": 79848,
+    "pos_rate": 0.4358,
+    "model": {
+     "pr_auc": 0.8927,
+     "brier": 0.123
+    },
+    "same_month": {
+     "pr_auc": 0.8615,
+     "brier": 0.1341
+    },
+    "last_year": {
+     "pr_auc": 0.6499,
+     "brier": 0.2357
+    },
+    "beats": true
+   }
+  ]
+ },
+ "aoi": {
+  "model": "aoi_occurrence_xgb+platt",
+  "calibration": "platt",
+  "validation": "expanding window 2016-2025",
+  "table": {
+   "group": "KR_SGG",
+   "rows": 30240,
+   "pos_rate": 0.1302,
+   "model": {
+    "pr_auc": 0.422,
+    "brier": 0.0927
+   },
+   "same_month": {
+    "pr_auc": 0.4037,
+    "brier": 0.0964
+   },
+   "last_year": {
+    "pr_auc": 0.2234,
+    "brier": 0.1631
+   }
+  }
+ }
+}

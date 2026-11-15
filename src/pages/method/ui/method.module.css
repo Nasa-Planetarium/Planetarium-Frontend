@@ -199,3 +199,5 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 :global(html[data-device="web"]) .mt-g4 .mt-coef td:first-child,:global(html[lang="ko"][data-device="web"]) .mt-grid[data-g="method"] .mt-coef td:first-child{white-space:nowrap}
 :global(html[data-device="web"]:not([data-touch="1"])) .mt-ko summary{min-height:0}
 @media (max-height:860px){:global(html[data-device="web"]) .mt-ctab{--lc:1}:global(html[data-device="web"]) .mt .tbl td{padding-block:3px}}
+.mt-dn{font-weight:var(--fw-strong)}
+.mt-sat{margin-top:var(--sp-3);min-width:0}
