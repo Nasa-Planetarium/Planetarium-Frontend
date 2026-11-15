@@ -1,20 +1,11 @@
-/** 로고 표지(목업 core.js LOGO 그대로). 양피지 색(--raw-paper)은 이 표지 한 곳에만 쓴다(DIRECTION-R8 §3.2) */
+import Image from "next/image";
+import logoMark from "./logo-mark.png";
+
+/**
+ * 로고 표지 — 불꽃 + 궤도(flame-orbit). 원본 남색 별 배경을 걷어 낸 투명 PNG(66px = 22px 의 3배, 붉은 후광 포함).
+ * 접근성 이름은 감싸는 요소(머리줄 span role="img" aria-label="Emberline")가 가진다 → 여기는 꾸밈(alt="").
+ * 정적 가져오기 → 빌드가 /_next/static/media/ 에 내용 해시 이름으로 내보낸다(1년 캐시 규칙에 들어감).
+ */
 export function LogoMark() {
-  return (
-    <svg
-      className="flex-none text-paper-mark"
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      fill="none"
-      stroke="currentColor"
-      strokeLinecap="round"
-    >
-      <path d="M3 10.5A9.6 9.6 0 0 1 19.6 6.4" strokeWidth="1.6" />
-      <circle cx="20.6" cy="7.6" r="1.7" fill="currentColor" stroke="none" />
-      <circle cx="12" cy="15" r="6" strokeWidth="2" />
-      <circle cx="12" cy="15" r="2.4" fill="currentColor" stroke="none" />
-    </svg>
-  );
+  return <Image src={logoMark} alt="" aria-hidden="true" width={22} height={22} className="flex-none" draggable={false} />;
 }
