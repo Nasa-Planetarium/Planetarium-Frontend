@@ -474,7 +474,7 @@
    "r2_note": "R² alone does not decide quality — read MAE, bias, seasons and extremes together",
    "reference": "Reference: overlap-period VIIRS",
    "scope": "{aoi}, {n} {u} · overlap {a}–{b}",
-   "zero_note": "Share of MODIS-0 {u}·months where VIIRS saw at least one hotspot — the basis for flagging pre-2012 zero cells"
+   "zero_note": "Share of MODIS-0 {u}·months where VIIRS saw at least one hotspot — the basis for withholding the verdict on pre-2012 zero cells"
   },
   "village": {
    "고란리": "Goran-ri",

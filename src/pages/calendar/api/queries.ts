@@ -93,6 +93,10 @@ export interface ComparisonData {
   baseline_p25?: number | null;
   baseline_p75?: number | null;
   baseline?: { year: number; value: number | null; status?: string; used?: boolean }[];
+  /** v1.2 선택 필드(옛 응답엔 없음): 이 지역 비교 기준 기간 · 연속성 점검 비율 · 비율 출처(own | parent:<id>) */
+  baseline_period?: string | null;
+  continuity_ratio?: number | null;
+  continuity_source?: string | null;
 }
 export const comparisonQuery = (aoiId: string, ym: string, mv: string | null, on: boolean) =>
   queryOptions({
