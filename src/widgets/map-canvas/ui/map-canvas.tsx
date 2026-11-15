@@ -208,7 +208,7 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
         pitchWithRotate: false,
         touchPitch: false,
         fadeDuration: 0,
-        // 소프트웨어 GL(GPU 없는 PC·VM·CI 러너)에서는 MSAA 를 끈다 — 화면마다 다시 그리는 비용의 약 2할(aibox 1코어 실측)
+        // 소프트웨어 GL(GPU 없는 PC·VM·CI 러너)에서는 MSAA 를 끈다 — 화면마다 다시 그리는 비용의 약 2할(팀 시험 서버 1코어 실측)
         canvasContextAttributes: { antialias: !softwareGl(), preserveDrawingBuffer: true },
       });
       made = m;

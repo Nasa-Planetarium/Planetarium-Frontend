@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * ② 비교 분석 시험(aibox 전용) — 계약 /api/v1(MSW 스냅숏 또는 실서버)이 3단계 화면에 붙는지 잰다.
+ * ② 비교 분석 시험(팀 시험 서버 전용) — 계약 /api/v1(MSW 스냅숏 또는 실서버)이 3단계 화면에 붙는지 잰다.
  * 잰다: 경북 2025-03 판정(예년보다 많음 · 백분위 100) · 단계 1→2→3 주소 step · 캘린더 「비교 분석」 넘김(aoi·ym·view 유지) · 보기 바꾸기 · 고를 수 없는 달은 비활성.
  */
 test.beforeEach(async ({ page }) => {

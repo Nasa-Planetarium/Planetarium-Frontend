@@ -76,7 +76,8 @@ function flatten(obj, prefix = "", acc = []) {
   return acc;
 }
 
-const report = { mockup, generated_at: new Date().toISOString(), langs: {} };
+/* 목업 위치는 저장소 기준 상대 경로로만 적는다(공개 저장소 — 개인 홈 경로가 커밋되지 않게) */
+const report = { mockup: path.relative(root, mockup).split(path.sep).join("/"), generated_at: new Date().toISOString(), langs: {} };
 const allKeys = {};
 fs.mkdirSync(outDir, { recursive: true });
 const bundleNames = new Set();
