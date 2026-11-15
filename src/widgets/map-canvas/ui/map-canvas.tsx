@@ -104,6 +104,24 @@ const lngLatOf = (c: unknown): [number, number] | null => {
 
 const fc = (features: unknown[]) => ({ type: "FeatureCollection" as const, features });
 const reduced = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+/** 이 브라우저의 WebGL 이 소프트웨어 래스터(SwiftShader·llvmpipe 등)인가 — 한 번만 재고 기억한다 */
+let softGl: boolean | null = null;
+const softwareGl = () => {
+  if (softGl !== null) return softGl;
+  softGl = false;
+  try {
+    const gl = document.createElement("canvas").getContext("webgl");
+    if (gl) {
+      const ext = gl.getExtension("WEBGL_debug_renderer_info");
+      const name = String(gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER) ?? "");
+      softGl = /swiftshader|llvmpipe|softpipe|software|basic render/i.test(name);
+      gl.getExtension("WEBGL_lose_context")?.loseContext();
+    }
+  } catch {
+    softGl = false;
+  }
+  return softGl;
+};
 const tokReader = (): Tok => {
   const css = getComputedStyle(document.documentElement);
   return (n) => css.getPropertyValue(`--${n}`).trim();
@@ -190,7 +208,8 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
         pitchWithRotate: false,
         touchPitch: false,
         fadeDuration: 0,
-        canvasContextAttributes: { antialias: true, preserveDrawingBuffer: true },
+        // 소프트웨어 GL(GPU 없는 PC·VM·CI 러너)에서는 MSAA 를 끈다 — 화면마다 다시 그리는 비용의 약 2할(aibox 1코어 실측)
+        canvasContextAttributes: { antialias: !softwareGl(), preserveDrawingBuffer: true },
       });
       made = m;
       mapRef.current = m;
@@ -227,6 +246,15 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
         pRef.current.onReady?.(m);
       });
       m.on("moveend", emitView);
+      /* 움직임 신호(data-moving): 카메라가 움직이기 시작하면(movestart — easeTo·fitBounds·끌기 모두 부르는 순간 바로) "1",
+         움직임이 끝나면(moveend) "0". 타일 읽기·경로 점선 흐름 같은 계속되는 그리기와는 상관없다(idle 은 그런 화면에서 오래 안 온다).
+         React 상태가 아니라 속성을 바로 바꾼다 — 움직이는 동안 다시 그리지 않게. 시험은 카메라를 옮긴 뒤 "0" 을 기다린다 */
+      const moving = (v: "0" | "1") => {
+        if (wrap.current) wrap.current.dataset.moving = v;
+      };
+      moving(m.isMoving() ? "1" : "0");
+      m.on("movestart", () => moving("1"));
+      m.on("moveend", () => moving("0"));
       const tick = () => {
         if (!raf)
           raf = requestAnimationFrame(() => {

@@ -1,9 +1,11 @@
 # 배포 — release 로 머지(push)되면 Cloudflare Pages 운영 판으로. 수동 실행(workflow_dispatch)도 release 에서만 배포한다.
-# 화면 = 정적 내보내기(out/, 실서버 http 모드로 고정) · API = functions/api/[[path]].ts 가 /api/v1/* 를 API_ORIGIN 으로 넘긴다.
+# 화면 = 정적 내보내기(out/, 실서버 http 모드로 고정) · API = functions/api/[[path]].ts 가 /api/v1/* 를
+#   서비스 바인딩 API(Worker emberline-api)로, 바인딩이 없을 때만 API_ORIGIN 으로 넘긴다.
 # 필요한 것(README 「배포」):
 #   비밀  CLOUDFLARE_API_TOKEN(계정 › Cloudflare Pages: Edit 만) · CLOUDFLARE_ACCOUNT_ID
-#   변수  CF_PAGES_PROJECT(Pages 프로젝트 이름, 프로덕션 가지 = main)
-#   Pages 프로젝트 환경변수 API_ORIGIN(백엔드 공개 주소) — 이 워크플로가 아니라 Cloudflare 대시보드에서
+#   변수  CF_PAGES_PROJECT(= emberline, 프로덕션 가지 = main)
+#   바인딩 API 는 Cloudflare Pages 프로젝트 설정에 이미 있다 — 레포에 wrangler.toml 을 두지 않는다(두면 프로젝트 설정을 덮는다)
+#   API_ORIGIN 은 선택(바인딩이 없을 때의 대체) — 이 워크플로가 아니라 Cloudflare 대시보드에서
 name: deploy
 
 on:

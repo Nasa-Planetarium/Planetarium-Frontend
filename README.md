@@ -7,6 +7,21 @@
 - 결정 원장: `planetarium-spec/00-decisions.md` (A–G). 설계: `planetarium-spec/architecture/frontend-design.md`. 계약: `contract/openapi.yaml`(사본, 원본 `planetarium-spec/contract`).
 - 이 소스는 프런트 팀에 **소스로 전달**한다(결정 G3). 원격 저장소 = `Nasa-Planetarium/Planetarium-Frontend`(GitHub) — `main` 개발, `release` 로 머지하면 배포(아래 「배포」).
 
+## 팀 안내 (저장소 처음 README 에서 옮김)
+
+Team Planetarium · NASA Space Apps 2026 Seoul — 챌린지: Harmonization of MODIS and VIIRS Hot Spots.
+MODIS(2000~)와 VIIRS(2012~) 위성 화재 감지를 하나의 기준(VIIRS S-NPP 기준 감지량)으로 통합한 데이터를 지도·캘린더·그래프로 보여 준다.
+
+```
+[모델 Planetarium-AI]  →  [백엔드 Planetarium-Backend (Spring)]  →  [프런트엔드 (이 저장소)]
+ 데이터·예측 결과            파라미터를 정제해 API로 제공              화면 표시
+```
+
+- 프런트엔드는 정제된 데이터의 API만 부른다. 모델 쪽 내부 API는 직접 부르지 않는다.
+  데이터·API 규칙: [Planetarium-AI/docs/api_contract.md](https://github.com/Nasa-Planetarium/Planetarium-AI/blob/main/docs/api_contract.md), [backend-handoff.md](https://github.com/Nasa-Planetarium/Planetarium-AI/blob/main/docs/backend-handoff.md)
+- 화면 표시 규칙: 「산불 건수」가 아니라 **「위성 화재 감지량 (VIIRS 기준)」** · 2000-11 ~ 2012-01 값은 **「추정값」** 으로 범위(`value_lo`~`value_hi`)와 함께 · `status = missing` 인 달은 회색(0 으로 칠하지 않기), `partial` 은 「집계 중」 · residual 값은 따로 그리지 않기 · 확산 가능성 지도엔 필수 안내 문구 · 비밀 키(`FIRMS_MAP_KEY` 등)는 프런트 코드에 넣지 않기 · NASA FIRMS 인정 문구와 경계 데이터 출처(CC BY) 표기.
+- 작업 방법: `main` 에 직접 push 하지 않는다 — 가지 → PR → 리뷰 → 머지. 배포는 `main` 이 아니라 `release` 머지 때다(아래 「배포」).
+
 ## 실행
 
 Node ≥ 22.18, pnpm 10.34.9(`packageManager` 고정 — pnpm 이 없으면 `corepack enable` 이 이 판을 받아 준다).
@@ -57,14 +72,17 @@ node scripts/check-pages-out.mjs --mode http   # 빌드 결과가 Pages 한도 �
 | `/geo/*` | 정적(경계·하천) | 7일 |
 | `/data/*` | 정적(release 스냅숏) | 5분 + 재확인 |
 | `/`, `/ko/*`, `/en/*`, `*.html` | 정적(페이지) | 0(배포 즉시 새 판) |
-| `/api/v1/*` | **Pages Functions** `functions/api/[[path]].ts` → `API_ORIGIN` | 백엔드 응답의 Cache-Control 그대로 |
+| `/api/v1/*` | **Pages Functions** `functions/api/[[path]].ts` → 서비스 바인딩 `API`(없으면 `API_ORIGIN`) | 백엔드 응답의 Cache-Control 그대로 |
 
 프록시 규칙(`functions/api/[[path]].ts`):
+- **넘기는 곳**: 서비스 바인딩 `API`(Worker `emberline-api` → Workers VPC → 전용 터널 → 백엔드)가 있으면 그쪽으로. 바인딩이 없을 때만 Pages 환경변수 `API_ORIGIN` 으로.
+  바인딩은 Cloudflare Pages 프로젝트 `emberline` 의 production·preview 양쪽에 **이미 설정돼 있다**(OMB). 레포에 `wrangler.toml` 을 두지 않는 한 프런트 쪽 할 일은 없다
+  — `wrangler.toml` 을 두면 그 파일이 프로젝트 설정을 덮으므로 그때는 `[[services]] binding = "API"` · `service = "emberline-api"` 를 꼭 넣는다.
 - `GET`·`HEAD` 만 넘긴다. 그 밖 메서드 → 405 problem+json(`method_not_allowed`). `/api/v1/` 밖 → 404(`not_found`).
   계약의 `POST /summary-queries` 는 화면이 부르지 않아 막혀 있다 — 화면이 부르게 되면 이 파일을 같이 고친다.
 - 요청 헤더는 `Accept`·`Accept-Language`·`If-None-Match`·`If-Modified-Since` 만 넘긴다. **쿠키·Authorization 은 넘기지 않는다.**
 - 응답은 상태·본문·헤더(Cache-Control·ETag·X-Method-Version 등) 그대로, `Set-Cookie` 와 hop-by-hop 헤더만 뺀다.
-- `API_ORIGIN` 이 없거나 백엔드에 닿지 못하면 502 problem+json(`upstream_error`, `Cache-Control: no-store`).
+- 바인딩도 `API_ORIGIN` 도 없거나, 백엔드에 닿지 못하면(바인딩 호출이 던짐·연결 실패·20초 넘김) 502 problem+json(`upstream_error`, `Cache-Control: no-store`).
 - 접속자 IP 는 `X-Client-IP` 로(값 = Cloudflare 가 붙인 `CF-Connecting-IP`), 그리고 `X-Forwarded-Proto`·`X-Forwarded-Host` 를 붙인다.
   **백엔드가 `X-Client-IP` 를 믿을지는 백엔드(OMB) 몫이다** — 터널 공개 주소로 직접 오는 요청은 이 헤더를 아무 값으로나 지어 보낼 수 있다.
   믿으려면 백엔드가 Pages 에서 온 요청만 받게(예: Cloudflare Access 서비스 토큰·비밀 헤더) 막은 뒤에만 쓴다.
@@ -74,12 +92,14 @@ node scripts/check-pages-out.mjs --mode http   # 빌드 결과가 Pages 한도 �
 | 이름 | 종류 · 위치 | 값 | 누가 |
 |---|---|---|---|
 | `CLOUDFLARE_API_TOKEN` | GitHub 비밀(Settings › Secrets and variables › Actions, 또는 환경 `production`) | API 토큰 — 권한 **Account › Cloudflare Pages › Edit 하나만**, 계정 하나로 한정 | Cloudflare 계정 소유자가 만들고 → 레포 관리자가 등록 |
-| `CLOUDFLARE_ACCOUNT_ID` | GitHub 비밀 | Cloudflare 계정 ID | 계정 소유자 → 레포 관리자 |
-| `CF_PAGES_PROJECT` | GitHub **변수**(Variables) | Pages 프로젝트 이름(소문자·숫자·`-`) | 레포 관리자 |
-| `API_ORIGIN` | **Cloudflare Pages 프로젝트 환경변수**(Settings › Variables and Secrets, Production) — GitHub 아님 | 백엔드 공개 주소, 예 `https://emberline-api.example`(경로는 버리고 출처만 씀) | Cloudflare 계정 소유자(주소는 OMB 가 터널을 연 뒤 알려 줌) |
+| `CLOUDFLARE_ACCOUNT_ID` | GitHub 비밀 | Cloudflare 계정 ID(대시보드 › 계정 홈의 Account ID — 값은 저장소에 적지 않는다, 액션이 비밀로 읽는다) | 레포 관리자 |
+| `CF_PAGES_PROJECT` | GitHub **변수**(Variables) | `emberline` | 레포 관리자 |
+| 서비스 바인딩 `API` | **Cloudflare Pages 프로젝트 설정**(Settings › Bindings, production·preview) — GitHub 아님 | Worker `emberline-api` | **이미 설정됨**(OMB) — 할 일 없음 |
+| `API_ORIGIN`(선택) | Cloudflare Pages 프로젝트 환경변수(Settings › Variables and Secrets) — GitHub 아님 | 바인딩이 없을 때만 쓰는 대체 주소(출처만, 경로는 버림). 바인딩이 있으면 읽지 않는다 | 비워 둔다 |
 
-- Pages 프로젝트는 **Direct Upload** 로 만들고 프로덕션 가지를 `main` 으로 둔다(`--branch=main` 이 운영 판이 되게). Git 연동 빌드는 켜지 않는다(빌드는 Actions 가 한다).
-- `API_ORIGIN` 을 바꾸면 Functions 는 **다음 배포부터** 새 값을 쓴다 — 바꾼 뒤 Actions › deploy 를 release 에서 다시 돌린다.
+- 토큰 값은 사용자가 레포 관리자에게 직접 전달한다(저장소·문서에 적지 않는다).
+- Pages 프로젝트 `emberline` 은 이미 있다(주소 `https://emberline-9sd.pages.dev` — `emberline` 주소는 다른 곳이 써서 뒤가 붙었다). Direct Upload, 프로덕션 가지 `main`(`--branch=main` 이 운영 판). Git 연동 빌드는 켜지 않는다(빌드는 Actions 가 한다).
+- 바인딩·`API_ORIGIN` 을 바꾸면 Functions 는 **다음 배포부터** 새 값을 쓴다 — 바꾼 뒤 Actions › deploy 를 release 에서 다시 돌린다.
 - 한도: 파일 20,000 · 파일당 25 MiB · `_headers` 규칙 100. 지금 out/ = 파일 약 2,835 · 약 118.5 MiB · 가장 큰 파일 4.2 MiB(2026-11-15 aibox 측정). 넘으면 `check-pages-out` 이 배포 전에 멈춘다.
 
 ### 롤백
@@ -96,6 +116,9 @@ NEXT_PUBLIC_DATA_MODE=http pnpm build                    # Windows PowerShell: $
 node scripts/check-pages-out.mjs --mode http
 npx wrangler@4.155.0 pages dev out --port 8798 --binding API_ORIGIN=http://<백엔드 주소>   # http://127.0.0.1:8798/ko/calendar/
 ```
+
+로컬에는 `emberline-api` Worker 가 없으므로 위처럼 `API_ORIGIN` 대체 경로로 본다. 바인딩 경로를 로컬에서 보려면 같은 이름 `API` 로 Worker 를 띄워 붙인다
+(`npx wrangler@4.155.0 dev <worker>.js --name <이름>` 을 따로 띄운 뒤 `pages dev out --service API=<이름>`).
 
 **MSW 모드는 시험용**: 환경변수 없이 `pnpm dev`·`pnpm build` 하면 코드 기본값(`src/shared/config/env.ts`)이 `msw` 라서 백엔드 없이 `public/data/snap` 스냅숏으로 돈다 — e2e·화면 작업용.
 운영 배포는 이 기본값에 기대지 않는다(deploy.yml 이 `http` 를 주고, 결과물에서 다시 잰다).

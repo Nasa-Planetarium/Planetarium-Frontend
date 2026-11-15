@@ -106,6 +106,8 @@ function AnalysisScreen() {
 
   const kq = useQuery(comparisonQuery(aoi ?? "KR", ym || "2000-01", mv, !!aoi && !blocked));
   const c = !blocked && kq.data ? kq.data : null;
+  /* 달을 바꾸면 새 응답이 올 때까지 앞 달 값을 그대로 둔다(빈 화면으로 갔다 오지 않게) — 표시는 은은하게만 */
+  const stale = !!c && kq.isPlaceholderData;
 
   const writeQ = useCallback(
     (patch: Record<string, string | null>, push = false, country?: string) => {
@@ -172,7 +174,7 @@ function AnalysisScreen() {
     prefs.set("an.v3", JSON.stringify({ step, aoi, year: qy, month: month ?? null, view }));
   }, [ready, aoi, step, qy, month, view]);
 
-  const ctx: Ctx = { t, T, W, lang, nf, device, aoi: aoi ?? "", rec, cal, c, M, view, y: qy, m: month ?? qm, base, aoiName, writeQ, go, errWord, has };
+  const ctx: Ctx = { t, T, W, lang, nf, device, aoi: aoi ?? "", rec, cal, c, stale, M, view, y: qy, m: month ?? qm, base, aoiName, writeQ, go, errWord, has };
 
   const counts: { key: string; label: string; value: string; unit?: string }[] = [];
   if (step > 1 && c && c.value != null) {
@@ -184,7 +186,7 @@ function AnalysisScreen() {
 
   return (
     <div className="min-h-full min-w-0" data-page="analysis">
-      <div className={cx("an")} data-testid="analysis" data-step={step} data-ready={ready ? "1" : "0"} data-aoi={aoi ?? ""} data-ym={ym} data-view={view}>
+      <div className={cx("an")} data-testid="analysis" data-step={step} data-ready={ready ? "1" : "0"} data-aoi={aoi ?? ""} data-ym={ym} data-view={view} data-busy={stale ? "1" : undefined}>
         <header className={cx("pghd an-head")}>
           <div className={cx("ph-1")}>
             <h1 tabIndex={-1} ref={h1}>

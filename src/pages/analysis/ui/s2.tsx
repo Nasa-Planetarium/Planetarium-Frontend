@@ -106,7 +106,7 @@ export function S2({ x }: { x: Ctx }) {
               <div className={cx("an-gl")}>
                 <CalPanel x={x} onPick={pick} />
               </div>
-              <section className={cx("panel an-det")}>
+              <section className={cx("panel an-det")} aria-busy={x.stale || undefined}>
                 <div className={cx("panel-h")}>
                   <h3>
                     {T("ui.yearly")}
@@ -602,7 +602,7 @@ function Trend({ x }: { x: Ctx }) {
     saveText(`emberline_summary_${safeName(x.aoi)}_${tr.start}_${tr.end}_day.csv`, toCSV(rows, ["row_type", "aoi_id", "date", "value", "value_projected", "as_of_date", "days_in_range", "days_in_month", "residual_prorated", "freq", "method_version", "release"]));
   };
   return (
-    <section className={cx("panel an-trend")} aria-label={T("g6.tr_title")}>
+    <section className={cx("panel an-trend")} aria-label={T("g6.tr_title")} aria-busy={(freq === "day" && sq.isPlaceholderData) || undefined}>
       <div className={cx("panel-h")}>
         <h3>{T("g6.tr_title")}</h3>
         <div className={cx("seg an-trf")} role="group" aria-label={T("g6.tr_freq")}>
@@ -696,7 +696,13 @@ function CellPanel({ x }: { x: Ctx }) {
   const ym = ymIso(y, m);
   const mv = x.M?.method_version ?? null;
   const q0 = useQuery(cellsQuery(x.aoi, ym, mv, true));
-  const wide = q0.error instanceof ApiError && q0.error.code === "range_too_large";
+  /* 넓은 범위(400 range_too_large → 1° 묶음) 판정은 지역마다 하나 — 달이 바뀌어 새 응답을 기다리는 동안 앞 판정을 그대로 써서
+     「…」 빈 판으로 갔다 오지 않게(2026-11-15 깜빡임). 응답이 오면(성공·오류) 그 판정으로 바꾼다 */
+  const wideNow = q0.error instanceof ApiError && q0.error.code === "range_too_large";
+  const settled = (q0.isError || q0.isSuccess) && !q0.isPlaceholderData;
+  const [wideSt, setWideSt] = useState<{ a: string; w: boolean } | null>(null);
+  if (settled && (wideSt?.a !== x.aoi || wideSt.w !== wideNow)) setWideSt({ a: x.aoi, w: wideNow });
+  const wide = settled ? wideNow : wideSt?.a === x.aoi ? wideSt.w : false;
   const aq = useQuery(aoisQuery(mv));
   const co = useCoarseCells({ aoiId: x.aoi, aois: aq.data, y, m, on: wide });
   const q: { data: CellsData | undefined; error: unknown; isPending: boolean } = wide ? { data: (co.data ?? undefined) as CellsData | undefined, error: co.isError ? q0.error : null, isPending: co.isPending } : q0;
@@ -734,7 +740,7 @@ function CellPanel({ x }: { x: Ctx }) {
   const vmax = Math.max(1, ...cells.map((c) => c.value));
   const err = q.error ? W(q.error instanceof ApiError && (q.error.code === "data_not_loaded" || q.error.code === "rate_limited") ? `err.${q.error.code}` : "err.network") : null;
   return (
-    <section className={cx("panel an-cellp")}>
+    <section className={cx("panel an-cellp")} aria-busy={(wide ? false : q0.isPlaceholderData) || undefined}>
       <div className={cx("panel-h")}>
         <h3>
           {T("g3.cell_map")} <span className={cx("num")}>{ym}</span>

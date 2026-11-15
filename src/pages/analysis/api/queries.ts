@@ -31,6 +31,21 @@ export interface AoiRec {
  */
 export const retryRateLimited = (n: number, e: unknown) => n < 2 && e instanceof ApiError && e.status === 429;
 
+/**
+ * 달·기간만 바뀐 같은 지역·같은 method_version 질의는 앞 응답을 자리표시(placeholderData)로 둔다 — 캘린더에서 달을 누를 때
+ * 새 응답이 올 때까지 화면이 「빈 상태」로 갔다 돌아오며 깜빡이던 것(2026-11-15 측정: 클릭마다 본문 전체가 1프레임 사라졌다 다시 그려짐).
+ * 지역·판이 바뀌면 앞 값을 쓰지 않는다(다른 지역 값을 잠깐이라도 보이지 않게). 화면은 isPlaceholderData 로 「새 값 받는 중」을 은은하게만 보인다.
+ */
+export const sameAoiKey = (key: readonly unknown[] | undefined, aoiId: string, mv: string | null) => {
+  if (!key || key[2] !== (mv ?? "mv?")) return false;
+  const p = key[1] as { aoi_id?: unknown } | undefined;
+  return String(key[0]).startsWith(`aois/${aoiId}/`) || p?.aoi_id === aoiId;
+};
+export const keepSameAoi =
+  (aoiId: string, mv: string | null) =>
+  <T,>(prev: T | undefined, prevQuery: { queryKey: readonly unknown[] } | undefined): T | undefined =>
+    prev !== undefined && sameAoiKey(prevQuery?.queryKey, aoiId, mv) ? prev : undefined;
+
 export const aoisQuery = (mv: string | null) =>
   queryOptions({
     queryKey: qk("aois", { all: 1 }, mv),
@@ -85,6 +100,7 @@ export const comparisonQuery = (aoiId: string, ym: string, mv: string | null, on
     staleTime: 24 * 60 * 60 * 1000,
     enabled: !!mv && on,
     retry: retryRateLimited,
+    placeholderData: keepSameAoi(aoiId, mv),
   });
 
 export interface CellsData {
@@ -100,6 +116,7 @@ export const cellsQuery = (aoiId: string, ym: string, mv: string | null, on: boo
     staleTime: 24 * 60 * 60 * 1000,
     enabled: !!mv && on,
     retry: retryRateLimited,
+    placeholderData: keepSameAoi(aoiId, mv),
   });
 
 /** 칸 지도 점 층(목) — 그 달 release 기준 감지 점(GET /hotspots layer=reference, 합계에 드는 점). 목업 analysis.js drawCells pm==="month" */
@@ -156,4 +173,5 @@ export const summaryQuery = (aoiId: string, start: string, end: string, mv: stri
     staleTime: 24 * 60 * 60 * 1000,
     enabled: !!mv && on,
     retry: retryRateLimited,
+    placeholderData: keepSameAoi(aoiId, mv),
   });

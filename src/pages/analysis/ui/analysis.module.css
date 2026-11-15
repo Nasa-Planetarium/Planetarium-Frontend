@@ -381,6 +381,11 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 .an-vbits b{color:var(--text-1);font-weight:var(--fw-strong)}
 .an-vn{color:var(--text-3)}
 .an-cellp{border-top:var(--hair) solid var(--seam)}
+/* 달 바꿈: 새 값 받는 동안 앞 값 위 은은한 표시(빈 판으로 바꾸지 않는다). 응답이 빠르면(<180ms) 안 보인다 */
+.an-det .panel-b,.an-trend .panel-b,.an-cellp .panel-b{transition:opacity .16s ease}
+.an-det[aria-busy="true"] .panel-b,.an-trend[aria-busy="true"] .panel-b,.an-cellp[aria-busy="true"] .panel-b{opacity:.62;transition-delay:.18s}
+.an[data-busy="1"] .cntbar .cb-v{opacity:.62;transition:opacity .16s ease .18s}
+@media (prefers-reduced-motion:reduce){.an-det .panel-b,.an-trend .panel-b,.an-cellp .panel-b,.an[data-busy="1"] .cntbar .cb-v{transition:none}}
 .an-cellb{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:var(--sp-4);align-items:start}
 .an-cellsvg{max-width:560px}
 .an-cellb .an-cleg{margin-top:0}
