@@ -13,3 +13,4 @@ export { islandMarkers, ISLAND_MAINLAND_PX, ISLAND_MIN_PX, ISLAND_MERGE_PX } fro
 export { shellRamp, SHELL_RAMP_AT } from "./shell-ramp";
 export { LEVEL_KEY, KEY_LEVEL, STATUS_KEY, TAIL_KEY } from "./copy";
 export type { MapStatusKind } from "./copy";
+export { displayInterval, hasSpread } from "./interval";

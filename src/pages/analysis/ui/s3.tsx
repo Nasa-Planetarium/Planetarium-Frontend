@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ChevronLeft, Download, FileText } from "lucide-react";
 import { api, hotspotsTooWide } from "@/shared/api";
-import { displayInterval, hasSpread } from "@/shared/lib/interval";
+import { displayInterval, hasSpread } from "@/shared/lib/display";
 import { continuityParent } from "@/shared/lib/baseline-period";
 import { toast } from "@/shared/ui/toast";
 import { LIM_BASE, RESULT_COLS, calendarCSV, isoD, lastDay, monthRec, safeName, toCSV, trDefault } from "../model/analysis";

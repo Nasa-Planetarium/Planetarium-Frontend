@@ -7,13 +7,12 @@ import { boundaryQuery } from "@/entities/country";
 import { decodeMonth, monthIdx, worldGridQuery, type CoarseAoi } from "@/entities/world-grid";
 import { ApiError, cellsTileQuery, pointsBoxQuery } from "@/shared/api";
 import { useT } from "@/shared/i18n";
-import { areaOf, boxHits, levelOf, LEVEL_KEY, pointBoxes, TAIL_KEY, tilesOf, type Box, type Level, type MapStatusKind } from "@/shared/lib/display";
+import { areaOf, boxHits, displayInterval, hasSpread, levelOf, LEVEL_KEY, pointBoxes, TAIL_KEY, tilesOf, type Box, type Level, type MapStatusKind } from "@/shared/lib/display";
 import { boundaryApiQuery, type MonthPoints } from "../api/queries";
 import type { CalView, CellProps } from "../model/calendar";
 import { caseFor, cellCase, fmtNum, fmtVal, iso3OfAoi, monthIndex, ymIso, ymWord } from "../model/calendar";
 import { unitWord } from "./cal-grid";
 import { cx } from "./cx";
-import { displayInterval, hasSpread } from "@/shared/lib/interval";
 import { DotMap, type DotCell } from "./dot-map";
 import { WorldReplay } from "./world-replay";
 

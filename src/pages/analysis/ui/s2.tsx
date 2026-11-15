@@ -36,7 +36,7 @@ import { cx } from "./cx";
 import { DistChart } from "./dist-chart";
 import { VdMark } from "./vd-mark";
 import type { Ctx } from "./types";
-import { displayInterval, hasSpread } from "@/shared/lib/interval";
+import { displayInterval, hasSpread } from "@/shared/lib/display";
 
 /** 보기 낱말 = 셸 사전 한 곳(shell.view.* — 캘린더 탭과 같은 낱말, 목업 g7 EM.viewWord) */
 export const viewWord = (x: Pick<Ctx, "W">, v: CalView) => x.W(`view.${v}`);

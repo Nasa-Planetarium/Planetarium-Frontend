@@ -3,7 +3,7 @@
  * 값은 release 그대로(A1·E1): 판정·백분위·배수는 /compare 값, 달 상태·출처는 /calendar 행. 화면이 하는 일은 고르기·늘어놓기뿐이다.
  * 경우 가르기(결측·범위 밖·운용 전…)는 core.caseOf → judgeMonth(E4, switch 없음).
  */
-import { displayInterval, hasSpread } from "@/shared/lib/interval";
+import { displayInterval, hasSpread } from "@/shared/lib/display";
 import { caseOf, ymIso, ymKey, type CalendarData, type CalView, type MonthRow } from "./core";
 
 export const STEPS = [1, 2, 3] as const;
