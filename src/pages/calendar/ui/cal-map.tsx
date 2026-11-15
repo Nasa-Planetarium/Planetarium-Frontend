@@ -193,7 +193,7 @@ export function CalMap(o: { aoi: string; aois?: CoarseAoi[] | null; y: number; m
 
   return (
     <>
-      <div className={cx("cl-map")} data-map="" data-level={level ?? ""} data-cells={level && level !== "L3" && !pendingCells ? String(cells.length) : ""}>
+      <div className={cx("cl-map")} data-map="" data-level={level ?? ""} data-area={view ? areaOf(view.box).toFixed(2) : ""} data-cells={level && level !== "L3" && !pendingCells ? String(cells.length) : ""}>
         <DotMap
           cells={mismatch ? [] : cells}
           size={kept.size}
