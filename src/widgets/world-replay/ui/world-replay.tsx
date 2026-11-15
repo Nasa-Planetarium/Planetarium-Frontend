@@ -11,7 +11,8 @@ import { worldGridQuery, type LatBand, type WorldMeta } from "@/entities/world-g
 import { useT } from "@/shared/i18n";
 import { aoiOfIso3 } from "@/shared/lib/adm0";
 import { contTok } from "@/shared/lib/map-color";
-import { MapLoading } from "@/shared/ui";
+import { boxBounds, radiusPx, stepOf, stepOfCell, useStepColors } from "@/shared/lib/display";
+import { MapKey, MapLoading } from "@/shared/ui";
 import cj from "./continent-jump.module.css";
 import lbl from "./map-labels.module.css";
 
@@ -83,6 +84,7 @@ const MAP_LABELS = [
 const p2 = (n: number) => String(n).padStart(2, "0");
 const ymIso = (y: number, m: number) => `${y}-${p2(m)}`;
 const ymOfIndex = (i: number): [number, number] => [2000 + Math.floor((10 + i) / 12), ((10 + i) % 12) + 1];
+const ymWord = (lang: string, y: number, m: number) => (lang === "ko" ? `${y}년 ${m}월` : new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en", { month: "short", year: "numeric", timeZone: "UTC" }));
 const nfC = new Map<string, Intl.NumberFormat>();
 const intl = (lang: string, key: string, o: Intl.NumberFormatOptions) => {
   const k = `${lang}|${key}`;
@@ -128,8 +130,8 @@ const yOf = (lat: number) => Math.round((MY0 - merc(Math.max(LAT_S, Math.min(LAT
 const NM = 313;
 const SPEEDS = [1, 2, 4];
 const VS_CLS: Record<string, string> = { modis_m2v_terra: "as", modis_m2v: "as", snpp_observed: "va", n20_bridge: "af" };
-const R_ST = [0.9, 1.25, 1.6, 1.95, 2.3];
-const tOf = (v: number) => Math.max(0, Math.min(255, Math.round((Math.log10(v) / 4) * 255)));
+/* 캔버스(가로 1440px = 360°)가 화면에 1:1 로 보이는 줌 — 칸 원 크기는 이 줌에서 R5 규칙(radiusPx)으로 정한다(캔버스는 확대하면 같이 커진다) */
+const Z_CANVAS = Math.log2(CW / 512);
 const ymS = (i: number) => {
   const [y, m] = ymOfIndex(i);
   return ymIso(y, m);
@@ -168,20 +170,8 @@ function prep(meta: WorldMeta, buf: ArrayBuffer, band: LatBand): Prep {
   return { meta, band, n, bpm, u8, off, bx, by0, dq };
 }
 
-/** 램프 LUT(256 단계 · 투명도 0.9–1 — 밝은 바탕에서 적은 값도 3:1 을 지키게, F14 C3) */
-function makeLut(ramp: (t: number) => string) {
-  const L = new Uint8ClampedArray(256 * 4);
-  for (let k = 0; k < 256; k++) {
-    const h = ramp(0.18 + 0.82 * (k / 255)).replace("#", "");
-    const v = parseInt(h, 16) || 0;
-    L.set([(v >> 16) & 255, (v >> 8) & 255, v & 255, Math.round(255 * (0.9 + 0.1 * (k / 255)))], k * 4);
-  }
-  return L;
-}
-
 export interface WorldReplayProps {
   month: number | null;
-  ramp: (t: number) => string;
   onMonth?: (i: number) => void;
   onCountry?: (iso3: string, i: number) => void;
   /** 판(method_version) — 누른 나라의 캘린더 행(/aois/{ADM0}/calendar)을 받는 키 */
@@ -208,7 +198,8 @@ export function WorldReplay(o: WorldReplayProps) {
   const { list: countries } = useCountry();
   const { data, isError } = useQuery(worldGridQuery());
   const D = useMemo(() => (data ? prep(data.meta, data.buf, data.band) : null), [data]);
-  const lut = useMemo(() => makeLut(o.ramp), [o.ramp]);
+  /* 단계 색 5개(R4) — 모든 지도와 같은 색 · 같은 경계(0.1° 칸당 0.1 · 1 · 10 · 100, 1° 칸은 합 ÷ 100) */
+  const colors = useStepColors();
   const [i, setI] = useState(o.month ?? NM - 1);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(0);
@@ -289,6 +280,8 @@ export function WorldReplay(o: WorldReplayProps) {
     return () => marks.forEach((m) => m.remove());
   }, [map, lang]);
   const barEl = useRef<HTMLDivElement>(null);
+  /* 대륙 줄 높이(범례를 그 위로 띄운다) */
+  const [barH, setBarH] = useState(0);
   /* 쓰는 화면이 달을 바꾸면(분석 S1 달 고르기 — 목업 wfApi.setMonth) 재생 위치도 그 달로 */
   const [seenMonth, setSeenMonth] = useState(o.month);
   if (o.month !== seenMonth) {
@@ -386,16 +379,17 @@ export function WorldReplay(o: WorldReplayProps) {
     for (let k = 0; k < D.n; k++) {
       if (!((D.u8[bm + (k >> 3)] as number) & (1 << (k & 7)))) continue;
       const v = D.dq[D.u8[p++] as number] as number;
-      if (v < 0.5) continue;
+      const st = stepOfCell(v, 1);
+      if (st == null) continue;
       const y = D.by0[k] as number;
       if (y < -3 || y > CH + 3) continue;
-      const q = tOf(v) * 4;
-      const st = v >= 1000 ? 4 : v >= 100 ? 3 : v >= 10 ? 2 : v >= 1 ? 1 : 0;
-      ctx.fillStyle = `rgba(${lut[q]},${lut[q + 1]},${lut[q + 2]},${((lut[q + 3] as number) / 255).toFixed(2)})`;
+      ctx.fillStyle = colors[st] as string;
+      ctx.globalAlpha = 0.85;
       ctx.beginPath();
-      ctx.arc(D.bx[k] as number, y, R_ST[st] as number, 0, 6.2832);
+      ctx.arc(D.bx[k] as number, y, radiusPx(st, 1, Z_CANVAS), 0, 6.2832);
       ctx.fill();
     }
+    ctx.globalAlpha = 1;
     /* 바다로 넘친 부분 지우기: 육지 가림판과 겹친 곳만 남긴다 */
     if (landMask) {
       ctx.globalCompositeOperation = "destination-in";
@@ -411,7 +405,7 @@ export function WorldReplay(o: WorldReplayProps) {
       }
     }
     onMonth.current?.(i);
-  }, [D, cv, i, lut, map, landMask]);
+  }, [D, cv, i, colors, map, landMask]);
 
   /* 고른 나라 테두리 + 확대 (나라를 안 골랐으면 고른 대륙, 그것도 없으면 전 세계) */
   const boxes = useMemo(() => continentBoxes(countries), [countries]);
@@ -431,12 +425,17 @@ export function WorldReplay(o: WorldReplayProps) {
     if (b) {
       /* 나라 상자는 날짜 변경선을 넘으면 경도가 180 을 넘게 적혀 있다(미국 172 → 293). 세계 복사본을 그리지 않는 지도라 더 넓은 쪽만 남긴다
          (QA 2026-11-15: 미국을 고르면 러시아·아시아 쪽으로 가던 것) */
-      let w = b[0] as number;
-      let e = b[2] as number;
-      if (e > 180) [w, e] = e - 180 > 180 - w ? [Math.max(-180, w - 360), e - 360] : [w, 180];
-      map.fitBounds([[w, Math.max(-58, b[1] as number)], [e, Math.min(78, b[3] as number)]], { padding: 24, maxZoom: 5, duration: 600 });
+      map.fitBounds(boxBounds(b as number[], -58, 78), { padding: 24, maxZoom: 5, duration: 600 });
     }
   }, [map, sel, countries, cont, boxes]);
+
+  useEffect(() => {
+    const el = barEl.current;
+    if (!map || !el) return;
+    const ro = new ResizeObserver(() => setBarH(el.offsetHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [map]);
 
   /* 위도 5° 띠 × 달 */
   useEffect(() => {
@@ -457,13 +456,13 @@ export function WorldReplay(o: WorldReplayProps) {
       rows.forEach((j, r) => {
         const x0 = v[j] == null ? 0 : (v[j] as number) / 10;
         if (!(x0 >= 10)) return;
-        const q = Math.max(0, Math.min(255, Math.round(((Math.log10(x0) - 1) / 5) * 255))) * 4;
-        g.fillStyle = `rgba(${lut[q]},${lut[q + 1]},${lut[q + 2]},${((lut[q + 3] as number) / 255).toFixed(2)})`;
+        /* 위도 띠 합(5° 띠 × 달)은 칸이 아니라 띠 전체 양 — 같은 5색을 쓰되 경계는 띠 눈금(100 · 1천 · 1만 · 10만) */
+        g.fillStyle = colors[stepOf(x0 / 1000) ?? 0] as string;
         g.fillRect(k * cw, (rows.length - 1 - r) * rh, Math.ceil(cw), Math.ceil(rh));
       });
     }
     lbBase.current = g.getImageData(0, 0, c.width, c.height);
-  }, [D, lut]);
+  }, [D, colors]);
   useEffect(() => {
     const c = lbEl.current;
     const g = c?.getContext("2d");
@@ -471,7 +470,7 @@ export function WorldReplay(o: WorldReplayProps) {
     g.putImageData(lbBase.current, 0, 0);
     g.fillStyle = tok("text-1");
     g.fillRect(Math.round(((i + 0.5) / NM) * c.width) - 1, 0, 2, c.height);
-  }, [i, D, lut]);
+  }, [i, D, colors]);
 
   /* 재생: 초당 6 × 배속 달 */
   useEffect(() => {
@@ -534,6 +533,7 @@ export function WorldReplay(o: WorldReplayProps) {
     <div className={cx("wf")} data-month={ymS(i)}>
       <div className={`${cx("wf-map")} ${lbl.host}`} ref={mapEl}>
         <MapLoading show={!map} />
+        {map ? <MapKey level="L1" win={ymWord(lang, ...ymOfIndex(i))} lift={barH} fmt={(n) => fmtNum(lang, n)} /> : null}
         {map ? (
           <div className={cj.bar} ref={barEl} role="group" aria-label={t("shell.map.jump")}>
             {CONTINENTS.map((c) => (
@@ -580,19 +580,6 @@ export function WorldReplay(o: WorldReplayProps) {
         <p className={cx("wf-unit")}>
           {t("shell.unit.snpp_equiv")} · <span>{vs ? t(`shell.vsrc.${vs}`) : ""}</span>
         </p>
-        <div className={cx("wf-leg")}>
-          <span className={cx("wf-legt")}>{T("legend")}</span>
-          <div className={cx("wf-ramp")}>
-            {Array.from({ length: 9 }, (_, k) => (
-              <i key={k} style={{ background: o.ramp(0.18 + 0.82 * (k / 8)) }} />
-            ))}
-          </div>
-          <div className={cx("wf-ticks num")}>
-            {["1", "10", "100", "1k", "10k"].map((x) => (
-              <span key={x}>{x}</span>
-            ))}
-          </div>
-        </div>
         {sel ? (
           <div className={cx("wf-sel")}>
             <div className={cx("wf-sh")}>

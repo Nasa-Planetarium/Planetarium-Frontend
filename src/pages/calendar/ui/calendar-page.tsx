@@ -69,9 +69,8 @@ function CalendarScreen() {
   const pathname = usePath();
   const sp = useQueryParams();
   const { iso3, list: countries } = useCountry();
+  /* 연×월 칸(CalGrid)은 어두운 셸 위 램프. 밝은 지도(점 지도·전 세계 재생)는 지도마다 공통 단계 색(shared/lib/display, 표시 규칙서 R4)을 스스로 읽는다 */
   const ramp = useRamp();
-  /* 밝은 지도 위(점 지도·전 세계 재생)는 지도 램프(F14) — 연×월 칸(CalGrid)은 어두운 셸 위라 ramp 그대로 */
-  const mapRamp = useRamp("mh");
   const mq = useQuery(methodQuery());
   const mv = mq.data?.method_version ?? null;
   const release = (mq.data as { data_version?: string } | undefined)?.data_version ?? mv ?? "";
@@ -280,10 +279,9 @@ function CalendarScreen() {
                 <span className={cx("cl-unit")}>{t("shell.unit.snpp_equiv")}</span>
               </div>
               <div className={cx("cl-wbox")}>
-                {mapRamp ? <WorldReplay
+                {ramp != null ? <WorldReplay
                   mv={mv}
                   month={inRange(y, m) ? monthIndex(y, m) : null}
-                  ramp={mapRamp}
                   partialLine={(o) => t("calendar.ui.partial_line", o)}
                   onCountry={(i3, i) => {
                     const [yy, mm] = ymOfIndex(i);
@@ -320,7 +318,7 @@ function CalendarScreen() {
                 </div>
                 <div className={cx("panel-b")}>
                   {/* key 에 달을 넣지 않는다: 달을 바꿔도 지도를 유지하고 칸·점만 바꾼다(달마다 지도를 새로 만들며 덮개가 번쩍이던 것, LF-1·2) */}
-                  {mapRamp ? <CalMap key={`${aoi}|${view}`} aoi={aoi} aois={aois} y={y} m={m} view={view} mv={mv} inGb={inGb(aoi, byId)} ramp={mapRamp} onCountry={(i3, i) => {
+                  {ramp != null ? <CalMap key={`${aoi}|${view}`} aoi={aoi} aois={aois} y={y} m={m} view={view} mv={mv} inGb={inGb(aoi, byId)} onCountry={(i3, i) => {
                     const [yy, mm] = ymOfIndex(i);
                     setAoi(aoiOfIso3(i3), { ym: ymIso(yy, mm) });
                   }} onWorldMonth={(i) => {
