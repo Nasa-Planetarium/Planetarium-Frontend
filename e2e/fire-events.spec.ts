@@ -14,7 +14,7 @@ function watch(page: Page) {
 async function open(page: Page, path: string, role?: string) {
   await page.addInitScript((r) => {
     localStorage.setItem("em.lang", "ko");
-    if (r) localStorage.setItem("em.role", r);
+    if (r) sessionStorage.setItem("em.role", r);
   }, role ?? "");
   await page.goto(path);
 }

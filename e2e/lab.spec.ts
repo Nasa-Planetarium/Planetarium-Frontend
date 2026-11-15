@@ -17,7 +17,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("예측 분석(한국): 시군구 252 확률·산업 열원 회색·고르기·검증·한계", async ({ page }) => {
-  await page.goto("/ko/lab/");
+  await page.goto("/ko/lab/?view=occ");
   const root = page.locator('[data-testid="lab"][data-ready="1"]');
   await expect(root).toBeVisible({ timeout: 20000 });
   await expect(root.locator("[data-scope]")).toContainText("2026.12");
@@ -48,7 +48,7 @@ test("예측 분석(한국): 시군구 252 확률·산업 열원 회색·고르�
 });
 
 test("예측 분석(한국): 시도를 고르면 그 시도의 시군구 · 격자 요약", async ({ page }) => {
-  await page.goto("/ko/lab/?aoi=SIDO_47");
+  await page.goto("/ko/lab/?view=occ&aoi=SIDO_47");
   const root = page.locator('[data-testid="lab"][data-ready="1"]');
   await expect(root).toBeVisible({ timeout: 20000 });
   const rows = root.locator("[data-ft] tbody tr");
@@ -56,13 +56,13 @@ test("예측 분석(한국): 시도를 고르면 그 시도의 시군구 · 격�
   await expect(rows.first()).toContainText("김천시");
   await expect(rows.first()).toContainText("16%");
   await expect(root.locator('[data-sum="area"]')).toBeVisible();
-  await page.goto("/ko/lab/?aoi=SGG_47150");
+  await page.goto("/ko/lab/?view=occ&aoi=SGG_47150");
   await expect(root.locator('[data-ft] tbody tr[data-r="SGG_47150"]')).toHaveClass(/on/);
   await expect(root.locator('[data-sum="sel"]')).toContainText("김천시");
 });
 
 test("예측 분석(아르헨티나): 0.5° 격자 요약·상위 칸·칸 고르기", async ({ page }) => {
-  await page.goto("/ko/lab/?c=ARG");
+  await page.goto("/ko/lab/?view=occ&c=ARG");
   const root = page.locator('[data-testid="lab"][data-ready="1"]');
   await expect(root).toBeVisible({ timeout: 30000 });
   await expect(root.locator('[data-cnt="tot"]')).toContainText("1,087");
@@ -77,7 +77,7 @@ test("예측 분석(아르헨티나): 0.5° 격자 요약·상위 칸·칸 고�
 });
 
 test("예측 분석: 칸이 없는 나라는 「이 지역 자료 없음」 한 줄(가짜 값 없음)", async ({ page }) => {
-  await page.goto("/ko/lab/?c=BHR");
+  await page.goto("/ko/lab/?view=occ&c=BHR");
   const root = page.locator('[data-testid="lab"][data-ready="1"]');
   await expect(root).toBeVisible({ timeout: 30000 });
   await expect(root.locator("[data-nodata]")).toHaveCount(1);
@@ -87,7 +87,7 @@ test("예측 분석: 칸이 없는 나라는 「이 지역 자료 없음」 한 
 
 test("예측 분석(영어): 문구가 영어 사전에서", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("em.lang", "en"));
-  await page.goto("/en/lab/");
+  await page.goto("/en/lab/?view=occ");
   const root = page.locator('[data-testid="lab"][data-ready="1"]');
   await expect(root).toBeVisible({ timeout: 20000 });
   await expect(root.locator("h1")).toHaveText("Forecast");

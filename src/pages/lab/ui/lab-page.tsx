@@ -1,6 +1,7 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { countryName, useCountry, type CountryInfo } from "@/entities/country";
@@ -9,16 +10,20 @@ import { ScopeButton, aoiOfIso3, useAoiScope, type Bbox } from "@/features/pick-
 import { api, unwrap } from "@/shared/api";
 import { PAGES } from "@/shared/config";
 import { useT } from "@/shared/i18n";
+import { usePath, useQueryParams } from "@/shared/lib/nav";
 import { PageFrame } from "@/widgets/page-frame";
 import { aoiOccurrenceListQuery, aoiOccurrenceQuery, gridOccurrenceQuery, type AoiOccurrence, type GridCell } from "../api/occurrence";
 import { BAND_KEYS, bandOf, geomBounds, latLon, pct, ppDiff, shadeOf, sortOcc } from "../model/occ";
 import { LabBand } from "./lab-band";
 import { LabMap } from "./lab-map";
+import { ForecastView } from "./forecast-view";
 import { cx } from "./cx";
 import { downloadText, toCSV } from "./use-lab";
 
 /**
- * 예측 분석(lab, 과학자) — 모델팀 「다음 달 발생 확률」(결정 F15, release data-v1.2-2026-11-15).
+ * 예측 분석(lab, 과학자) — 두 보기(주소 ?view=):
+ *  - 기본: FireOutlook Planner 30일 전망(결정 F17, POST /api/v1/forecast) — forecast-view.tsx
+ *  - occ: 모델팀 「다음 달 발생 확률」(결정 F15, release data-v1.2-2026-11-15) — 아래 LabScreen
  * 자료: /api/v1 /occurrence/grid(전 세계 0.5° 격자) · /occurrence/aois(한국 시군구 252) · /aois/{id}/occurrence(고른 지역 — 시군구는 모델 값, 그 밖은 격자 요약).
  * 화면은 확률을 다시 계산하지 않는다(A1). 지역 확률은 시군구만 있다 — 나라·시도는 칸 분포(격자 요약)로만 말한다(계약 Q2).
  * 한국: 고른 범위(?aoi=, 기본 대한민국)의 시군구 면 · 그 밖: 0.5° 칸 색. 지속·산업 열원 의심은 회색, 순위·강조에서 뺀다.
@@ -36,7 +41,34 @@ function LabGate() {
   const { data: session, isPending } = useSession();
   const ok = !isPending && !!session && (PAGES.lab.roles ?? []).includes(session.role);
   if (!ok) return <PageFrame page="lab" />;
-  return <LabScreen />;
+  return <LabViews />;
+}
+
+/** 보기 고르기: 30일 전망(기본) · 다음 달 발생 확률(?view=occ) */
+function LabViews() {
+  const t = useT();
+  const lang = useLocale();
+  const sp = useQueryParams();
+  const router = useRouter();
+  const pathname = usePath();
+  const view = sp.get("view") === "occ" ? "occ" : "fc";
+  const go = (v: "fc" | "occ") => {
+    const q = new URLSearchParams(sp.toString());
+    if (v === "occ") q.set("view", "occ");
+    else q.delete("view");
+    const qs = q.toString();
+    router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
+  };
+  const tabs = (
+    <div className={cx("lb-views")} role="tablist" aria-label={t("fc30.views_aria")}>
+      {(["fc", "occ"] as const).map((v) => (
+        <button key={v} type="button" role="tab" aria-selected={view === v} className={cx("lb-view", view === v && "on")} data-view={v} onClick={() => go(v)}>
+          {t(`fc30.view.${v}`)}
+        </button>
+      ))}
+    </div>
+  );
+  return view === "occ" ? <LabScreen tabs={tabs} /> : <ForecastView t={t} lang={lang} tabs={tabs} />;
 }
 
 export type TV = (k: string, p?: Record<string, string | number>) => string;
@@ -56,7 +88,7 @@ export interface OccRow {
 }
 type Filter = "ge70" | "higher" | null;
 
-function LabScreen() {
+function LabScreen({ tabs }: { tabs: ReactNode }) {
   const t = useT();
   const lang = useLocale();
   const { iso3, info } = useCountry();
@@ -183,11 +215,10 @@ function LabScreen() {
           <span className={cx("ph-scope")} data-scope="">
             {t("occ.scope", { a: areaName, m: ym(tm), d: asOf ?? "–" })}
           </span>
-          {kor ? (
-            <div className={cx("ph-tools")}>
-              <ScopeButton s={S} size="sm" />
-            </div>
-          ) : null}
+          <div className={cx("ph-tools")}>
+            {tabs}
+            {kor ? <ScopeButton s={S} size="sm" /> : null}
+          </div>
         </div>
         <div className={cx("cntbar")} role="group" aria-label={t("shell.counts.aria")}>
           {C.map((c) =>

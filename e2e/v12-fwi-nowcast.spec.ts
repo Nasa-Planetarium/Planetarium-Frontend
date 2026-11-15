@@ -11,7 +11,7 @@ import { expect, test, type Page } from "@playwright/test";
  */
 const login = (r: string) => {
   localStorage.setItem("em.lang", "ko");
-  localStorage.setItem("em.role", r);
+  sessionStorage.setItem("em.role", r);
 };
 function watchErrors(page: Page) {
   const errs: string[] = [];
