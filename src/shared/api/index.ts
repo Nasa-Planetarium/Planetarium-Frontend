@@ -3,6 +3,8 @@ export { ApiError, ERROR_HANDLING, heavyRetry, heavyRetryDelay, rateWaitMs } fro
 export type { Problem, ErrorCode } from "./errors";
 export { qk, normalizeParams } from "./query-keys";
 export { listAllAois } from "./aois";
+export { CELLS_MAX, HOTSPOT_MAX_AREA, bboxSqDeg, cellsTooMany, hotspotsTooWide } from "./limits";
+export type { RangeAoi } from "./limits";
 export { dataReady, openDataGate } from "./ready";
 export type { QueryParams } from "./query-keys";
 export type { components, paths } from "./schema";
