@@ -387,6 +387,17 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 .an[data-busy="1"] .cntbar .cb-v{opacity:.62;transition:opacity .16s ease .18s}
 @media (prefers-reduced-motion:reduce){.an-det .panel-b,.an-trend .panel-b,.an-cellp .panel-b,.an[data-busy="1"] .cntbar .cb-v{transition:none}}
 .an-cellb{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:var(--sp-4);align-items:start}
+/* 맨 위 줄(칸 지도 | 캘린더 나란히, QA 2026-11-15): 칸 지도 안은 지도 위 · 범례 아래 한 줄로, 지도는 칸 너비 전체 */
+.an-top .an-cellb{grid-template-columns:minmax(0,1fr)}
+.an-top .an-cellsvg{max-width:none}
+.an-top .an-cellb .an-clr{flex-direction:row;align-items:center;gap:var(--sp-3)}
+.an-detrow{grid-template-columns:minmax(0,1fr)}
+/* 나라·기간 바로 바꾸기(QA 2026-11-15): 단계 줄 아래 드롭다운 3개 + 적용 */
+.an-qx{display:flex;align-items:flex-end;gap:var(--sp-3);flex-wrap:wrap;margin-top:var(--sp-3)}
+.an-qxf{display:flex;flex-direction:column;gap:var(--sp-1);font-size:var(--fs-1);color:var(--text-2)}
+.an-qxf select{height:32px;min-width:96px;padding:0 var(--sp-2);border:var(--hair) solid var(--line-strong);border-radius:var(--r-s);background:var(--surface-1);color:var(--text-1);font:var(--fw-medium) var(--fs-2) var(--font-body)}
+.an-qxf select[data-qx-country]{min-width:180px}
+.an-qxgo{height:32px}
 .an-cellsvg{max-width:560px}
 .an-cellb .an-cleg{margin-top:0}
 .an-cellb .an-clr{flex-direction:column;align-items:flex-start;gap:var(--sp-2)}
