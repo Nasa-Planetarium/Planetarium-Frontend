@@ -39,8 +39,9 @@ node scripts/check-pages-out.mjs --mode http   # 빌드 결과가 Pages 한도 �
 ```
 
 - **main** = 개발. PR·main·release 에 올라온 커밋마다 `.github/workflows/ci.yml` 이 돈다:
-  `pnpm install --frozen-lockfile` → `pnpm check` → 빌드 두 벌(http · msw) + `check-pages-out` → `pnpm e2e`(MSW 빌드, Playwright chromium).
-- **release 로 머지 = 배포.** `.github/workflows/deploy.yml` 이 `pnpm check` → http 빌드 → `check-pages-out --mode http` →
+  `pnpm install --frozen-lockfile` → 정적 검사(typecheck · eslint · steiger · check:isolation) → http 빌드 + `check-pages-out`.
+  **테스트(vitest · e2e)는 CI 에서 돌리지 않는다 — 올리기 전에 로컬에서 `pnpm test` 와 `pnpm build && pnpm e2e` 를 돌린다.**
+- **release 로 머지 = 배포.** `.github/workflows/deploy.yml` 이 정적 검사 → http 빌드 → `check-pages-out --mode http` →
   `cloudflare/wrangler-action`(wrangler 4.155.0)로 `pages deploy out --branch=main` 을 한다. 수동 실행(Actions › deploy › Run workflow)도 **release 가지에서만** 배포한다.
   배포는 한 번에 하나(`concurrency: deploy-production`), GitHub 환경 `production` 에 기록된다.
 - 배포 빌드는 **실서버 모드로 고정**(`NEXT_PUBLIC_DATA_MODE=http`, `NEXT_PUBLIC_API_BASE=/api/v1`). 값을 환경변수로 주고, `check-pages-out` 이
