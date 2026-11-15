@@ -52,16 +52,15 @@ table.tbl{width: 100%; border-collapse: collapse; font-size: var(--fs-3); font-v
 .map .zoom button:focus-visible{outline-offset: -2px;}
 .map .zoom button + button{border-top: 1px solid var(--line-strong);}
 .map .zoom svg{width: var(--ic-map); height: var(--ic-map);}
-.map .scale{position: absolute; right: var(--sp-3); bottom: var(--sp-3); font-family: var(--font-data); font-size: var(--fs-1); font-variant-numeric: tabular-nums; color:var(--map-label);text-shadow:0 0 2px var(--map-halo),0 0 3px var(--map-halo),0 0 4px var(--map-halo); display: flex; align-items: center; gap: var(--sp-1); pointer-events: none;}
-.map .scale i{display:block;height:5px;border:1px solid var(--map-label);border-top:0;box-shadow:0 1px 0 var(--map-halo)}
-.map .attrib{position: absolute; left: var(--sp-3); bottom: 10px; font-size: var(--fs-1); color:var(--map-label);text-shadow:0 0 2px var(--map-halo),0 0 3px var(--map-halo),0 0 4px var(--map-halo); font-family: var(--font-body); pointer-events: none; white-space: nowrap;}
+.map .scale{position: absolute; right: var(--sp-3); bottom: var(--sp-3); font-family: var(--font-data); font-size: var(--fs-1); font-variant-numeric: tabular-nums; color: var(--text-2); display: flex; align-items: center; gap: var(--sp-1); pointer-events: none;}
+.map .scale i{display:block;height:5px;border:1px solid var(--text-2);border-top:0}
+.map .attrib{position: absolute; left: var(--sp-3); bottom: 10px; font-size: var(--fs-1); color: var(--text-3); font-family: var(--font-body); pointer-events: none; white-space: nowrap;}
 .map .tipbox{position: absolute; pointer-events: none; background: color-mix(in srgb,var(--surface-1) 95%,transparent); border: 1px solid var(--line-strong); border-radius: var(--r-s); box-shadow: var(--elev-2); padding: var(--sp-2) var(--sp-3); font-size: var(--fs-2); min-width: 150px; max-width: 240px; transform: translate(12px, -50%); z-index: 5;}
 .map .map-key{position: absolute; left: var(--sp-3); bottom: var(--sp-7); z-index: 2; display: flex; align-items: center; gap: var(--sp-3); max-width: calc(100% - 72px); min-height: 28px; padding: var(--sp-1) var(--sp-2); border-radius: var(--r-2xs); border: 0px; background: color-mix(in srgb,var(--surface-0) 72%,transparent); font-size: var(--fs-1); line-height: 1.3; color: var(--text-2); white-space: nowrap; overflow: hidden; pointer-events: none;}
 .map .map-key > span{display: inline-flex; align-items: center; gap: var(--sp-1); flex: 0 0 auto;}
 .map .map-key > b{flex: 0 0 auto; font-weight: var(--fw-medium); color: var(--text-1);}
 .map .map-key i{flex: 0 0 auto; display: block; width: 10px; height: 10px; border-radius: var(--r-2xs); background: var(--c,var(--text-2));}
-/* 지도 범례 = 지도 램프(땅색 칩 위, F14 L1) */
-.map .map-key i.ramp{width: 56px; height: 8px; background: linear-gradient(90deg,var(--mh1),var(--mh3),var(--mh4),var(--mh5),var(--mh6));box-shadow:0 0 0 2px var(--map-land);}
+.map .map-key i.ramp{width: 56px; height: 8px; background: linear-gradient(90deg,var(--h1),var(--h3),var(--h4),var(--h5),var(--h6));}
 .chart svg{display: block; width: 100%; height: auto; overflow: visible;}
 .chart text{fill: var(--text-2); font-family: var(--font-data); font-size: var(--fs-1); font-variant-numeric: tabular-nums;}
 .chart text.t-ko{font-family: var(--font-body);}
@@ -127,7 +126,7 @@ table.tbl{width: 100%; border-collapse: collapse; font-size: var(--fs-3); font-v
 
 .dt-none{margin:0;padding:var(--sp-5) var(--sp-4);color:var(--text-2);font-size:var(--fs-2)}
 .gl{position:absolute;inset:0}
-.m-lbl{position:absolute;transform:translate(-50%,-50%);font-size:var(--fs-2);color:var(--map-label);white-space:nowrap;pointer-events:none;text-shadow:0 0 2px var(--map-halo),0 0 3px var(--map-halo),0 0 4px var(--map-halo)}
+.m-lbl{position:absolute;transform:translate(-50%,-50%);font-size:var(--fs-2);color:var(--text-2);white-space:nowrap;pointer-events:none;text-shadow:0 0 3px var(--map-void),0 0 6px var(--map-void)}
 .m-note{position:absolute;left:50%;top:var(--sp-3);transform:translateX(-50%);z-index:2;margin:0;max-width:calc(100% - 2 * var(--sp-3));padding:var(--sp-1) var(--sp-3);border-radius:var(--r-s);background:color-mix(in srgb,var(--surface-1) 90%,transparent);border:1px solid var(--line-strong);color:var(--text-2);font-size:var(--fs-2);pointer-events:none}
 .m-fire{position:absolute;pointer-events:none}
 
@@ -796,9 +795,6 @@ table.tbl{width: 100%; border-collapse: collapse; font-size: var(--fs-3); font-v
 :global(html[data-device="phone"]) .cm-map .attrib{max-width:calc(100% - 2 * var(--sp-3))}
 :global(html[data-device="phone"]) .cm-map .scale{bottom:var(--sp-6)}
 :global(html[data-device="phone"]) .cm-map .map-key{bottom:var(--sp-8)}
-/* 지도 상태 줄(.state)이 뜨면 범례를 그 위로(겹침 202×28 — F14 L8) */
-.map[data-state="1"] .map-key{bottom:calc(2 * var(--sp-7) + var(--sp-1))}
-:global(html[data-device="phone"]) .cm-map[data-state="1"] .map-key{bottom:calc(var(--sp-8) + var(--sp-7) + var(--sp-1))}
 
 
 

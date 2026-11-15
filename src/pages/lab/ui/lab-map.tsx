@@ -5,7 +5,7 @@ import type { GeoJSONSource, Map as MlMap, MapLayerMouseEvent } from "maplibre-g
 import { useQuery } from "@tanstack/react-query";
 import { boundaryQuery, useCountry, type CountryInfo } from "@/entities/country";
 import { MapCanvas, type Bbox, type Geom, type MapCanvasHandle, type MapRegion } from "@/widgets/map-canvas";
-import { MAP_CLS_TOK, clsOf, lvOf } from "../model/outlook";
+import { CLS_TOK, clsOf, lvOf } from "../model/outlook";
 import type { LabCtx } from "./lab-page";
 import { cx } from "./cx";
 import { useTok } from "./use-lab";
@@ -41,25 +41,10 @@ export function LabMap(c: LabCtx) {
     m.addSource("lb-face", { type: "geojson", data: fc([]) });
     m.addSource("lb-reg", { type: "geojson", data: fc([]) });
     const before = m.getLayer("reg-line") ? "reg-line" : undefined;
-    /* 밝은 지도(F14): 면 = 지도용 3단(옅음→진함 = 낮음→높음) · 자료 부족 = 옅은 회색 + 빗금 무늬 층 · 고른 면 = 지도 강조(map-sel) */
-    const hatch = document.createElement("canvas");
-    hatch.width = hatch.height = 8;
-    const g = hatch.getContext("2d");
-    if (g) {
-      g.strokeStyle = tk("map-boundary");
-      g.globalAlpha = 0.55;
-      g.lineWidth = 1;
-      g.beginPath();
-      g.moveTo(0, 8);
-      g.lineTo(8, 0);
-      g.stroke();
-      if (!m.hasImage("lb-hatch")) m.addImage("lb-hatch", g.getImageData(0, 0, 8, 8));
-    }
-    m.addLayer({ id: "lb-face", type: "fill", source: "lb-face", paint: { "fill-color": ["get", "c"], "fill-opacity": 0.8 } }, before);
-    m.addLayer({ id: "lb-face-na", type: "fill", source: "lb-face", filter: ["==", ["get", "na"], 1], paint: { "fill-pattern": "lb-hatch" } }, before);
-    m.addLayer({ id: "lb-face-line", type: "line", source: "lb-face", paint: { "line-color": tk("map-boundary"), "line-opacity": 0.7, "line-width": 0.8 } }, before);
-    m.addLayer({ id: "lb-face-on", type: "line", source: "lb-face", filter: ["==", ["get", "on"], 1], paint: { "line-color": tk("map-sel"), "line-width": 2.2 } });
-    m.addLayer({ id: "lb-fc", type: "circle", source: "lb-reg", paint: { "circle-radius": ["get", "r"], "circle-color": ["get", "c"], "circle-opacity": 0.9, "circle-stroke-color": ["case", ["==", ["get", "on"], 1], tk("map-sel"), tk("map-boundary")], "circle-stroke-width": ["case", ["==", ["get", "on"], 1], 2, 1] } });
+    m.addLayer({ id: "lb-face", type: "fill", source: "lb-face", paint: { "fill-color": ["get", "c"], "fill-opacity": 0.72 } }, before);
+    m.addLayer({ id: "lb-face-line", type: "line", source: "lb-face", paint: { "line-color": tk("line-strong"), "line-width": 0.8 } }, before);
+    m.addLayer({ id: "lb-face-on", type: "line", source: "lb-face", filter: ["==", ["get", "on"], 1], paint: { "line-color": tk("cosmo-star"), "line-width": 2.2 } });
+    m.addLayer({ id: "lb-fc", type: "circle", source: "lb-reg", paint: { "circle-radius": ["get", "r"], "circle-color": ["get", "c"], "circle-stroke-color": ["case", ["==", ["get", "on"], 1], tk("cosmo-star"), tk("line-strong")], "circle-stroke-width": ["case", ["==", ["get", "on"], 1], 2, 1] } });
     const pick = (e: MapLayerMouseEvent) => {
       const id = e.features?.[0]?.properties?.id as string | undefined;
       if (id) selRef.current(id);
@@ -92,11 +77,10 @@ export function LabMap(c: LabCtx) {
   useEffect(() => {
     if (!map || !tok) return;
     const r0 = kor ? (regions.length > 12 ? 15 : 22) : 7;
-    const colorOf = (id: string | null) => tok[MAP_CLS_TOK[clsOf(rowOf(id))] as keyof typeof tok] || tok["map-lv-na"];
-    const naOf = (id: string | null) => (clsOf(rowOf(id)) === 0 ? 1 : 0);
+    const colorOf = (id: string | null) => tok[CLS_TOK[clsOf(rowOf(id))] as keyof typeof tok] || tok["hatch-bg"];
     if (!kor && ctryFaces.length && clsOf(rowOf(null)) > 0) {
       const c = colorOf(null);
-      (map.getSource("lb-face") as GeoJSONSource | undefined)?.setData(fc(ctryFaces.map((f) => ({ type: "Feature", properties: { id: "all", c, on: 0, na: naOf(null) }, geometry: f.geometry }))) as GeoData);
+      (map.getSource("lb-face") as GeoJSONSource | undefined)?.setData(fc(ctryFaces.map((f) => ({ type: "Feature", properties: { id: "all", c, on: 0 }, geometry: f.geometry }))) as GeoData);
       (map.getSource("lb-reg") as GeoJSONSource | undefined)?.setData(fc([]) as GeoData);
       return;
     }
@@ -106,7 +90,7 @@ export function LabMap(c: LabCtx) {
           .filter((r) => r.geom)
           .map((r) => {
             const g = r.geom as { geometry?: unknown };
-            return { type: "Feature", properties: { id: r.id, c: colorOf(r.id), on: sel === r.id ? 1 : 0, na: naOf(r.id) }, geometry: g.geometry ?? g };
+            return { type: "Feature", properties: { id: r.id, c: colorOf(r.id), on: sel === r.id ? 1 : 0 }, geometry: g.geometry ?? g };
           }),
       ) as GeoData,
     );
@@ -208,16 +192,16 @@ export function LabMap(c: LabCtx) {
           </>
         ) : null}
       </div>
-      <div className={cx("map-key")} data-tick-avoid="">
+      <div className={cx("map-key")}>
         {(["low", "normal", "high"] as const).map((k) => (
           <span key={k}>
-            <i style={{ background: `var(--map-lv-${k})`, boxShadow: "0 0 0 1px var(--map-land)" }} />
+            <i style={{ background: `var(--lv-${k})` }} />
             {LVW[k]}
           </span>
         ))}
         {anyNa ? (
           <span>
-            <i style={{ background: "repeating-linear-gradient(135deg,color-mix(in srgb,var(--map-boundary) 55%,transparent) 0 1px,transparent 1px 4px),var(--map-lv-na)", boxShadow: "0 0 0 1px var(--map-land)" }} />
+            <i style={{ background: "var(--hatch)", outline: "1px solid var(--line-strong)", outlineOffset: -1 }} />
             {T_("lab.ui.insufficient_data")}
           </span>
         ) : null}

@@ -61,9 +61,9 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 .map .zoom button:focus-visible{outline-offset:-2px}
 .map .zoom button+button{border-top:1px solid var(--line-strong)}
 .map .zoom svg{width:var(--ic-map);height:var(--ic-map)}
-.map .scale{position:absolute;right:var(--sp-3);bottom:var(--sp-3);font-family:var(--font-data);font-size:var(--fs-1);font-variant-numeric:tabular-nums;color:var(--map-label);text-shadow:0 0 2px var(--map-halo),0 0 3px var(--map-halo),0 0 4px var(--map-halo);display:flex;align-items:center;gap:var(--sp-1);pointer-events:none}
-.map .scale i{display:block;height:5px;border:1px solid var(--map-label);border-top:0;box-shadow:0 1px 0 var(--map-halo)}
-.map .attrib{position:absolute;left:var(--sp-3);bottom:10px;font-size:var(--fs-1);color:var(--map-label);text-shadow:0 0 2px var(--map-halo),0 0 3px var(--map-halo),0 0 4px var(--map-halo);font-family:var(--font-body);pointer-events:none;white-space:nowrap}
+.map .scale{position:absolute;right:var(--sp-3);bottom:var(--sp-3);font-family:var(--font-data);font-size:var(--fs-1);font-variant-numeric:tabular-nums;color:var(--text-2);display:flex;align-items:center;gap:var(--sp-1);pointer-events:none}
+.map .scale i{display:block;height:5px;border:1px solid var(--text-2);border-top:0}
+.map .attrib{position:absolute;left:var(--sp-3);bottom:10px;font-size:var(--fs-1);color:var(--text-3);font-family:var(--font-body);pointer-events:none;white-space:nowrap}
 .map .tipbox{position:absolute;pointer-events:none;background:color-mix(in srgb,var(--surface-1) 95%,transparent);border:1px solid var(--line-strong);border-radius:var(--r-s);box-shadow:var(--elev-2);padding:var(--sp-2) var(--sp-3);font-size:var(--fs-2);min-width:150px;max-width:240px;transform:translate(12px,-50%);z-index:5}
 .map .drawhint{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:var(--accent);color:var(--on-accent);font-size:var(--fs-2);font-weight:var(--fw-strong);border-radius:var(--r-xs);padding:var(--sp-1) var(--sp-4);pointer-events:none;white-space:nowrap;box-shadow:var(--elev-2)}
 .map .map-key{position:absolute;left:var(--sp-3);bottom:var(--sp-7);z-index:2;display:flex;align-items:center;gap:var(--sp-3);max-width:calc(100% - 72px);min-height:28px;padding:var(--sp-1) var(--sp-2);border-radius:var(--r-2xs);border:0;background:color-mix(in srgb,var(--surface-0) 72%,transparent);font-size:var(--fs-1);line-height:1.3;color:var(--text-2);white-space:nowrap;overflow:hidden;pointer-events:none}
@@ -75,7 +75,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 .map .map-key i.ring{background:transparent;border:2px solid var(--c,var(--text-2));border-radius:var(--r-round)}
 .map .map-key i.line{width:14px;height:2px}
 .map .map-key i.dash{width:14px;height:0;background:none;border-top:2px dashed var(--c,var(--text-2))}
-.map .map-key i.ramp{width:56px;height:8px;background:linear-gradient(90deg,var(--mh1),var(--mh3),var(--mh4),var(--mh5),var(--mh6));box-shadow:0 0 0 2px var(--map-land)}
+.map .map-key i.ramp{width:56px;height:8px;background:linear-gradient(90deg,var(--h1),var(--h3),var(--h4),var(--h5),var(--h6))}
 .map .map-key i.hatch{background:var(--hatch);border:1px solid var(--text-3)}
 :global(html[data-device="phone"]) .map .map-key{flex-wrap:wrap;row-gap:var(--sp-1);column-gap:var(--sp-2);padding:var(--sp-1) var(--sp-2);max-width:calc(100% - 64px)}
 :global(html[data-device="phone"]) .map .zoom [data-z="1"],:global(html[data-device="phone"]) .map .zoom [data-z="-1"]{display:none}
@@ -84,7 +84,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 .map.ticks-out{overflow:visible}
 .map.ticks-out>.gl,.map.ticks-out>canvas{border-radius:var(--r-l);overflow:hidden}
 .map.ticks-out .mticks{inset:calc(-1 * var(--tick-band));width:calc(100% + 2 * var(--tick-band));height:calc(100% + 2 * var(--tick-band))}
-.map:not(.ticks-out) .mticks text{fill:var(--map-label);paint-order:stroke;stroke:var(--map-halo);stroke-width:3px;stroke-linejoin:round}
+.map:not(.ticks-out) .mticks text{paint-order:stroke;stroke:var(--map-halo);stroke-width:3px;stroke-linejoin:round}
 .map .m3-fire.is-under .m3-label{visibility:hidden}
 .sumlist{display:grid;grid-template-columns:auto minmax(0,1fr);margin:0;min-width:0}
 .sumlist>dt,.sumlist>dd{margin:0;padding:var(--sp-2) 0;border-bottom:var(--hair) solid var(--line-soft);font-size:var(--fs-3)}
@@ -183,16 +183,15 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 .lb-mrv b{font-family:var(--font-data);font-size:var(--fs-num-m);font-weight:var(--fw-strong);line-height:1.1;color:var(--text-1)}
 .lb-mrv>span{font-size:var(--fs-3);color:var(--text-2)}
 .lb-mrv>span .num{color:var(--text-1)}
-/* 지도 이름표(F14 B2): 면 색과 무관하게 지도 이름표 잉크 + 흰 halo(밝은 면·자료 부족 면 어디서나 4.5:1) */
-.lb-fm{font-family:var(--font-body);display:flex;flex-direction:column;align-items:center;gap:0;padding:var(--sp-half) var(--sp-1);border:0;border-radius:var(--r-s);background:transparent;color:var(--map-label-hi);cursor:pointer;line-height:1.15;transition:background-color var(--dur-fast) var(--ease-out)}
+.lb-fm{font-family:var(--font-body);display:flex;flex-direction:column;align-items:center;gap:0;padding:var(--sp-half) var(--sp-1);border:0;border-radius:var(--r-s);background:transparent;color:var(--on-cls,var(--text-1));cursor:pointer;line-height:1.15;transition:background-color var(--dur-fast) var(--ease-out)}
 .lb-fm::after{content:"";position:absolute;inset:min(0px,calc(50% - var(--hit) / 2))}
 .lb-fm b{font-size:var(--fs-2);font-weight:var(--fw-medium);white-space:nowrap}
 .lb-fm span{font-family:var(--font-data);font-size:var(--fs-3);font-weight:var(--fw-strong)}
-.lb-fm b,.lb-fm span{text-shadow:0 0 2px var(--map-halo),0 0 3px var(--map-halo),0 0 4px var(--map-halo)}
+.lb-fm b,.lb-fm span{text-shadow:0 0 var(--sp-half) var(--cls,var(--map-halo)),0 0 var(--sp-1) var(--cls,var(--map-halo))}
 .lb-fm.on b,.lb-fm.on span{text-shadow:none}
 .lb-fm:hover span{text-decoration:underline;text-underline-offset:var(--sp-half)}
-.lb-fm:focus-visible{outline:var(--ring-w) solid var(--map-focus);outline-offset:var(--sp-half)}
-.lb-fm.on{background:var(--surface-3);color:var(--text-1);outline:2px solid var(--map-sel);outline-offset:0;z-index:3}
+.lb-fm:focus-visible{outline:var(--ring-w) solid var(--focus-ring);outline-offset:var(--sp-half)}
+.lb-fm.on{background:var(--surface-3);color:var(--text-1);outline:2px solid var(--cosmo-star);outline-offset:0;z-index:3}
 .lb-side{grid-area:side;display:flex;flex-direction:column;gap:0;min-width:0;min-height:0;overflow-y:auto;scrollbar-width:thin;background:var(--surface-1);box-shadow:var(--seam-ring)}
 .lb-side>.panel{box-shadow:none;background:transparent}
 .lb-side>.panel+.panel{border-top:var(--hair) solid var(--line-soft)}
@@ -404,5 +403,5 @@ table.lb-ft.lb-ft-wide th:nth-child(1){width:120px}
 
 /* ── Next 이식 몫(목업 map.js 가 그리던 것) ── */
 .gl{position:absolute;inset:0}
-.map .scale i{display:block;height:5px;border:1px solid var(--map-label);border-top:0;box-shadow:0 1px 0 var(--map-halo)}
+.map .scale i{display:block;height:5px;border:1px solid var(--text-2);border-top:0}
 .lb-fm{position:absolute}

@@ -34,7 +34,7 @@ export function CmdMap(c: Ctx & { hist: Fire[] }) {
     const cs = getComputedStyle(document.documentElement);
     const tk = (n: string) => cs.getPropertyValue(`--${n}`).trim();
     m.addSource("cm-sum", { type: "geojson", data: fc([]) });
-    m.addLayer({ id: "cm-sum", type: "circle", source: "cm-sum", paint: { "circle-radius": ["get", "r"], "circle-color": tk("map-viirs"), "circle-opacity": 0.3, "circle-stroke-color": tk("mh4"), "circle-stroke-width": 1.4 } }, m.getLayer("aoi-fill") ? "aoi-fill" : undefined);
+    m.addLayer({ id: "cm-sum", type: "circle", source: "cm-sum", paint: { "circle-radius": ["get", "r"], "circle-color": tk("h4"), "circle-opacity": 0.42, "circle-stroke-color": tk("h5"), "circle-stroke-width": 1 } }, m.getLayer("aoi-fill") ? "aoi-fill" : undefined);
     setMap(m);
   }, []);
 
@@ -121,7 +121,7 @@ export function CmdMap(c: Ctx & { hist: Fire[] }) {
       ticks
       status={!view.cum && c.ptsState !== "ok" ? (c.ptsState === "wide" ? T_("shell.map.cells_wide_year", { p: `${view.year}`, n: String(cells.length) }) : c.ptsState === "pending" ? T_("cmd.real.loading") : c.ptsState === "rate" ? T_("shell.err.rate_limited") : T_("shell.err.request")) : null}
     >
-      <div className={cx("map-key")} data-tick-avoid="">
+      <div className={cx("map-key")}>
         <b>{wide ? T_("shell.map.cells_key") : T_("cmd.ui.hotspot_density")}</b>
         <span>
           <i className={cx("ramp")} />
