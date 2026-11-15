@@ -433,6 +433,10 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 .an-trs b{color:var(--text-1);font-weight:600}
 .an-trn,.an-sts{margin:var(--sp-2) 0 0;font-size:var(--fs-2);color:var(--text-3)}
 .an-sts{margin:0 0 var(--sp-2);font-size:var(--fs-3);color:var(--text-2)}
+/* 위성 교체 전후 그래프 선 설명 — 선 색·점선이 무엇인지(그래프 위). 고른 보기는 진하게 */
+.an-stlg{display:flex;flex-wrap:wrap;gap:var(--sp-1) var(--sp-4);margin:0 0 var(--sp-2);padding:0;list-style:none;font-size:var(--fs-2);color:var(--text-3)}
+.an-stlg li{display:inline-flex;align-items:center;gap:6px}
+.an-stlg li[data-on="1"]{color:var(--text-1)}
 .an-sts b{color:var(--text-1)}
 .an-trchart svg,.an-schart svg{display:block;width:100%;height:auto}
 :global(html[data-touch="1"]) .an-trl input{height:var(--hit)}

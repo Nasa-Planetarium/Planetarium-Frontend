@@ -648,7 +648,7 @@ function Trend({ x }: { x: Ctx }) {
   );
 }
 
-/* ⑥ 보정 전·후 시계열 */
+/* ⑥ 위성 교체 전후 — 원래 감지 수 vs 통합 감지량 */
 const COL: Record<CalView, string> = { value: "var(--data-harm)", raw_stitched: "var(--text-1)", raw_modis: "var(--data-modis)", raw_viirs: "var(--data-viirs)" };
 function StepChart({ x }: { x: Ctx }) {
   const { T, cal, view } = x;
@@ -680,6 +680,16 @@ function StepChart({ x }: { x: Ctx }) {
       </div>
       <div className={cx("panel-b")}>
         <p className={cx("an-sts")}>{sumNode}</p>
+        <ul className={cx("an-stlg")} aria-label={T("g6.st_lg")}>
+          {series.map((s) => (
+            <li key={s.name} data-on={s.name === view ? "1" : "0"}>
+              <svg width="22" height="8" aria-hidden="true">
+                <line x1="1" y1="4" x2="21" y2="4" stroke={s.color} strokeWidth={s.name === view ? 2.6 : 1.6} strokeDasharray={s.dash} />
+              </svg>
+              {T(`g6.st_lg_${s.name}`)}
+            </li>
+          ))}
+        </ul>
         <div className={cx("an-schart chart")} ref={box}>
           <Lines series={series} width={wid} height={240} label={`${T("g6.st_title")} · ${viewWord(x, view)}`} marker={{ x: 2012 + 1 / 12, label: T("g6.st_mark") }} />
         </div>
