@@ -318,7 +318,7 @@ export interface paths {
          *     - 파일에 없는 칸 = 2012-02 이후 감지가 한 번도 없던 칸(남극·공해 포함). 「0%」가 아니라 「대상 아님」으로 그린다.
          *     - `persistent_source=true`(259칸) 는 순위·강조에서 빼고 회색. 값은 툴팁·상세에서만.
          *     - `vs_normal` 은 모델팀 표시 규칙(`p_any − baseline_p` ≥ +0.10 높음, ≤ −0.10 낮음, 그 사이 예년 수준)을 서버가 붙인 것 — 확률 자체는 파일 값.
-         *     - bbox 없이 부르면 전 세계 52,855칸. 크기(2026-11-15 aibox 에서 파일로 직렬화해 잼): `fields=full`(아래 칸 필드 전부, 소수 5자리) 11.34 MB / gzip 0.65 MB,
+         *     - bbox 없이 부르면 전 세계 52,855칸. 크기(2026-11-15 팀 시험 서버에서 파일로 직렬화해 잼): `fields=full`(아래 칸 필드 전부, 소수 5자리) 11.34 MB / gzip 0.65 MB,
          *       `fields=map`(cell_id·lat·lon·p_any·baseline_p·vs_normal·persistent_source, 소수 4자리) 6.58 MB / gzip 0.47 MB. 반올림 없이 float32 → double 로 내보내면 12.56 MB / gzip 0.93 MB 라 **소수 5자리로 반올림해 낸다**(표시 정밀도 1%p 보다 충분히 작음).
          *       전 세계 응답은 gzip/br 압축 필수. 적재 때 `fields` 별로 한 번 직렬화해 판 단위로 캐시한다.
          *     - 잰 분포: `p_model` 열 = `p_any` (52,855/52,855 같음, 싣지 않음) · `p_any + p_none = 1` (오차 0) · vs_normal higher 4,941 / similar 42,772 / lower 5,142 ·
@@ -374,6 +374,43 @@ export interface paths {
         get: operations["getAoiOccurrence"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/forecast": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * FireOutlook Planner — 지역 + 기간 열원 전망 (화면 기본 30일, F17)
+         * @description 모델팀 계약 원본 = 모델 레포 `docs/api_contract.md` 「POST /forecast」(main c43368c), 사본 `product/team/v1.2/api_contract-v2.md`.
+         *     값은 `planetarium.forecast.forecast(region, start, end, horizon_days)` 반환값 그대로 낸다(A1, 다시 계산하지 않음). 실험 기능.
+         *     - 읽기 전용 계산이라 POST 이지만 멱등이다(같은 본문 → 같은 날 같은 값). 서버 캐시는 (본문 정규형 + data_release + 오늘 KST) 키로 해도 된다.
+         *     - **30일 고정 질의(화면 기본)**: `{"region": ..., "horizon_days": 30}` → 기간 = 오늘(KST) ~ +29일. `start` 를 같이 주면 그날부터 30일.
+         *       오늘 ≤ `as_of` 이면 `as_of + 1` 부터. 오늘과 as_of 사이가 비면 오늘은 `lead_days_from_as_of` 일 앞선 예측이다.
+         *     - 일 단위(lead 1~7) = Planner 일 단위, 그 뒤 = 월 단위 × 일별 기후 가중치(진행 중인 달 나머지는 예년 기준선, skill none).
+         *     - `value_source`(30일 질의에서만): `model_calibrated`(skill high·low, 등급별 isotonic 보정) · `baseline`(skill none → 평년 값, `p_any = baseline.p_any`, `daily[].p_day = base_p_day`) · `model`(30일이 아니거나 시작이 as_of + 3일 뒤).
+         *     - 화면 표시 규칙(모델팀): value_source `model_calibrated` → 확률과 skill 을 함께 · `baseline` 또는 skill none → 「예년 수준(모델 예측력 낮음)」, 「예측」이라 부르지 않음 ·
+         *       `daily[]` lead ≤ 7 「모델 예측」, ≥ 8 「평년 패턴 기반」 · 건수 옆에는 `count_skill` · `p_any ≥ 0.98` → 확률 대신 `display_hint` 를 크게, `expected_count`(q10~q90) 가 주 정보 ·
+         *       `persistent_source_cells.count > 0` 이면 지속 열원 의심 안내, `suspected_industrial_sgg` 는 회색(순위·강조 제외) ·
+         *       필수 문구 「위성 탐지 기반 확률이며 산불 발생을 보장하지 않습니다.」 · 값은 위성 탐지 건수(S-NPP 기준)이며 산불 개수·면적이 아니다.
+         *     - 머리 표기 예: 「FireOutlook 30일 전망 · 관측 기준 11-14」(`as_of` 그대로). 표시 이름은 화면에만, `product`·`models` 값은 내부 id 그대로.
+         *     - 응답 시간(모델팀 잰 것, warmup 뒤 30일 질의): 시군구·시도·주·bbox·폴리곤 0.006~0.012초, 전 세계 0.26초. 서버 시작 때 `warmup()` 1회.
+         *     - 한도: 기간은 as_of 다음 날부터 기준 달(`origin_month`)에서 12개월 뒤 달까지(모델 함수가 거름).
+         *       본문 ≤ 64 KB · 폴리곤 꼭짓점 ≤ 2,000 · 링 ≤ 50 · `horizon_days` 1~366 은 **우리가 정한 값**(모델팀 계약에 없음, x-status assumed) —
+         *       Pages 프록시가 Content-Type 과 본문 64 KB 를 먼저 거르고(415·413), 꼭짓점·링·기간은 백엔드가 400 으로 거른다.
+         *     - 오류 대응(모델 함수 ValueError → 서버): 모르는 aoi_id → 404 unknown_aoi(20401) · 기간 규칙 위반 → 400 invalid_param(40005) ·
+         *       12개월 넘음 → 400 range_too_large(40108) · region 모양 틀림 → 400 invalid_param(40001) · 꼭짓점·링 초과 → 400 polygon_too_complex(40102).
+         */
+        post: operations["postForecast"];
         delete?: never;
         options?: never;
         head?: never;
@@ -535,7 +572,7 @@ export interface paths {
         };
         /**
          * 불 세기 FRP (S-NPP 환산, 0.1° 칸 × 일 또는 월)
-         * @description `harmonized_cell_day_frp.parquet`(97,791,096행, 800 row group — 2026-11-15 aibox 에서 parquet 메타로 잼). 전 세계, `date_local` 2000-11-01 ~ 2026-11-15.
+         * @description `harmonized_cell_day_frp.parquet`(97,791,096행, 800 row group — 2026-11-15 팀 시험 서버에서 parquet 메타로 잼). 전 세계, `date_local` 2000-11-01 ~ 2026-11-15.
          *     - 파일 열(잼): `cell_id` int64 · `date_local` date32 · `frp_sum` double · `frp_snpp_equiv_sum` double · `frp_snpp_equiv_max` float · `n_points` int32 (6열, null 0).
          *       **위경도 열이 없다** → `cell_lat/lon` 은 서버가 CellId 식으로 붙인다(칸 중심). 응답 `date` = `date_local`(현지 날짜, 2026-11-15 은 UTC 보다 앞선 시간대의 날).
          *     - 화면 값 = `frp_snpp_equiv_sum` / `frp_snpp_equiv_max`. `frp_sum` 은 원 FRP(참고). 기준 점(고정 열원 제외)만으로 만든 값.
@@ -1250,6 +1287,115 @@ export interface components {
             notice: string;
             data_release: components["schemas"]["DataRelease"];
         };
+        /**
+         * @description high = 기준선 대비 Brier 개선 ≥ 5% · low = 1~5% · none = < 1%(모델 대신 기준선 값)
+         * @enum {string}
+         */
+        ForecastSkill: "high" | "low" | "none";
+        /**
+         * @description aoi_id(aoi_list 5,051개) | bbox [서, 남, 동, 북] | GeoJSON Polygon·MultiPolygon(또는 그 Feature).
+         *     bbox·폴리곤은 0.5° 격자 교차 면적 비율로 모은다. 꼭짓점 ≤ 2,000 · 링 ≤ 50(우리가 정함) — 넘으면 400 polygon_too_complex(40102).
+         */
+        ForecastRegion: components["schemas"]["AoiId"] | number[] | {
+            /** @enum {string} */
+            type: "Polygon" | "MultiPolygon" | "Feature";
+            coordinates?: unknown[];
+            geometry?: Record<string, never>;
+        };
+        /**
+         * @description `horizon_days`(화면 기본 30) 또는 `start`·`end` 중 하나는 있어야 한다(둘 다 없으면 400 40005).
+         *     기간은 as_of 다음 날부터, 시작 ≤ 끝(아니면 400 40005), 기준 달에서 12개월 뒤 달까지(넘으면 400 40108).
+         */
+        ForecastQuery: {
+            region: components["schemas"]["ForecastRegion"];
+            /** @description 오늘(KST)부터 N일. 30 이면 value_source 규칙(30일 검증표)을 쓴다 */
+            horizon_days?: number;
+            /** Format: date */
+            start?: string;
+            /** Format: date */
+            end?: string;
+        };
+        ForecastDay: {
+            /**
+             * Format: date
+             * @description 현지 날짜 기준 집계
+             */
+            date: string;
+            /** @description as_of 에서 며칠 뒤 예측인가 (≤ 7 화면 「모델 예측」, ≥ 8 「평년 패턴 기반」) */
+            lead_days_from_as_of: number;
+            /** @description 그날 위성 탐지 ≥ 1건 확률 (value_source baseline 이면 = base_p_day) */
+            p_day: number;
+            /** @description 예년 같은 날 확률 */
+            base_p_day: number;
+            /** @description 그날 예상 탐지 수 (S-NPP 기준) */
+            expected_count_day: number;
+            skill: components["schemas"]["ForecastSkill"];
+            /** @description `daily model` · `monthly model h=N x daily weights` · `baseline (current month)` (참고용) */
+            source: string;
+        };
+        ForecastBaseline: {
+            p_any: number;
+            count: number;
+            expected_fire_days: number;
+            definition: string;
+        };
+        /** @description 모델 함수 반환값. 아래에 없는 필드가 더 와도 화면은 무시한다(모델팀 실험 기능 — 필드가 늘 수 있음). */
+        Forecast: {
+            /** @constant */
+            product: "FireOutlook Planner";
+            /** @description `aoi_id <id>` · `bbox` · `polygon` */
+            region: string;
+            /** @description 지역 등급(예 Korea sido · Korea sgg · adm1 · all regions) */
+            region_group: string;
+            /** Format: date */
+            start: string;
+            /** Format: date */
+            end: string;
+            /**
+             * Format: date
+             * @description 마지막 완결 관측일 — 머리 「관측 기준 MM-DD」
+             */
+            as_of: string;
+            lead_days_from_as_of: {
+                first: number;
+                last: number;
+            };
+            /** @description 기간 안 위성 탐지 ≥ 1건 확률 */
+            p_any: number;
+            /** @description 예상 탐지 수(S-NPP 기준). 산불 개수·면적 아님 */
+            expected_count: number;
+            expected_count_q10: number;
+            expected_count_q90: number;
+            /** @description Σ p_day (탐지가 있을 것으로 기대되는 날 수) */
+            expected_fire_days: number;
+            baseline: components["schemas"]["ForecastBaseline"];
+            skill: components["schemas"]["ForecastSkill"];
+            count_skill: components["schemas"]["ForecastSkill"];
+            /** @description `30-day holdout validation 2024-2025 (<등급>; …)` 또는 `worst piece` */
+            skill_basis: string;
+            /** @enum {string} */
+            value_source: "model_calibrated" | "baseline" | "model";
+            models?: string[];
+            horizons?: number[];
+            /** @description 날짜 순, 30일 질의면 30개 */
+            daily: components["schemas"]["ForecastDay"][];
+            /** @description 조각별 값과 route(참고용 — 화면은 쓰지 않음) */
+            pieces?: {
+                [key: string]: unknown;
+            }[];
+            persistent_source_cells: {
+                count: number;
+                area_share: number;
+                note: string;
+            };
+            /** @description `p_any ≥ 0.98` 이면 「거의 확실히 탐지됨 — 예상 건수를 보세요」, 아니면 빈 문자열 */
+            display_hint: string;
+            /** @description 한국 시군구 산업 열원 의심(이 지역 안) — 화면 회색·순위 제외 */
+            suspected_industrial_sgg: components["schemas"]["AoiId"][];
+            unit?: string;
+            /** @description 필수 문구(ko + en) */
+            notice: string;
+        };
         /** @description `<region>_<시작 YYYYMMDD>_<일련>` (release 실값 KR_20001102_0001 · ARG_20001120_0003). 이번 release 일련은 1,240,978건 전부 4자리(잼) — 패턴은 다음 판 여유로 4~6자리. */
         FireEventId: string;
         FireEvent: {
@@ -1578,7 +1724,7 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
-        /** @description 본문 > 256 KB */
+        /** @description 본문 > 256 KB (POST /forecast 는 > 64 KB, 10102 BODY_TOO_LARGE) */
         PayloadTooLarge: {
             headers: {
                 [name: string]: unknown;
@@ -1671,7 +1817,7 @@ export interface components {
         /**
          * @description v1.2 새 층(release 고정 자료) = `public, max-age=0, s-maxage=3600, must-revalidate`.
          *     - 브라우저는 매번 재검증(ETag → 304, 판 교체가 바로 보임 — 데이터 경로 규칙과 같음).
-         *     - 공유 캐시(Cloudflare 무료 플랜 엣지·nginx proxy_cache)는 1시간 보관 → 원 서버(aibox K3s) 부하를 줄인다. 판 교체 때 캐시 키에 `X-Data-Version` 을 넣거나 퍼지.
+         *     - 공유 캐시(Cloudflare 무료 플랜 엣지·nginx proxy_cache)는 1시간 보관 → 원 서버(팀 K3s) 부하를 줄인다. 판 교체 때 캐시 키에 `X-Data-Version` 을 넣거나 퍼지.
          *     - 서버 안: Redis 캐시 키 = data_version + 정규화 질의, TTL 없음(판이 바뀌면 키가 바뀜). `/occurrence/grid` 전 세계·`/occurrence/aois?parent_id=KR` 는 적재 때 미리 직렬화.
          *     - 오류는 `no-store`.
          */
@@ -2225,6 +2371,56 @@ export interface operations {
             };
             304: components["responses"]["NotModified"];
             404: components["responses"]["NotFound"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    postForecast: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForecastQuery"];
+            };
+        };
+        responses: {
+            /** @description 전망 (모델 함수 반환값 그대로) */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    "X-Method-Version": components["headers"]["XMethodVersion"];
+                    "X-Data-Version": components["headers"]["XDataVersion"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Forecast"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            /** @description POST 밖 메서드 (Allow POST) */
+            405: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            413: components["responses"]["PayloadTooLarge"];
+            /** @description Content-Type 이 application/json 이 아님 (10004 UNSUPPORTED_MEDIA_TYPE) */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
             503: components["responses"]["Unavailable"];
         };
     };
