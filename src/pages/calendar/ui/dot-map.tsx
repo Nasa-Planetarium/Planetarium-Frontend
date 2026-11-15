@@ -190,19 +190,10 @@ export function DotMap(o: DotMapProps) {
       ro?.disconnect();
       made?.remove();
     };
-    // 지도는 한 번만 만든다(달이 바뀌면 아래 fitKey 효과가 범위만 다시 맞춘다)
+    // 지도는 한 번만 만든다(F14 LF-1: 달이 바뀌어도 key 로 다시 만들지 않는다) — 범위는 위 fitKey 효과(QA #15, 사용자가 움직이기 전까지)가 맞춘다
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* 달이 바뀌어 맞춤 범위(사례 초점)가 달라지면 다시 맞춘다 — 지도는 유지(F14 LF-1, 예전에는 key 로 지도를 새로 만들었다) */
-  const fitKey = fit.flat().map((v) => v.toFixed(3)).join(",");
-  const fitSeen = useRef<string | null>(null);
-  useEffect(() => {
-    if (!map) return;
-    if (fitSeen.current != null && fitSeen.current !== fitKey) map.fitBounds(fit, { padding: 16, duration: 0 });
-    fitSeen.current = fitKey;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, fitKey]);
   /* 달(점 자료)이 바뀌면 재생 위치·팝업을 처음으로 */
   const [seenK, setSeenK] = useState(k);
   if (seenK !== k) {
