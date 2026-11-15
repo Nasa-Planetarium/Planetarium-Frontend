@@ -41,10 +41,11 @@ function FireMark({ f, sel }: { f: OpsFire; sel: boolean }) {
   const half = (2 * r + 18 * k + 4) / 2 + (sel ? 2 : 0);
   return (
     <svg width={2 * half} height={2 * half} viewBox={`0 0 ${2 * half} ${2 * half}`} aria-hidden="true">
+      <circle cx={half} cy={half} r={r - sw / 2} fill="none" stroke="var(--map-label-hi)" strokeWidth={sw + 4} strokeOpacity={0.85} />
       <circle cx={half} cy={half} r={r - sw / 2} fill="none" stroke="var(--map-halo)" strokeWidth={sw + 2} />
       <circle cx={half} cy={half} r={r - sw / 2} fill="none" stroke={c} strokeWidth={sw} strokeDasharray={closed ? "3 2" : undefined} />
       {!closed && f.status !== "onscene" ? <circle cx={half} cy={half} r={3.75 * k} fill={c} /> : null}
-      {sel ? <circle cx={half} cy={half} r={r + 4} fill="none" stroke="var(--cosmo-star)" strokeWidth={2} /> : null}
+      {sel ? <circle cx={half} cy={half} r={r + 4} fill="none" stroke="var(--map-sel)" strokeWidth={2} /> : null}
     </svg>
   );
 }
@@ -174,7 +175,9 @@ export function OpsMap(p: OpsMapProps) {
   const regions = kids?.length ? kids : (adm1 ?? []);
   const onReady = useCallback((m: MlMap) => {
     m.addSource("op-routes", { type: "geojson", data: fc([]) });
-    m.addLayer({ id: "op-routes", type: "line", source: "op-routes", paint: { "line-color": tok("route"), "line-width": 2, "line-dasharray": [2, 2] } });
+    m.addLayer({ id: "op-routes", type: "line", source: "op-routes", paint: { "line-color": tok("map-halo"), "line-width": 5, "line-opacity": 0.9 } });
+    /* 출동 경로: 밝은 지도 위 진한 청록(map-route) + 흰 halo(F14 H6 — --route #3ddc97 은 흰 땅에서 1.7:1) */
+    m.addLayer({ id: "op-routes-line", type: "line", source: "op-routes", paint: { "line-color": tok("map-route"), "line-width": 2.2, "line-dasharray": [2, 2] } });
     setMap(m);
   }, []);
 
@@ -435,13 +438,13 @@ export function OpsMap(p: OpsMapProps) {
               <g key={fn.f.id}>
                 <path d={`M ${fn.x} ${fn.y} L ${fn.x + Math.cos(a0) * r3} ${fn.y + Math.sin(a0) * r3} A ${r3} ${r3} 0 0 1 ${fn.x + Math.cos(a1) * r3} ${fn.y + Math.sin(a1) * r3} Z`} fill={`url(#opfan-${fn.f.id})`} opacity={fn.on ? 0.5 : 0.18} />
                 {[1, 2, 3].map((h) => (
-                  <path key={h} d={arc(fn.x, fn.y, fn.rr(h), a0, a1)} fill="none" stroke="var(--alert-3)" strokeWidth={fn.on ? 1.2 : 1} strokeDasharray="3 4" opacity={fn.on ? 0.9 : 0.35} />
+                  <path key={h} d={arc(fn.x, fn.y, fn.rr(h), a0, a1)} fill="none" stroke="var(--map-warn-ink)" strokeWidth={fn.on ? 1.4 : 1} strokeDasharray="3 4" opacity={fn.on ? 0.95 : 0.45} />
                 ))}
                 {fn.on
                   ? [1, 2, 3].map((h) => {
                       const r = fn.rr(h) + 9;
                       return (
-                        <text key={h} x={fn.x + Math.cos(a1) * r} y={fn.y + Math.sin(a1) * r} fill="var(--alert-3)" fontSize="11" fontFamily="var(--font-data)" textAnchor="middle" dominantBaseline="middle">
+                        <text key={h} x={fn.x + Math.cos(a1) * r} y={fn.y + Math.sin(a1) * r} fill="var(--map-warn-ink)" stroke="var(--map-halo)" strokeWidth={3} paintOrder="stroke" strokeLinejoin="round" fontSize="11" fontWeight={600} fontFamily="var(--font-data)" textAnchor="middle" dominantBaseline="middle">
                           {h}h
                         </text>
                       );
@@ -452,9 +455,9 @@ export function OpsMap(p: OpsMapProps) {
           })}
           {view.vils.map(({ v, xy: [vx, vy] }) => (
             <g key={v.name}>
-              <path d={`M ${vx} ${vy - 7} L ${vx + 6.5} ${vy - 1.5} L ${vx + 6.5} ${vy + 6} L ${vx - 6.5} ${vy + 6} L ${vx - 6.5} ${vy - 1.5} Z`} fill="var(--surface-0)" stroke="var(--text-1)" strokeWidth={1.6} />
+              <path d={`M ${vx} ${vy - 7} L ${vx + 6.5} ${vy - 1.5} L ${vx + 6.5} ${vy + 6} L ${vx - 6.5} ${vy + 6} L ${vx - 6.5} ${vy - 1.5} Z`} fill="var(--map-label-hi)" stroke="var(--map-halo)" strokeWidth={1.6} />
               {view.wide ? (
-                <text x={vx + 11} y={vy} fill="var(--text-1)" stroke="var(--surface-0)" strokeWidth={3} paintOrder="stroke" fontSize="11" fontWeight={600} dominantBaseline="middle">
+                <text x={vx + 11} y={vy} fill="var(--map-label-hi)" stroke="var(--map-halo)" strokeWidth={3} paintOrder="stroke" strokeLinejoin="round" fontSize="11" fontWeight={600} dominantBaseline="middle">
                   {t("ops.vil.homes", { v: vname(v.name), n: v.homes })}
                 </text>
               ) : null}
@@ -464,9 +467,10 @@ export function OpsMap(p: OpsMapProps) {
             <text
               x={(view.vils[0]?.xy[0] ?? 0) + 14}
               y={(view.vils[0]?.xy[1] ?? 0) + 16}
-              fill="var(--text-1)"
-              stroke="var(--surface-0)"
+              fill="var(--map-label-hi)"
+              stroke="var(--map-halo)"
               strokeWidth={3}
+              strokeLinejoin="round"
               paintOrder="stroke"
               fontSize="11"
               fontWeight={600}
@@ -501,9 +505,9 @@ export function OpsMap(p: OpsMapProps) {
                     transform: "translateY(-50%)",
                     whiteSpace: "nowrap",
                     fontSize: "var(--fs-2)",
-                    fontWeight: 600,
-                    color: sel ? "var(--text-1)" : "var(--map-label-hi)",
-                    textShadow: "0 0 3px var(--surface-0),0 0 3px var(--surface-0),0 0 3px var(--surface-0)",
+                    fontWeight: sel ? 700 : 600,
+                    color: "var(--map-label-hi)",
+                    textShadow: "0 0 2px var(--map-halo),0 0 3px var(--map-halo),0 0 4px var(--map-halo)",
                   }}
                 >
                   {fname(f).split(" ").slice(-2).join(" ")}
@@ -597,7 +601,7 @@ export function OpsMap(p: OpsMapProps) {
       ) : null}
       <div className={cx("map-ui")} style={{ pointerEvents: "none" }}>
         {view ? <OffChips view={view} fires={fires} units={p.layers.units} onFit={() => setFitN((n) => n + 1)} /> : null}
-        <div className={cx("op-tr")}>
+        <div className={cx("op-tr")} data-tick-avoid="">
           <div className={cx("op-wind")} aria-label={t("ops.sel_alert.wind")}>
             <span className={cx("op-wind-dial")}>
               <svg viewBox="0 0 40 40" aria-hidden="true">
@@ -621,7 +625,7 @@ export function OpsMap(p: OpsMapProps) {
           </div>
           <OpsSwath sw={sw} />
         </div>
-        <div className={cx("op-legend")} aria-hidden="true">
+        <div className={cx("op-legend")} aria-hidden="true" data-tick-avoid="">
           <span>
             <i className={cx("op-pip standby")} />
             {t("ops.off.k.standby")}
@@ -640,7 +644,12 @@ export function OpsMap(p: OpsMapProps) {
           </span>
           <i className={cx("op-legend-br")} />
           <span className={cx("op-legend-fan")}>{t("ops.sel_alert.spread_1_2_3")}</span>
-          <span className={cx("op-legend-vil")}>{t("ops.sel_alert.evacuation_villages")}</span>
+          <span className={cx("op-legend-vil")}>
+            <svg width="14" height="14" viewBox="-7.5 -8.5 15 16" aria-hidden="true">
+              <path d="M 0 -7 L 6.5 -1.5 L 6.5 6 L -6.5 6 L -6.5 -1.5 Z" fill="var(--map-label-hi)" stroke="var(--map-halo)" strokeWidth={1.6} />
+            </svg>
+            {t("ops.sel_alert.evacuation_villages")}
+          </span>
           <span className={cx("op-legend-heat")}>{t("ops.sel_alert.today_last_3_days")}</span>
         </div>
         <div className={cx("mtools")} role="toolbar" aria-label={t("shell.map.tools")}>
