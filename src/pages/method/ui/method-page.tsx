@@ -756,6 +756,7 @@ function SatCsv({ c, first, through }: { c: Ctx; first: string | null; through: 
   return (
     <CsvButton
       kind="satellite-status"
+      label=""
       aria={c.t("csv.sat", { p: `${first?.slice(0, 7) ?? ""}–${through ?? ""}` })}
       make={async () => {
         const r = await satelliteCsv({ freq: "month" });

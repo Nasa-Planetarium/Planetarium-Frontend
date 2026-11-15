@@ -6,7 +6,9 @@ import { useLocale } from "next-intl";
 import { ArrowDown, Check, ChevronLeft, Download, Layers, Send, Table } from "lucide-react";
 import { useSituation } from "@/entities/situation";
 import { lastPass } from "@/entities/satellite-pass";
-import { BURN_WINDOW, fireEventsQuery } from "@/entities/fire-event";
+import { BURN_WINDOW, EVENTS_CSV_LIMIT, fireEventsQuery } from "@/entities/fire-event";
+import { getCsvText } from "@/shared/api";
+import { CsvButton } from "@/shared/ui";
 import { methodQuery } from "@/entities/release";
 import { useAgency } from "@/shared/agency";
 import { useT, useTl, type TFn } from "@/shared/i18n";
@@ -344,7 +346,18 @@ export function LandScreen() {
                 <h2 className={cx("ld-gh")}>{t("events.land.head")}</h2>
                 {evSt === "ok" ? (
                   <>
-                    <p className={cx("ld-none")}>{t("events.land.sub")}</p>
+                    <p className={cx("ld-none")}>
+                      {t("events.land.sub")}{" "}
+                      <CsvButton
+                        kind="fire-events"
+                        aria={t("csv.events", { a: "KR", p: `${BURN_WINDOW.start}/${BURN_WINDOW.end}` })}
+                        make={async () => ({
+                          name: `emberline_fire-events_KR_burned_${BURN_WINDOW.start.slice(0, 4)}-${BURN_WINDOW.end.slice(0, 4)}.csv`,
+                          text: await getCsvText("/fire-events", { aoi_id: "KR", ...BURN_WINDOW, sort: "burned_area_km2", limit: EVENTS_CSV_LIMIT }),
+                          meta: { aoi: "KR", period: `${BURN_WINDOW.start}/${BURN_WINDOW.end}`, source: "/api/v1/fire-events", sort: "burned_area_km2", limit: EVENTS_CSV_LIMIT },
+                        })}
+                      />
+                    </p>
                     <EventRows events={events} selId={evSel} onPick={(e) => pickEvent(e.event_id)} testId="land-ev-rows" />
                   </>
                 ) : (
