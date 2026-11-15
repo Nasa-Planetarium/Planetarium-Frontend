@@ -2,7 +2,8 @@
  * Cloudflare Pages Functions — 같은 출처 `/api/v1/*` 를 실제 백엔드(API_ORIGIN)로 넘기는 얇은 프록시.
  *
  * 화면은 정적 내보내기라 서버가 없다. 화면은 `/api/v1/...` 를 같은 출처로 부르고(NEXT_PUBLIC_API_BASE 기본값),
- * Pages 에서는 이 파일이 그 요청을 받아 `API_ORIGIN`(Pages 프로젝트 환경변수, 예: https://emberline-api.example)으로 넘긴다.
+ * Pages 에서는 이 파일이 그 요청을 받아 서비스 바인딩 `API`(Worker emberline-api → Workers VPC → 터널 → 백엔드)로 넘긴다.
+ * 바인딩이 없을 때만 예전처럼 `API_ORIGIN`(Pages 프로젝트 환경변수)으로 넘긴다.
  *
  * 규칙
  *  - `/api/v1/` 밖(`/api/x` 등) → 404 problem+json(not_found)
@@ -18,6 +19,8 @@
  */
 
 export interface Env {
+  /** 서비스 바인딩(Pages 프로젝트 설정 또는 wrangler.toml [[services]] binding="API" service="emberline-api") */
+  API?: { fetch(input: string, init?: RequestInit): Promise<Response> };
   API_ORIGIN?: string;
 }
 
@@ -29,6 +32,8 @@ interface Ctx {
 const PREFIX = "/api/v1/";
 const ALLOWED_METHODS = ["GET", "HEAD"];
 const TIMEOUT_MS = 20_000;
+/** 서비스 바인딩으로 보낼 때 쓰는 자리표시 출처 — 바인딩은 호스트를 보지 않고 경로·쿼리만 쓴다 */
+const BINDING_ORIGIN = "https://emberline-api.internal";
 
 /** 백엔드로 넘기는 요청 헤더(소문자) — 이 밖은 버린다 */
 export const REQUEST_HEADERS = ["accept", "accept-language", "if-none-match", "if-modified-since"];
@@ -86,7 +91,7 @@ export const onRequest = async ({ request, env }: Ctx): Promise<Response> => {
     return problem(405, "method_not_allowed", 10002, "Method not allowed", instance, { Allow: ALLOWED_METHODS.join(", ") });
   }
 
-  const origin = parseOrigin(env.API_ORIGIN);
+  const origin = env.API ? BINDING_ORIGIN : parseOrigin(env.API_ORIGIN);
   if (!origin) return problem(502, "upstream_error", 60501, "Upstream not configured", instance);
 
   const target = new URL(url.pathname + url.search, origin);
@@ -100,9 +105,11 @@ export const onRequest = async ({ request, env }: Ctx): Promise<Response> => {
   headers.set("X-Forwarded-Proto", url.protocol.replace(":", ""));
   headers.set("X-Forwarded-Host", url.host);
 
+  const api = env.API;
+  const send = api ? (u: string, i: RequestInit) => api.fetch(u, i) : fetch;
   let upstream: Response;
   try {
-    upstream = await fetch(target.toString(), {
+    upstream = await send(target.toString(), {
       method: request.method,
       headers,
       redirect: "manual",
