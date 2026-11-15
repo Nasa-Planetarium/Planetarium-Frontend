@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * 예측 분석(lab) 시험(aibox 전용, MSW) — 모델팀 「다음 달 발생 확률」(F15, release data-v1.2-2026-11-15).
+ * 예측 분석(lab) 시험(팀 시험 서버 전용, MSW) — 모델팀 「다음 달 발생 확률」(F15, release data-v1.2-2026-11-15).
  * 숫자는 MSW 스냅숏(scripts/snap-occurrence.py 가 release 파일에서 자른 것)에서 잰 값:
  *  - 한국 시군구 252 · 산업 열원 의심 4(남구·포항시남구·제주시·함안군) · 예년보다 높음 7곳 · 대상 달 2026-12 · 자료 기준 2026-11-14
  *  - 경북(SIDO_47) 시군구 23 · 1위 김천시 16%
@@ -12,7 +12,7 @@ import { expect, test } from "@playwright/test";
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem("em.lang", "ko");
-    localStorage.setItem("em.role", "scientist");
+    sessionStorage.setItem("em.role", "scientist");
   });
 });
 

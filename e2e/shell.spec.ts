@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * 셸 골격 시험(aibox 전용). 정적 내보내기 out/ 을 서빙해 연다.
+ * 셸 골격 시험(팀 시험 서버 전용). 정적 내보내기 out/ 을 서빙해 연다.
  * 잰다: 8개 경로 제목 · 로그인 전 탭(공개 3, 결정 F12) · 역할·상황판 잠금 · 예시 로그인 → 상황판 + 역할 탭 · 로그아웃 → 캘린더
  *       · 머리줄 넘침 단계(탭 수가 바뀌어도 가로 넘침 0) · 언어 전환 · 나라 고르기(경계 지연 로드) · MSW 가 스냅숏 값을 계약 모양으로 응답.
  */
@@ -40,7 +40,7 @@ test("로그인 전 탭 = 캘린더·비교 분석·방법·검증 3개, 예시 
 test("상황판을 로그인 전 직접 열면 잠긴 화면 → 그 자리에서 로그인하면 상황판이 열린다(F12)", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem("em.lang", "ko");
-    localStorage.removeItem("em.role");
+    sessionStorage.removeItem("em.role");
   });
   await page.goto("/ko/home/");
   const locked = page.locator('[data-slot="locked"]');
@@ -62,7 +62,7 @@ test("로그아웃하면 캘린더로 가고 탭은 공개 3개로 돌아간다(
     if (sessionStorage.getItem("f12.once")) return;
     sessionStorage.setItem("f12.once", "1");
     localStorage.setItem("em.lang", "ko");
-    localStorage.setItem("em.role", "commander");
+    sessionStorage.setItem("em.role", "commander");
   });
   await page.goto("/ko/home/");
   const tabs = page.locator("#topbar nav a[data-tab]");
@@ -89,7 +89,7 @@ test("머리줄: 탭 3개(로그인 전)·5개(로그인 뒤) 모두 가로 넘�
     });
   await page.addInitScript(() => {
     localStorage.setItem("em.lang", "ko");
-    if (!sessionStorage.getItem("f12.role")) localStorage.removeItem("em.role");
+    if (!sessionStorage.getItem("f12.role")) sessionStorage.removeItem("em.role");
   });
   await page.goto("/ko/calendar/");
   await expect(page.locator("#topbar nav a[data-tab]")).toHaveCount(3);
@@ -98,7 +98,7 @@ test("머리줄: 탭 3개(로그인 전)·5개(로그인 뒤) 모두 가로 넘�
   const pub = await probe();
   await page.evaluate(() => {
     sessionStorage.setItem("f12.role", "1");
-    localStorage.setItem("em.role", "scientist");
+    sessionStorage.setItem("em.role", "scientist");
   });
   await page.goto("/ko/lab/");
   await expect(page.locator("#topbar nav a[data-tab]")).toHaveCount(5);

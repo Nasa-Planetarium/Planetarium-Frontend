@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 셸 스크린샷 + 머리줄 픽셀 대조(목업 ↔ Next) — aibox 전용(개인 PC 에서 브라우저 금지).
+ * 셸 스크린샷 + 머리줄 픽셀 대조(목업 ↔ Next) — 팀 시험 서버 전용(개인 PC 에서 브라우저 금지).
  *
  * 쓰는 법(정적 내보내기 out/ 이 있어야 함):
  *   node scripts/shot-header.mjs --mockup <목업 폴더> --out <저장 폴더> [--chromium <실행 파일>]

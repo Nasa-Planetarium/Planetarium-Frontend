@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * 상황판 r2-B 복원 시험(aibox · MSW 스냅숏 모드 · 웹 폭만). 잰다:
+ * 상황판 r2-B 복원 시험(팀 시험 서버 · MSW 스냅숏 모드 · 웹 폭만). 잰다:
  *  기간 창 — 날짜 직접 입력(달력 팝오버) · 범위 달력 올리면 미리 칠함 · 화살표 이동 · 전년 대비 스위치 → 지표 머리 「전년 대비」 · 확인 줄(role=status)
  *  지도 — 검색 후보에 불·지명·자원 · 지난 기간이면 「기간 밖 진행 중」 안내 · 캘린더 칸 툴팁 「(평가 연도 제외)」
  * 스냅숏 모드는 /summary·/hotspots 가 503 이라 전년 대비 수는 「–」(자료 준비 중) — 값 비교는 실서버 스크린숏으로 본다.
@@ -10,7 +10,7 @@ test.beforeEach(async ({ page }, info) => {
   test.skip(info.project.name !== "web", "웹 폭만");
   await page.addInitScript(() => {
     localStorage.setItem("em.lang", "ko");
-    localStorage.setItem("em.role", "responder");
+    sessionStorage.setItem("em.role", "responder");
   });
 });
 

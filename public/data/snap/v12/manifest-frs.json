@@ -1,6 +1,6 @@
 {
  "release": "data-v1.2-2026-11-15",
- "source_dir": "/home/trevi/planetarium/release/v1.2-2026-11-15",
+ "source_dir": "release/v1.2-2026-11-15",
  "sources": {
   "aoi_month_fire_regime": {
    "rows": 92335,

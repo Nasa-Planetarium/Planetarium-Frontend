@@ -3,6 +3,7 @@
  * 값은 release 그대로(A1·E1): 판정·백분위·배수는 /compare 값, 달 상태·출처는 /calendar 행. 화면이 하는 일은 고르기·늘어놓기뿐이다.
  * 경우 가르기(결측·범위 밖·운용 전…)는 core.caseOf → judgeMonth(E4, switch 없음).
  */
+import { displayInterval, hasSpread } from "@/shared/lib/interval";
 import { caseOf, ymIso, ymKey, type CalendarData, type CalView, type MonthRow } from "./core";
 
 export const STEPS = [1, 2, 3] as const;
@@ -76,7 +77,7 @@ export interface DistItem {
   value_lo?: number | null;
   value_hi?: number | null;
 }
-/** /compare baseline[] → 분포 막대(기준에 든 해 · 결측 해 · 평가 해). 수염 = /calendar value_lo–value_hi(폭이 있는 해만) */
+/** /compare baseline[] → 분포 막대(기준에 든 해 · 결측 해 · 평가 해). 수염 = 화면 구간 displayInterval(F16, 폭이 있는 해만) */
 export function distOf(
   c: { value: number | null; value_lo?: number | null; value_hi?: number | null; baseline?: { year: number; value: number | null; status?: string; used?: boolean }[] },
   y: number,
@@ -88,8 +89,8 @@ export function distOf(
     if (b.used) out.push({ year: b.year, value: b.value, state: "baseline", ...lh(b.year) });
     else if (b.status === "missing") out.push({ year: b.year, value: null, state: "missing" });
   });
-  const wide = c.value_lo != null && c.value_hi != null && c.value_lo !== c.value_hi;
-  out.push({ year: y, value: c.value, state: "evaluated", ...(wide ? { value_lo: c.value_lo, value_hi: c.value_hi } : {}) });
+  const iv = displayInterval(c.value, c.value_lo, c.value_hi);
+  out.push({ year: y, value: c.value, state: "evaluated", ...(hasSpread(iv) ? { value_lo: iv.lo, value_hi: iv.hi } : {}) });
   return out.sort((a, z) => a.year - z.year);
 }
 /** 원자료 보기 분포: 같은 달 각 해의 그 보기 값(기준 끝 해 뒤는 평가 해만) */

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * 캘린더(첫 탭) 시험(aibox 전용, MSW 스냅숏). 잰다: 개수 띠 4칸 값 · 칸 누르면 주소 ym · 보기 전환 눌림 · 상세 값(release 그대로) · 전 세계 재생 달 합계.
+ * 캘린더(첫 탭) 시험(팀 시험 서버 전용, MSW 스냅숏). 잰다: 개수 띠 4칸 값 · 칸 누르면 주소 ym · 보기 전환 눌림 · 상세 값(release 그대로) · 전 세계 재생 달 합계.
  */
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("em.lang", "ko"));
@@ -11,7 +11,7 @@ test("캘린더: 개수 띠·상세 값·칸 고르기·보기 전환", async ({
   await page.goto("/ko/calendar/?aoi=SIDO_47&ym=2025-03");
   const root = page.locator('[data-testid="calendar"][data-ready="1"]');
   await expect(root).toBeVisible({ timeout: 30000 });
-  await expect(root.locator("h1")).toHaveText("연소 활동 통합 캘린더");
+  await expect(root.locator("h1")).toHaveText("연소 활동 통합 모니터링");
   await expect(root.locator('[data-cnt="ok"]')).toContainText("308");
   await expect(root.locator('[data-cnt="partial"]')).toContainText("1");
   await expect(root.locator("[data-det]")).toContainText("2,353");

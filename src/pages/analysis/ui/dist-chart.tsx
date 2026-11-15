@@ -3,13 +3,14 @@
 import { useId, type KeyboardEvent } from "react";
 import { useLocale } from "next-intl";
 import { useT } from "@/shared/i18n";
+import { displayInterval, hasSpread } from "@/shared/lib/interval";
 import { fmtAxis, fmtNum, ticks } from "../model/core";
 import { C, Tx } from "./cal-svg";
 import { cx } from "./cx";
 
 /**
  * 같은 달 연도별 막대(목업 EM.charts.dist). release 값을 그대로 그린다 — 다시 계산하지 않는다.
- * 띠 = 기준 p25–p75 · 점선 = 중앙값 · 수염 = value_lo–value_hi · 결측 = 바닥의 낮은 빗금 칸.
+ * 띠 = 기준 p25–p75 · 점선 = 중앙값 · 수염 = 화면 구간 displayInterval(value, value_lo, value_hi)(F16 — 값까지 넓힘) · 결측 = 바닥의 낮은 빗금 칸.
  */
 export interface DistItem {
   year: number;
@@ -42,7 +43,8 @@ export function DistChart(o: {
   const pt = 22;
   const pb = 24;
   const vals = d.map((x) => x.value).filter((v): v is number => v != null);
-  const tk = ticks(Math.max(4, ...vals, o.bandHi ?? 0, ...d.map((x) => x.value_hi ?? 0)), 4);
+  const ivs = d.map((x) => displayInterval(x.value, x.value_lo, x.value_hi));
+  const tk = ticks(Math.max(4, ...vals, o.bandHi ?? 0, ...ivs.map((iv) => iv?.hi ?? 0)), 4);
   if (tk.max <= 8) tk.ticks = Array.from({ length: tk.max + 1 }, (_, i) => i).filter((v) => tk.max <= 5 || v % 2 === 0);
   const n = Math.max(1, d.length);
   const bw = (W - pl - pr) / n;
@@ -72,18 +74,18 @@ export function DistChart(o: {
           <title>{`${tt}${f(x.value)} ${o.unit}`}</title>
         </rect>
         {x.value === 0 ? <Tx x={bx + w / 2} y={Y(0) - 3} s="0" anchor="middle" fill={ev ? C.viirs : C.muted} /> : null}
-        {x.value_lo != null && x.value_hi != null
-          ? (() => {
+        {hasSpread(ivs[i])
+          ? ((iv) => {
               const cw = Math.max(2, w * 0.25);
               const cxp = bx + w / 2;
-              const y1 = Y(Math.min(x.value_hi, tk.max));
-              const y0 = Y(Math.max(0, x.value_lo));
+              const y1 = Y(Math.min(iv.hi, tk.max));
+              const y0 = Y(Math.max(0, iv.lo));
               return (
                 <path d={`M${cxp.toFixed(1)} ${y1.toFixed(1)}V${y0.toFixed(1)}M${(cxp - cw).toFixed(1)} ${y1.toFixed(1)}h${(2 * cw).toFixed(1)}M${(cxp - cw).toFixed(1)} ${y0.toFixed(1)}h${(2 * cw).toFixed(1)}`} stroke={C.ink} strokeOpacity={0.8} strokeWidth={1} fill="none" pointerEvents="none">
-                  <title>{`${x.year} · ${o.whiskerLabel} ${f(Math.round(x.value_lo))}–${f(Math.round(x.value_hi))}`}</title>
+                  <title>{`${x.year} · ${o.whiskerLabel} ${f(Math.round(iv.lo))}–${f(Math.round(iv.hi))}`}</title>
                 </path>
               );
-            })()
+            })(ivs[i])
           : null}
       </g>
     );

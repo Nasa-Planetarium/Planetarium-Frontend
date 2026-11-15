@@ -1,29 +1,69 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ComponentType } from "react";
-import type { CanvasSource, Map as MlMap } from "maplibre-gl";
+import type { GeoJSONSource, Map as MlMap } from "maplibre-gl";
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
 import { useLocale } from "next-intl";
 import { ChevronRight, Play, Square, X } from "lucide-react";
-import { countryName, pickableIso3, useCountry } from "@/entities/country";
+import { continentOf, countryName, pickableIso3, useCountry, type Continent, type CountryInfo } from "@/entities/country";
 import { aoiIndexQuery } from "@/features/pick-aoi";
 import { worldGridQuery, type LatBand, type WorldMeta } from "@/entities/world-grid";
 import { useT } from "@/shared/i18n";
 import { aoiOfIso3 } from "@/shared/lib/adm0";
+import { contTok } from "@/shared/lib/map-color";
 import { MapLoading } from "@/shared/ui";
 import cj from "./continent-jump.module.css";
 import lbl from "./map-labels.module.css";
 
-/* 대륙 바로 가기(프런트 UI/UX, 2026-11-15): 지도 아래쪽에 한 줄로 고정. 누르면 그 대륙 상자로 이동하고 단추가 검게 바뀐다. 상자 = [서, 남, 동, 북] */
+/* 대륙 바로 가기(프런트 UI/UX, 2026-11-15 · F14 다듬기): 지도 아래쪽 한 줄. 누르면 그 대륙으로 이동하고 단추가 검게 바뀐다.
+   - 이름 = 사전 shell.cont.*(나라 고르기와 같은 낱말 · 남북 아메리카는 NA·SA 키), 견본 색 = 토큰 --map-cont-*.
+   - 상자 = 나라 고르기와 같은 대륙 묶음(entities/country continentOf)의 나라 범위 합집합. 아메리카는 남미 나라 표(SA_ISO3)로 남·북을 가른다.
+     renderWorldCopies:false 라 날짜 변경선 너머는 ±180 으로 자른다(USA 처럼 동경 쪽 조각이 있는 나라는 서경 쪽으로 옮겨 본다).
+   - 고정 상자(FALLBACK)는 나라 색인을 아직 못 받았을 때만 */
 const CONTINENTS = [
-  { id: "na", ko: "북아메리카", en: "North America", color: "#e63946", box: [-168, 7, -52, 72] },
-  { id: "sa", ko: "남아메리카", en: "South America", color: "#5cb85c", box: [-82, -56, -34, 13] },
-  { id: "eu", ko: "유럽", en: "Europe", color: "#3b8fe0", box: [-25, 34, 45, 71] },
-  { id: "af", ko: "아프리카", en: "Africa", color: "#f28c28", box: [-18, -35, 52, 38] },
-  { id: "as", ko: "아시아", en: "Asia", color: "#f5c518", box: [40, -11, 150, 60] },
-  { id: "oc", ko: "오세아니아", en: "Oceania", color: "#9b7fe6", box: [110, -48, 180, 0] },
-] as const;
+  { id: "na", key: "NA", of: "AM" },
+  { id: "sa", key: "SA", of: "AM" },
+  { id: "eu", key: "EU", of: "EU" },
+  { id: "af", key: "AF", of: "AF" },
+  { id: "as", key: "AS", of: "AS" },
+  { id: "oc", key: "OC", of: "OC" },
+] as const satisfies readonly { id: string; key: string; of: Continent }[];
 type ContinentId = (typeof CONTINENTS)[number]["id"];
+type Box4 = [number, number, number, number];
+const FALLBACK: Record<ContinentId, Box4> = { na: [-168, 7, -52, 83], sa: [-82, -56, -34, 13], eu: [-25, 34, 180, 82], af: [-18, -35, 52, 38], as: [25, -11, 150, 56], oc: [110, -48, 180, 0] };
+const SA_ISO3 = new Set(["ARG", "BOL", "BRA", "CHL", "COL", "ECU", "GUY", "PRY", "PER", "SUR", "URY", "VEN", "FLK", "SGS", "TTO"]);
+function contOf(c: CountryInfo): ContinentId {
+  const k = continentOf(c);
+  if (k === "AM") return SA_ISO3.has(c.iso3) ? "sa" : "na";
+  return (CONTINENTS.find((x) => x.of === k)?.id ?? "as") as ContinentId;
+}
+/** 나라 범위(본토 범위 우선)를 지도 한 벌(±180) 안으로 */
+function boxIn(c: CountryInfo & { bbox_main?: Box4 }): Box4 {
+  let [w, s, e, n] = (c.bbox_main ?? c.bbox) as Box4;
+  if (e > 180) {
+    if (c.c[0] < 0) {
+      w -= 360;
+      e -= 360;
+    } else e = 180;
+  }
+  s = Math.max(-58, s);
+  n = Math.min(83, n);
+  return [Math.max(-180, w), s, Math.min(180, e), n];
+}
+/** 대륙별 상자(나라 범위 합집합) */
+export function continentBoxes(list: readonly CountryInfo[]): Record<ContinentId, Box4> {
+  const out = { ...FALLBACK };
+  const acc = new Map<ContinentId, Box4>();
+  list.forEach((c) => {
+    if (!c.iso2 || c.iso3 === "ATA") return;
+    const id = contOf(c);
+    const b = boxIn(c);
+    const a = acc.get(id);
+    acc.set(id, a ? [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[2], b[2]), Math.max(a[3], b[3])] : b);
+  });
+  acc.forEach((b, id) => (out[id] = b));
+  return out;
+}
 
 /* 지도 이름표(프런트 UI/UX, 2026-11-15): 대륙(굵게)·바다(기울임) 이름을 그 중앙 [경도, 위도]에 MapLibre Marker 로 붙인다.
    Marker 는 지도를 그리는 같은 프레임에 정수 픽셀 transform 으로 움직여서 떨리지 않는다. 한국어 화면 = 한국어, 그 밖 = 영어. 누름은 지도로 통과 */
@@ -105,6 +145,8 @@ interface Prep {
   off: number[];
   bx: Int16Array;
   by0: Int16Array;
+  /** 칸 남쪽 위도(°) */
+  la: Int16Array;
   dq: Float32Array;
 }
 function prep(meta: WorldMeta, buf: ArrayBuffer, band: LatBand): Prep {
@@ -116,27 +158,43 @@ function prep(meta: WorldMeta, buf: ArrayBuffer, band: LatBand): Prep {
   meta.counts.forEach((c, k) => off.push((off[k] as number) + c));
   const bx = new Int16Array(n);
   const by0 = new Int16Array(n);
+  const las = new Int16Array(n);
   for (let k = 0; k < n; k++) {
     const g = act[k] as number;
     const la = Math.floor(g / 360) - 90;
     const lo = (g % 360) - 180;
     bx[k] = (lo + 180) * PXD + PXD / 2;
     by0[k] = yOf(la + 0.5);
+    las[k] = la;
   }
   const dq = new Float32Array(256);
   for (let q = 1; q < 256; q++) dq[q] = Math.exp(meta.quant.lnmin + ((q - 1) / 254) * (meta.quant.lnmax - meta.quant.lnmin));
-  return { meta, band, n, bpm, u8, off, bx, by0, dq };
+  return { meta, band, n, bpm, u8, off, bx, by0, la: las, dq };
 }
 
-/** 램프 LUT(256 단계 · 투명도 0.62–0.98) */
+/** 램프 LUT(256 단계 · 투명도 0.9–1 — 밝은 바탕에서 적은 값도 3:1 을 지키게, F14 C3) */
 function makeLut(ramp: (t: number) => string) {
   const L = new Uint8ClampedArray(256 * 4);
   for (let k = 0; k < 256; k++) {
     const h = ramp(0.18 + 0.82 * (k / 255)).replace("#", "");
     const v = parseInt(h, 16) || 0;
-    L.set([(v >> 16) & 255, (v >> 8) & 255, v & 255, Math.round(255 * (0.62 + 0.36 * (k / 255)))], k * 4);
+    L.set([(v >> 16) & 255, (v >> 8) & 255, v & 255, Math.round(255 * (0.9 + 0.1 * (k / 255)))], k * 4);
   }
   return L;
+}
+
+/* 점 크기: 예전 1440px 캔버스 원(반지름 R_ST px)과 같은 화면 크기 — 캔버스 1px = 지도 512·2^z/1440 px */
+const PX_Z0 = 512 / CW;
+/** 램프 → 지도 원 색·투명도 식(q = 0–255, LUT 와 같은 램프 9 단계) */
+function circlePaint(ramp: (t: number) => string) {
+  const col: (string | number)[] = [];
+  const op: number[] = [];
+  for (let s = 0; s <= 8; s++) {
+    const k = Math.round((s / 8) * 255);
+    col.push(k, ramp(0.18 + 0.82 * (k / 255)));
+    op.push(k, 0.95 * (0.62 + 0.36 * (k / 255)));
+  }
+  return { color: ["interpolate", ["linear"], ["get", "q"], ...col], opacity: ["interpolate", ["linear"], ["get", "q"], ...op] };
 }
 
 export interface WorldReplayProps {
@@ -180,13 +238,7 @@ export function WorldReplay(o: WorldReplayProps) {
   useEffect(() => {
     pickRef.current = pick;
   }, [pick]);
-  const cv = useMemo(() => {
-    if (typeof document === "undefined") return null;
-    const c = document.createElement("canvas");
-    c.width = CW;
-    c.height = CH;
-    return c;
-  }, []);
+  const paint = useMemo(() => circlePaint(o.ramp), [o.ramp]);
   const mapEl = useRef<HTMLDivElement>(null);
   const lbEl = useRef<HTMLCanvasElement>(null);
   const lbBase = useRef<ImageData | null>(null);
@@ -194,7 +246,8 @@ export function WorldReplay(o: WorldReplayProps) {
   const [cont, setCont] = useState<ContinentId | null>(null);
   /* 이름표 = MapLibre Marker(지도와 같은 프레임에 움직임). 화면 언어가 바뀌면 다시 붙인다 */
   /* 육지 가림판(프런트 UI/UX, 2026-11-15): 1° 칸 점이 해안을 넘어 바다에 그려지지 않게, 지도 육지 면과 같은 world.json 을
-     재생 캔버스와 같은 좌표(경도 → x, 메르카토르 위도 → y)로 그려 둔다. 해안선은 1.5px 넓혀(선 굵기 3) 해안 칸 점이 통째로 지워지지 않게 */
+     1440px 판(경도 → x, 메르카토르 위도 → y)에 그려 둔다. 해안선은 1.5px 넓혀(선 굵기 3) 해안 칸이 통째로 빠지지 않게.
+     점은 지도 벡터 원이라 잘라 낼 수 없으니, 아래 pos 에서 칸 중심이 바다면 그 칸의 육지 쪽 가운데로 옮긴다 */
   const [landMask, setLandMask] = useState<HTMLCanvasElement | null>(null);
   useEffect(() => {
     let dead = false;
@@ -232,6 +285,44 @@ export function WorldReplay(o: WorldReplayProps) {
       dead = true;
     };
   }, []);
+  /* 칸마다 점 자리 [경도, 위도](NaN = 그리지 않음). 칸 중심이 육지면 중심, 바다면 칸 안 육지 화소의 평균 자리, 육지가 없으면 뺀다 */
+  const pos = useMemo(() => {
+    if (!D) return null;
+    const lon = new Float32Array(D.n);
+    const lat = new Float32Array(D.n);
+    const img = landMask?.getContext("2d")?.getImageData(0, 0, CW, CH).data ?? null;
+    const land = (x: number, y: number) => !img || ((img[(y * CW + x) * 4 + 3] as number) > 0);
+    const latOfY = (y: number) => Math.atan(Math.sinh(MY0 - y / PXR)) * (180 / Math.PI);
+    for (let k = 0; k < D.n; k++) {
+      const la = D.la[k] as number;
+      const x0 = (D.bx[k] as number) - PXD / 2;
+      lon[k] = NaN;
+      lat[k] = NaN;
+      /* 재생 범위(80°N – 60°S) 밖 칸은 예전처럼 그리지 않는다 */
+      if (la + 0.5 > LAT_N || la + 0.5 < LAT_S) continue;
+      if (land(x0 + PXD / 2, D.by0[k] as number)) {
+        lon[k] = x0 / PXD - 180 + 0.5;
+        lat[k] = la + 0.5;
+        continue;
+      }
+      const yT = Math.max(0, yOf(la + 1));
+      const yB = Math.min(CH, yOf(la));
+      let sx = 0;
+      let sy = 0;
+      let c = 0;
+      for (let y = yT; y < yB; y++)
+        for (let x = x0; x < x0 + PXD; x++)
+          if (land(x, y)) {
+            sx += x + 0.5;
+            sy += y + 0.5;
+            c++;
+          }
+      if (!c) continue;
+      lon[k] = sx / c / PXD - 180;
+      lat[k] = latOfY(sy / c);
+    }
+    return { lon, lat };
+  }, [D, landMask]);
   const mlLib = useRef<typeof import("maplibre-gl") | null>(null);
   useEffect(() => {
     const lib = mlLib.current;
@@ -247,7 +338,8 @@ export function WorldReplay(o: WorldReplayProps) {
       return new lib.Marker({ element: el, anchor: "center" }).setLngLat([l.at[0], l.at[1]]).addTo(map);
     });
     return () => marks.forEach((m) => m.remove());
-  }, [map, lang]);  /* 쓰는 화면이 달을 바꾸면(분석 S1 달 고르기 — 목업 wfApi.setMonth) 재생 위치도 그 달로 */
+  }, [map, lang]);
+  const barEl = useRef<HTMLDivElement>(null);  /* 쓰는 화면이 달을 바꾸면(분석 S1 달 고르기 — 목업 wfApi.setMonth) 재생 위치도 그 달로 */
   const [seenMonth, setSeenMonth] = useState(o.month);
   if (o.month !== seenMonth) {
     setSeenMonth(o.month);
@@ -260,7 +352,6 @@ export function WorldReplay(o: WorldReplayProps) {
 
   /* 지도 */
   useEffect(() => {
-    if (!cv) return;
     let dead = false;
     let made: MlMap | null = null;
     let ro: ResizeObserver | null = null;
@@ -286,18 +377,32 @@ export function WorldReplay(o: WorldReplayProps) {
           version: 8,
           sources: {
             land: { type: "geojson", data: "/geo/world.json" },
-            /* canvas 원천은 스타일 명세 타입에 없지만 MapLibre 가 실행 때 받는다(목업 worldgrid.js 와 같음) */
-            wf: { type: "canvas", canvas: cv, animate: false, coordinates: [[-180, LAT_N], [180, LAT_N], [180, LAT_S], [-180, LAT_S]] } as never,
+            /* 화재 점(프런트 UI/UX, 2026-11-15): 예전 1440px 캔버스 그림(확대하면 뿌옇게 번짐) 대신 지도 벡터 원 — 어느 확대에서도 또렷하다 */
+            wf: { type: "geojson", data: { type: "FeatureCollection", features: [] } },
           },
           layers: [
             { id: "bg", type: "background", paint: { "background-color": tok("map-sea") } },
             { id: "land", type: "fill", source: "land", paint: { "fill-color": tok("map-land") } },
-            { id: "wf", type: "raster", source: "wf", paint: { "raster-resampling": "linear", "raster-fade-duration": 0, "raster-opacity": 0.95 } },
+            {
+              id: "wf",
+              type: "circle",
+              source: "wf",
+              /* 센 칸을 위에 */
+              layout: { "circle-sort-key": ["get", "q"] },
+              paint: {
+                /* 반지름 = R_ST(캔버스 px) × 512·2^z/1440 — 예전과 같은 크기, 확대 2배마다 2배 */
+                "circle-radius": ["interpolate", ["exponential", 2], ["zoom"], 0, ["*", PX_Z0, ["get", "r"]], 6, ["*", PX_Z0 * 64, ["get", "r"]]],
+                "circle-color": paint.color as never,
+                "circle-opacity": paint.opacity as never,
+                "circle-blur": 0.08,
+              },
+            },
             /* 고른 나라 강조(QA 2026-11-15) — 데이터를 가리지 않게: 고른 나라는 칠하지 않고 연회색 얇은 테두리(sel-line)만,
                나머지 나라는 #F9F9F9 막(45%)으로 흐리게(포커스). 나라를 안 골랐으면 막 없음(filter 가 아무것도 안 맞음) */
             { id: "dim", type: "fill", source: "land", filter: ["==", ["get", "iso3"], "\u0000"], paint: { "fill-color": "#F9F9F9", "fill-opacity": 0.45 } },
             { id: "line", type: "line", source: "land", paint: { "line-color": tok("map-boundary"), "line-opacity": 0.32, "line-width": 0.6 } },
-            { id: "sel-line", type: "line", source: "land", filter: ["==", ["get", "iso3"], ""], paint: { "line-color": "#c4c4c4", "line-width": 1.2 } },
+            /* sel-line 색: QA 의 연회색(#c4c4c4)은 밝은 육지 대비 1.7:1 이라 같은 회색 계열로 진하게만(--map-sel-line, F14) */
+            { id: "sel-line", type: "line", source: "land", filter: ["==", ["get", "iso3"], ""], paint: { "line-color": tok("map-sel-line"), "line-width": 1.2 } },
           ],
         },
       });
@@ -331,54 +436,47 @@ export function WorldReplay(o: WorldReplayProps) {
       /* 지운 지도를 다른 effect 가 계속 쓰지 않게(개발 중 핫 리로드 때 getSource 오류) */
       setMap(null);
     };
-  }, [cv]);
+    // 지도는 한 번만 만든다 — 색(paint)이 바뀌면 아래 effect 가 setPaintProperty 로 바꾼다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  /* 한 달 그리기 → 캔버스 원천 갱신 */
+  /* 램프가 바뀌면 점 색만 바꾼다 */
   useEffect(() => {
-    if (!D || !cv) return;
-    const ctx = cv.getContext("2d");
-    if (!ctx) return;
-    ctx.clearRect(0, 0, CW, CH);
+    if (!alive(map)) return;
+    map.setPaintProperty("wf", "circle-color", paint.color as never);
+    map.setPaintProperty("wf", "circle-opacity", paint.opacity as never);
+  }, [map, paint]);
+
+  /* 한 달 그리기 → 점 원천 갱신 (q = 색 단계 0–255, r = 크기 단계 반지름) */
+  useEffect(() => {
+    if (!D || !pos) return;
+    const feats: { type: "Feature"; geometry: { type: "Point"; coordinates: [number, number] }; properties: { q: number; r: number } }[] = [];
     const bm = D.n * 2 + i * D.bpm;
     let p = D.off[i] as number;
     for (let k = 0; k < D.n; k++) {
       if (!((D.u8[bm + (k >> 3)] as number) & (1 << (k & 7)))) continue;
       const v = D.dq[D.u8[p++] as number] as number;
       if (v < 0.5) continue;
-      const y = D.by0[k] as number;
-      if (y < -3 || y > CH + 3) continue;
-      const q = tOf(v) * 4;
+      const lo = pos.lon[k] as number;
+      if (Number.isNaN(lo)) continue;
       const st = v >= 1000 ? 4 : v >= 100 ? 3 : v >= 10 ? 2 : v >= 1 ? 1 : 0;
-      ctx.fillStyle = `rgba(${lut[q]},${lut[q + 1]},${lut[q + 2]},${((lut[q + 3] as number) / 255).toFixed(2)})`;
-      ctx.beginPath();
-      ctx.arc(D.bx[k] as number, y, R_ST[st] as number, 0, 6.2832);
-      ctx.fill();
+      feats.push({ type: "Feature", geometry: { type: "Point", coordinates: [lo, pos.lat[k] as number] }, properties: { q: tOf(v), r: R_ST[st] as number } });
     }
-    /* 바다로 넘친 부분 지우기: 육지 가림판과 겹친 곳만 남긴다 */
-    if (landMask) {
-      ctx.globalCompositeOperation = "destination-in";
-      ctx.drawImage(landMask, 0, 0);
-      ctx.globalCompositeOperation = "source-over";
-    }
-    if (alive(map)) {
-      const src = map.getSource("wf") as CanvasSource | undefined;
-      if (src) {
-        src.play();
-        map.triggerRepaint();
-        map.once("render", () => (map.getSource("wf") as CanvasSource | undefined)?.pause());
-      }
-    }
+    if (alive(map)) (map.getSource("wf") as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: feats });
     onMonth.current?.(i);
-  }, [D, cv, i, lut, map, landMask]);
+  }, [D, pos, i, map]);
 
   /* 고른 나라 테두리 + 확대 (나라를 안 골랐으면 고른 대륙, 그것도 없으면 전 세계) */
+  const boxes = useMemo(() => continentBoxes(countries), [countries]);
   useEffect(() => {
     if (!alive(map)) return;
     map.setFilter("sel-line", ["==", ["get", "iso3"], sel ?? ""]);
     map.setFilter("dim", sel ? ["!=", ["get", "iso3"], sel] : ["==", ["get", "iso3"], "\u0000"]);
     if (!sel) {
-      const c = CONTINENTS.find((x) => x.id === cont);
-      if (c) map.fitBounds([[c.box[0], c.box[1]], [c.box[2], c.box[3]]], { padding: 24, duration: 600 });
+      const b = cont ? boxes[cont] : null;
+      /* 아래 대륙 줄 높이만큼 아래 여백(줄 밑으로 상자 남쪽이 들어가지 않게, F14 L4) */
+      const pb = (barEl.current?.offsetHeight ?? 0) + 8;
+      if (b) map.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: { top: 24, left: 24, right: 24, bottom: Math.max(24, pb) }, duration: 600 });
       else map.fitBounds([[-170, -50], [180, 72]], { padding: 4, duration: 500 });
       return;
     }
@@ -391,7 +489,7 @@ export function WorldReplay(o: WorldReplayProps) {
       if (e > 180) [w, e] = e - 180 > 180 - w ? [Math.max(-180, w - 360), e - 360] : [w, 180];
       map.fitBounds([[w, Math.max(-58, b[1] as number)], [e, Math.min(78, b[3] as number)]], { padding: 24, maxZoom: 5, duration: 600 });
     }
-  }, [map, sel, countries, cont]);
+  }, [map, sel, countries, cont, boxes]);
 
   /* 위도 5° 띠 × 달 */
   useEffect(() => {
@@ -490,7 +588,7 @@ export function WorldReplay(o: WorldReplayProps) {
       <div className={`${cx("wf-map")} ${lbl.host}`} ref={mapEl}>
         <MapLoading show={!map} />
         {map ? (
-          <div className={cj.bar} role="group" aria-label={lang === "ko" ? "대륙으로 이동" : "Jump to continent"}>
+          <div className={cj.bar} ref={barEl} role="group" aria-label={t("shell.map.jump")}>
             {CONTINENTS.map((c) => (
               <button
                 key={c.id}
@@ -503,8 +601,8 @@ export function WorldReplay(o: WorldReplayProps) {
                   setCont((x) => (x === c.id && !sel ? null : c.id));
                 }}
               >
-                <i className={cj.dot} style={{ background: c.color }} aria-hidden="true" />
-                {lang === "ko" ? c.ko : c.en}
+                <i className={cj.dot} style={{ background: `var(--${contTok(c.id)})` }} aria-hidden="true" />
+                {t(`shell.cont.${c.key}`)}
               </button>
             ))}
           </div>
@@ -552,7 +650,16 @@ export function WorldReplay(o: WorldReplayProps) {
           <div className={cx("wf-sel")}>
             <div className={cx("wf-sh")}>
               <b>{cname}</b>
-              <button type="button" className={cx("iconbtn")} aria-label={T("whole")} onClick={() => setSel(null)}>
+              <button
+                type="button"
+                className={cx("iconbtn")}
+                aria-label={T("whole")}
+                onClick={() => {
+                  /* 「전체 보기」 = 전 세계(고른 대륙도 푼다 — 이름과 동작을 맞춘다, F14 L3) */
+                  setSel(null);
+                  setCont(null);
+                }}
+              >
                 <X aria-hidden="true" />
               </button>
             </div>

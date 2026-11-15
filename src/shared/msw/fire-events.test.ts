@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createFireEventHandlers, type EventsSnap } from "./fire-events";
 
 /*
- * 기대값은 release fire_events.parquet 를 pandas 로 따로 읽어 센 값이다(2026-11-15 aibox, 스냅숏 스크립트와 다른 코드):
+ * 기대값은 release fire_events.parquet 를 pandas 로 따로 읽어 센 값이다(2026-11-15 팀 시험 서버, 스냅숏 스크립트와 다른 코드):
  *   KR 2025-03 겹침 237건(감지 3개 이상 58) — fire_events_meta validation 의 n_events 237 과 같다 · 의성군 30(13) · 경상북도 141
  *   ARG(country) 2025-09 6,967(1,658) · KR 2026-11-05..11-11 20(4)
  *   KR 2016–2025 연소 면적 1위 KR_20220304_0002 131.80 km² · ARG 1위 ARG_20170101_0033 1,365.66 km²

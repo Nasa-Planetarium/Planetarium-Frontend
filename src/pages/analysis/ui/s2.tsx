@@ -37,6 +37,7 @@ import { cx } from "./cx";
 import { DistChart } from "./dist-chart";
 import { VdMark } from "./vd-mark";
 import type { Ctx } from "./types";
+import { displayInterval, hasSpread } from "@/shared/lib/interval";
 
 /** 보기 낱말 = 셸 사전 한 곳(shell.view.* — 캘린더 탭과 같은 낱말, 목업 g7 EM.viewWord) */
 export const viewWord = (x: Pick<Ctx, "W">, v: CalView) => x.W(`view.${v}`);
@@ -92,8 +93,9 @@ export function S2({ x }: { x: Ctx }) {
             </button>
           </div>
         ) : null}
+        {/* QA 2026-11-15: [근거·보고] → [데이터 내보내기] — 누르면 3단계(근거·보고: 인쇄·CSV 내보내기)로 */}
         <button type="button" className={cx("btn primary an-vgo")} data-s3="" onClick={() => x.go(3)}>
-          {T("g3.to_s3")}
+          {T("qx.export")}
         </button>
       </div>
       <div className={cx("an-s2out")}>
@@ -104,12 +106,16 @@ export function S2({ x }: { x: Ctx }) {
           </div>
         ) : (
           <>
-            {/* 칸 지도를 맨 위에(QA 2026-11-15: 지역을 정해 비교 분석하면 지도를 먼저 보여 준다) */}
-            <CellPanel x={x} />
-            <div className={cx("an-grid")}>
+            {/* 맨 위 줄 = 칸 지도 | 연도×월 캘린더 나란히(QA 2026-11-15: 지도를 먼저, 캘린더를 바로 옆에). 연도별 값은 그 아래 한 줄 전체 */}
+            <div className={cx("an-grid an-top")}>
+              <div className={cx("an-gl")}>
+                <CellPanel x={x} />
+              </div>
               <div className={cx("an-gl")}>
                 <CalPanel x={x} onPick={pick} />
               </div>
+            </div>
+            <div className={cx("an-grid an-detrow")}>
               <section className={cx("panel an-det")} aria-busy={x.stale || undefined}>
                 <div className={cx("panel-h")}>
                   <h3>
@@ -354,7 +360,7 @@ function VerdictLine({ x }: { x: Ctx }) {
           <span>
             {view !== "value" ? `${T("g3.k_value_harm")} ` : ""}
             <b className={cx("num")}>{x.nf(c.value)}</b>
-            {c.value_lo != null && c.value_hi != null && c.value_lo !== c.value_hi ? <span className={cx("num")}> {T("g3.range_lohi", { lo: x.nf(c.value_lo), hi: x.nf(c.value_hi) })}</span> : null} <Status st={c.status} />
+            {((iv) => (hasSpread(iv) ? <span className={cx("num")}> {T("g3.range_lohi", { lo: x.nf(iv.lo), hi: x.nf(iv.hi) })}</span> : null))(displayInterval(c.value, c.value_lo, c.value_hi))} <Status st={c.status} />
           </span>
         ) : null}
         {mk ? (
@@ -395,7 +401,8 @@ export function Detail({ x, onBar, light, width }: { x: Ctx; onBar?: ((y: number
   const harm = light || view === "value";
   const lh = (yy: number) => {
     const r = monthRec(cal, yy, m);
-    return r && r.value_lo !== r.value_hi ? { value_lo: r.value_lo ?? null, value_hi: r.value_hi ?? null } : {};
+    const iv = r ? displayInterval(r.value, r.value_lo, r.value_hi) : null;
+    return hasSpread(iv) ? { value_lo: iv.lo, value_hi: iv.hi } : {};
   };
   const dist = harm ? distOf(c, y, lh) : distRaw(cal, view, y, m, x.base.to);
   return (
@@ -726,7 +733,8 @@ function StepChart({ x }: { x: Ctx }) {
    목(MSW)은 503 data_not_loaded → 「자료 준비 중」, 그 밖 오류는 통신 오류 낱말 */
 function CellPanel({ x }: { x: Ctx }) {
   const { T, W, view, y, m } = x;
-  const ramp = useRamp();
+  /* 칸 지도는 밝은 지도 위 — 지도 램프(F14) · 범례 견본도 같은 램프(땅색 칩 위) */
+  const ramp = useRamp("mh");
   const ym = ymIso(y, m);
   const mv = x.M?.method_version ?? null;
   /* 칸 1만 개를 넘는 지역(/aois n_cells · level)은 /cells 를 보내지 않고 바로 1° 묶음으로 — 보냈다 400 을 받으면 콘솔 오류가 남았다(2026-11-15 운영 USA·BRA).
@@ -821,7 +829,7 @@ function CellPanel({ x }: { x: Ctx }) {
           <div className={cx("an-clr")}>
             <span className={cx("an-ramp")}>
               <em>{T("ui.low")}</em>
-              <span className={cx("an-rsw")}>{ramp ? Array.from({ length: 7 }, (_, i) => <i key={i} style={{ background: ramp(i / 6) }} />) : null}</span>
+              <span className={cx("an-rsw an-rsw-map")}>{ramp ? Array.from({ length: 7 }, (_, i) => <i key={i} style={{ background: ramp(i / 6) }} />) : null}</span>
               <em>{T("ui.high")}</em>
             </span>
             <span className={cx("an-cmeta")}>

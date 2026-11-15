@@ -22,6 +22,7 @@ import { cx } from "./cx";
 import { S2 } from "./s2";
 import { BoundaryPreview, Eras } from "./s1-side";
 import { PrintDoc, S3 } from "./s3";
+import { QuickPick } from "./quick-pick";
 import type { Ctx, MethodDoc } from "./types";
 import { VdMark } from "./vd-mark";
 import { WorldReplay } from "./world";
@@ -31,7 +32,7 @@ import { WorldReplay } from "./world";
  * 데이터: 계약 /api/v1 만(aois · calendar · comparison · cells · summary · methods/current). 값·판정은 release 그대로(A1), 경우 가르기는 judgeMonth(E4).
  * 주소: ?step=1|2|3&aoi=<aoi_id>&ym=YYYY-MM&view=… (목업 #analysis?… 와 같은 키). 캘린더 「비교 분석」이 step=2 로 넘긴다.
  * S1 경계 미리보기 = 지금 나라 1급 경계 + 고른 지역 강조(전 지역, s1-side.tsx) · 지원 기간 아래 위성 연대 띠.
- * 상태 읽는 순서(목업 analysis.js S): 넘김(from=home|ops) → 주소 → em.an.v3(localStorage) → 기본. 주소에 분석 키가 하나도 없을 때만 em.an.v3 를 주소로 옮긴다.
+ * 상태 읽는 순서(목업 analysis.js S): 넘김(from=home|ops) → 주소 → em.an.v3(sessionStorage — 같은 탭 안에서만) → 기본. 주소에 분석 키가 하나도 없을 때만 em.an.v3 를 주소로 옮긴다. 새 창·다음 사람은 주소에 조건이 없으면 기본 상태(공유 링크는 주소 그대로).
  * 목업과 다른 점(남은 차이): 미리보기 하천 없음(전국 선 자료 없음 — 사람 결정 W0).
  */
 export function AnalysisPage() {
@@ -86,6 +87,10 @@ function AnalysisScreen() {
   const cq = useQuery({ ...calendarAllQuery(aoi ?? "KR", mv), enabled: !!mv && !!aoi });
   const cal = cq.data && cq.data.aoi_id === aoi ? cq.data : null;
   const inScope = !!rec && rec.has_data !== false && !!cal;
+  /* 나라 드롭다운의 「전체」(WORLD)는 전 세계 캘린더가 실제로 받아질 때만 — 목 스냅숏은 지역 목록에 WORLD 가 있어도 캘린더가 404 라
+     고르면 달·단계·분석 보기가 모두 잠겨 빠져나오기 어렵다(로컬). 같은 질의 키라 WORLD 를 고르면 캐시를 그대로 쓴다 */
+  const wq = useQuery({ ...calendarAllQuery("WORLD", mv), enabled: !!mv && has("WORLD") });
+  const worldOk = !!wq.data;
 
   const view: CalView = isView(sp.get("view")) ? (sp.get("view") as CalView) : "value";
   /* 주소 ym 이 없으면 고른 지역 캘린더의 마지막 관측 달(고정 사례 달 아님) */
@@ -219,6 +224,7 @@ function AnalysisScreen() {
               })}
             </ol>
           </div>
+          {step > 1 ? <QuickPick T={T} lang={lang} countries={countries} pick={pickableIso3(countries, aq.data)} iso3={aoi === "WORLD" ? "WORLD" : (aoi && iso3OfAoi(aoi)) || iso3} hasWorld={worldOk} y={qy} m={month ?? qm} step={step} writeQ={writeQ} /> : null}
           {counts.length ? (
             <div className={cx("cntbar")} role="group" aria-label={W("counts.aria")}>
               {counts.map((k) => (
@@ -294,7 +300,8 @@ function S1({ x, KOR, yr, setYr, inScope, iso3 }: { x: Ctx; KOR: boolean; yr: nu
   const curVs = monthRec(cal, x.y, x.m)?.value_source ?? null;
   const rows = Array.from({ length: 12 }, (_, i) => monthRec(cal, y, i + 1) ?? { year: y, month: i + 1, status: "out_of_range", data_source: null, value_source: null });
   const allMiss = (cal?.months ?? []).filter((r) => r.status === "missing");
-  const ramp = useRamp();
+  /* 전 세계 재생은 밝은 지도 위 — 지도 램프(F14, 많을수록 진하게) */
+  const ramp = useRamp("mh");
   /* 재생 지도에서 나라를 누르면 그 나라 단위 분석(같은 나라면 그 달만) — 목업 mountWorld onCountry */
   const onCountry = (i3: string, i: number) => {
     const [yy, mm] = ymOfIndex(i);

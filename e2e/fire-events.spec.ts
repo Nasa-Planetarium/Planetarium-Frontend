@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 /**
- * 화재 사건(F15 fire_events) 시험(aibox 전용, MSW 스냅숏 public/data/layers/fire-events.json — release v1.2 에서 자른 것).
+ * 화재 사건(F15 fire_events) 시험(팀 시험 서버 전용, MSW 스냅숏 public/data/layers/fire-events.json — release v1.2 에서 자른 것).
  * 기대 수는 release 파일을 pandas 로 따로 센 값(2026-11-15): 경북 2025-03 겹침 141 · 의성군 30 · ADM0_ARG 2025-09 6,967 · KR 2026-11-05..11-11 20 ·
  * KR 2016–2025 연소 면적 1위 KR_20220304_0002(131.8 km²) · ARG 1위 ARG_20170101_0033.
  * 잰다: 캘린더·비교 분석 달 사건 수 · 상황판 기간 사건 수 · 피해 면적 위성 확인 연소 목록·상세 · 자료 없는 나라 「이 지역 자료 없음」 · 페이지 오류 0.

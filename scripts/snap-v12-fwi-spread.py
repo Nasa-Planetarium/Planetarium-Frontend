@@ -2,7 +2,7 @@
 """
 release v1.2(data-v1.2-2026-11-15) → MSW 시험용 정적 스냅숏: FWI(산불 기상 위험도) · 확산 nowcast.
 
-쓰는 법(aibox, 읽기 전용):
+쓰는 법(팀 시험 서버, 읽기 전용):
   ~/planetarium/api/.venv/bin/python scripts/snap-v12-fwi-spread.py \
       --release ~/planetarium/release/v1.2-2026-11-15 --out public/data/snap/v12 [--fwi-days 14]
 

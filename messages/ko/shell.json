@@ -59,10 +59,10 @@
     "why": "원자료 VIIRS 는 2012-02 부터"
    },
    "interval_out": {
-    "how": "구간을 다시 계산하지 않음(E3)",
-    "opinion": "구간 없이 값만 읽음",
-    "what": "값 그대로 · 구간 버림 · 플래그",
-    "why": "값이 value_lo–value_hi 밖"
+    "how": "구간 = 값·value_lo·value_hi 의 최소–최대(F16)",
+    "opinion": "값과 넓힌 구간을 함께 읽음",
+    "what": "값 그대로 · 구간 넓힘 · 플래그",
+    "why": "값(평균 모델)이 value_lo–value_hi(q10·q90 모델) 밖"
    },
    "low_sample": {
     "how": "값 3 이상만 예년보다 많음",
@@ -248,7 +248,7 @@
    "low_sample": "표본 부족"
   },
   "flag_t": {
-   "interval_out": "값이 value_lo–value_hi 밖이라 구간을 표시하지 않음",
+   "interval_out": "값이 value_lo–value_hi 밖이라 구간을 값까지 넓혀 표시",
    "low_sample": "예년 기록이 너무 적음"
   },
   "fresh": {
@@ -354,7 +354,7 @@
   },
   "page": {
    "analysis": "비교 분석",
-   "calendar": "연소 활동 통합 캘린더",
+   "calendar": "연소 활동 통합 모니터링",
    "cmd": "지휘 통계",
    "home": "상황판",
    "lab": "예측 분석",

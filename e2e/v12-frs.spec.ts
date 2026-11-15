@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * v1.2 불 유형 배지 · 불 세기 FRP · 위성 일별 상태 · 방법 v1.2 변경점(aibox 전용, MSW 스냅숏 = release data-v1.2-2026-11-15 에서 자른 public/data/snap/v12).
+ * v1.2 불 유형 배지 · 불 세기 FRP · 위성 일별 상태 · 방법 v1.2 변경점(팀 시험 서버 전용, MSW 스냅숏 = release data-v1.2-2026-11-15 에서 자른 public/data/snap/v12).
  * 기대값은 스냅숏(= release 파일 값)을 읽어 적었다 — scripts/build-v12-frs-snapshot.py:
  *   SIDO_47 2025-03: large_fire · 사건 141 · 큰 사건 8 · share_large 0.75937 · FRP(S-NPP) Σ 15,537.65 MW · 칸 최대 233.99 · 39칸 · 점 2,253
  *   2026-10 S-NPP: low 2026-10-12 · 10-13 (나머지 ok) — satellite_day_status

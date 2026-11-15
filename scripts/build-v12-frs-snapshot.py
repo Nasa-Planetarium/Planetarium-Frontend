@@ -6,7 +6,7 @@ release data-v1.2-2026-11-15 → MSW 시험용 스냅숏(public/data/snap/v12/) 
 여기서 하는 일은 열 고르기 · 코드 인덱스 · 반올림(소수 3~5자리, 계약 예시와 같은 자리) · 칸×일 → 칸×월 묶기(Σ·max, 계약 /cells/frp freq=month 와 같은 규칙)뿐이다.
 실제 백엔드가 오면 이 스냅숏은 쓰지 않는다(NEXT_PUBLIC_DATA_MODE=http). 화면은 이 파일들을 직접 읽지 않는다(MSW 처리기만).
 
-쓰는 법 (aibox, 저장소 루트에서):
+쓰는 법 (팀 시험 서버, 저장소 루트에서):
   uv run --no-project --with duckdb --with shapely --with numpy python -I scripts/build-v12-frs-snapshot.py \
       --release ~/planetarium/release/v1.2-2026-11-15 --out .
 메모리: systemd-run --user --scope -p MemoryMax=8G 아래에서 돌린다(FRP 파일 97,791,096행을 날짜로 거른다).
@@ -77,7 +77,7 @@ NM = 313
 YM = [f"{2000 + (10 + i) // 12}-{(10 + i) % 12 + 1:02d}" for i in range(NM)]
 assert YM[0] == "2000-11" and YM[-1] == "2026-11"
 MI = "((year::INT-2000)*12+month::INT-11)"
-report = {"release": REL, "source_dir": D, "sources": {}, "outputs": {}, "checks": {}}
+report = {"release": REL, "source_dir": "release/" + os.path.basename(D.rstrip("/")), "sources": {}, "outputs": {}, "checks": {}}
 
 # ── 1. 불 유형 배지 ──
 RC = ["large_fire", "many_small", "mixed", "none"]
