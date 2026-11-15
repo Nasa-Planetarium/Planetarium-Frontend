@@ -148,7 +148,7 @@ export function ForecastView({ t, lang, tabs }: { t: T; lang: string; tabs: Reac
             tools={["layers", "bbox", "polygon"]}
             ticks
           >
-            <div className={cx("map-key fo-key")} data-tick-avoid="">
+            <div className={cx("map-key fo-key")}>
               <span>{t("fc30.map_key")}</span>
             </div>
           </MapCanvas>

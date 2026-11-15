@@ -190,11 +190,11 @@ export function CellDots(o: {
         .slice()
         .sort((a, b) => a.value - b.value)
         .map((c) => (
-          <circle key={`${c.lat},${c.lon}`} cx={X(c.lon)} cy={Y(c.lat)} r={cellRadius(f.cs, stepOf(c.value))} fill={o.ramp(Math.sqrt(Math.min(1, c.value / (o.scaleMax || 1))))} fillOpacity={0.92} stroke="var(--map-land)" strokeOpacity={0.8} strokeWidth={0.6}>
+          <circle key={`${c.lat},${c.lon}`} cx={X(c.lon)} cy={Y(c.lat)} r={cellRadius(f.cs, stepOf(c.value))} fill={o.ramp(Math.sqrt(Math.min(1, c.value / (o.scaleMax || 1))))} fillOpacity={0.88} stroke={C.bg} strokeWidth={0.6}>
             <title>{c.title}</title>
           </circle>
         ))}
-      {on.length ? <path d={on.map((p) => ringsPath(f, p.rings)).join("")} fill="none" stroke="var(--map-sel)" strokeWidth={1.6} strokeLinejoin="round" pointerEvents="none" data-an-on="" /> : null}
+      {on.length ? <path d={on.map((p) => ringsPath(f, p.rings)).join("")} fill="none" stroke={C.ink} strokeWidth={1.4} strokeLinejoin="round" pointerEvents="none" data-an-on="" /> : null}
       {o.image ? (
         <image
           data-an-wms=""
@@ -210,7 +210,7 @@ export function CellDots(o: {
       {(o.points ?? [])
         .filter((p) => p.lat >= s && p.lat <= n && f.wrap(p.lon) >= w && f.wrap(p.lon) <= e)
         .map((p, i) => (
-          <circle key={i} data-an-pt="" cx={X(p.lon)} cy={Y(p.lat)} r={1.8} fill="var(--map-sel)" stroke="var(--map-halo)" strokeWidth={0.8}>
+          <circle key={i} data-an-pt="" cx={X(p.lon)} cy={Y(p.lat)} r={1.8} fill="var(--surface-0)" stroke="var(--text-1)" strokeWidth={0.8}>
             <title>{p.title}</title>
           </circle>
         ))}

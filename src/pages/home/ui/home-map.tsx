@@ -82,10 +82,13 @@ export function HomeMap(c: Ctx) {
   const nM = hot.length - nV;
   const hotErr = hotQ.error instanceof ApiError ? hotQ.error : null;
 
-  /* 원시 점 수를 화면(확인 줄)에 넘긴다 */
+  /* 원시 점 수를 화면(확인 줄)에 넘긴다.
+     의존성에 hb(그릴 때마다 새 배열)를 넣으면 효과 → setHot(새 객체) → 다시 그림 → 새 hb → 효과 … 로 끝없이 돈다(실서버에서만 — MSW 는 /hotspots 503).
+     그 연쇄가 Next 탭 이동(전환 렌더)을 계속 밀어내 상황판에서 다른 탭으로 못 갔다(2026-11-15 사용자 보고). 의존성은 수(원시 값)만 — 수가 바뀔 때만 새 객체 */
   const { setHot, setDetBox } = c;
-  useEffect(() => setHot(hb && hotQ.data ? { v: nV, m: nM } : null), [setHot, hb, hotQ.data, nV, nM]);
   const hbKey = hb ? hb.join(",") : "";
+  const hotV = hbKey && hotQ.data ? nV : null;
+  useEffect(() => setHot(hotV == null ? null : { v: hotV, m: nM }), [setHot, hotV, nM]);
   useEffect(() => setDetBox(hbKey ? (hbKey.split(",").map(Number) as unknown as Bbox) : null), [setDetBox, hbKey]);
 
   /* 불·자원·경로(시나리오 목 — 한국만) */
@@ -291,7 +294,7 @@ export function HomeMap(c: Ctx) {
       status={wide ? c.t("shell.map.cells_wide", { p: mTxt, n: c.fmt.num(cells.length) }) : hotErr?.status === 429 ? c.t("shell.err.rate_limited") : null}
     >
       <div ref={tlRef} className={cx("hm-ov hm-ov-tl")} style={{ pointerEvents: "none" }}>
-        <div className={cx("hm-search")} role="search" data-tick-avoid="">
+        <div className={cx("hm-search")} role="search">
           <Search className={cx("ic ic-btn")} aria-hidden="true" strokeWidth={1.9} />
           <input
             type="search"
@@ -381,7 +384,7 @@ export function HomeMap(c: Ctx) {
         ) : null}
       </div>
       <SpreadTip hover={nc.hover} />
-      <div ref={blRef} className={cx("hm-ov hm-ov-bl")} style={{ pointerEvents: "none" }} data-tick-avoid="">
+      <div ref={blRef} className={cx("hm-ov hm-ov-bl")} style={{ pointerEvents: "none" }}>
         {ncOn ? <SpreadLegend data={ncQ.data} pending={ncQ.isPending && !!S.chosen} error={ncQ.isError} className="self-start phone:mb-20" /> : null}
         {outside.length ? (
           /* 과거 기간을 볼 때 지금 진행 중인 불(기간 밖) 안내(목업 renderOutside · L10) */
@@ -420,8 +423,7 @@ export function HomeMap(c: Ctx) {
             </span>
             {wide ? (
               <span className={cx("hm-lgs")} data-lg-cells="">
-                {/* 월 칸은 지도에서 mh 램프(많을수록 진하게) — 어두운 셸 램프 h3 한 칸은 지도 칸 색과 달랐다(F14) */}
-                <i className={cx("hm-lgd")} style={{ width: 14, borderRadius: 1, background: "linear-gradient(90deg,var(--mh1),var(--mh3),var(--mh5))" }} aria-hidden="true" />
+                <i className={cx("hm-lgd")} style={{ borderRadius: 1, background: "var(--h3)" }} aria-hidden="true" />
                 {c.t("shell.map.cells_key")}
               </span>
             ) : null}

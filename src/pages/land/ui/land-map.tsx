@@ -19,7 +19,7 @@ type GeoData = Parameters<GeoJSONSource["setData"]>[0];
 /**
  * 피해 면적 지도 — MapLibre 2D(결정 F9: 점은 원). 목업 map3d 의 평면 판 몫만:
  * 바탕(map-void) + 나라 경계 · 고른 불 소실 범위(h5 채움 16% + 실선 2px) · 다른 불 소실 범위(h4 50% 점선, 칸 안에 다 들 때만) ·
- * 불 표지(조준 고리 — 진화 끝 = text-3 파선, 과거 = 단계색 점선, 고른 불 = map-sel 선택 고리 — 밝은 지도 F14) · 면적 이름표 + 면·리 이름.
+ * 불 표지(조준 고리 — 진화 끝 = text-3 파선, 과거 = 단계색 점선, 고른 불 = cosmo-star 선택 고리) · 면적 이름표 + 면·리 이름.
  * 도구: 레이어(소실 범위·핫스팟·시군 이름) · PNG / 확대·축소·전체 보기 / 축척 / 출처 / 범례.
  * 핫스팟 = 실제 GET /hotspots(고른 불 소실 범위 상자 ± 0.05° · 감지일 전날 ~ 진화일(없으면 오늘) 다음 날, 92일까지) — 불·필지는 시나리오 목(F13)이라
  * 시나리오 불 자리·날짜에 실제 감지가 없으면 0 으로 적는다(과거 대형 산불은 실제 감지가 그려진다).
@@ -82,7 +82,6 @@ function FireMark({ f, sel, x, y }: { f: LandFire; sel: boolean; x?: number; y?:
   const pos = x == null ? undefined : { position: "absolute" as const, left: x - half, top: (y ?? 0) - half };
   return (
     <svg width={w} height={w} viewBox={`0 0 ${w} ${w}`} aria-hidden="true" style={pos}>
-      <circle cx={half} cy={half} r={r - sw / 2} fill="none" stroke="var(--map-label-hi)" strokeWidth={sw + 4} strokeOpacity={0.85} />
       <circle cx={half} cy={half} r={r - sw / 2} fill="none" stroke="var(--map-halo)" strokeWidth={sw + 2} />
       <circle
         cx={half}
@@ -95,7 +94,7 @@ function FireMark({ f, sel, x, y }: { f: LandFire; sel: boolean; x?: number; y?:
         strokeLinecap={o.state === "hist" ? "round" : undefined}
       />
       {o.state === "live" ? <circle cx={half} cy={half} r={3.75 * k} fill={c} /> : null}
-      {sel ? <circle cx={half} cy={half} r={r + 4} fill="none" stroke="var(--map-sel)" strokeWidth={2} /> : null}
+      {sel ? <circle cx={half} cy={half} r={r + 4} fill="none" stroke="var(--cosmo-star)" strokeWidth={2} /> : null}
     </svg>
   );
 }
@@ -123,10 +122,9 @@ export function LandMap(p: LandMapProps) {
     const empty = fc([]);
     m.addSource("burn-other", { type: "geojson", data: empty });
     m.addSource("burn-sel", { type: "geojson", data: empty });
-    /* 밝은 지도(F14 M1): 소실 범위 = 지도용 진한 적갈(map-burn·map-burn-sel) — h4·h5 주황·노랑은 흰 땅에서 1.1–1.7:1 */
-    m.addLayer({ id: "burn-other", type: "line", source: "burn-other", paint: { "line-color": tok("map-burn"), "line-opacity": 0.85, "line-width": 1.2, "line-dasharray": [3, 4] } });
-    m.addLayer({ id: "burn-sel-fill", type: "fill", source: "burn-sel", paint: { "fill-color": tok("map-burn-sel"), "fill-opacity": 0.22 } });
-    m.addLayer({ id: "burn-sel-line", type: "line", source: "burn-sel", paint: { "line-color": tok("map-burn-sel"), "line-width": 2 } });
+    m.addLayer({ id: "burn-other", type: "line", source: "burn-other", paint: { "line-color": tok("h4"), "line-opacity": 0.5, "line-width": 1, "line-dasharray": [3, 4] } });
+    m.addLayer({ id: "burn-sel-fill", type: "fill", source: "burn-sel", paint: { "fill-color": tok("h5"), "fill-opacity": 0.16 } });
+    m.addLayer({ id: "burn-sel-line", type: "line", source: "burn-sel", paint: { "line-color": tok("h5"), "line-width": 2 } });
     setMap(m);
   }, []);
 
@@ -275,11 +273,11 @@ export function LandMap(p: LandMapProps) {
     const h0 = hist[0];
     if (h0) items.push({ label: t("land.g.past_fires"), kind: "fire", f: { ...h0, level: Math.max(...hist.map((x) => x.level || 1)) as LandFire["level"], frp_max: 100 } });
     if (p.layers.burns) {
-      items.push({ label: t("land.sync_key.selected_burn_extent_est"), kind: "sq", c: "var(--map-burn-sel)" });
-      if (view?.others.length) items.push({ label: t("land.sync_key.other_burn_extents"), kind: "dash", c: "var(--map-burn)" });
+      items.push({ label: t("land.sync_key.selected_burn_extent_est"), kind: "sq", c: "var(--h4)" });
+      if (view?.others.length) items.push({ label: t("land.sync_key.other_burn_extents"), kind: "dash", c: "var(--h4)" });
     }
     if (p.events?.length) items.push({ label: t("events.land.map"), kind: "sq", c: "var(--h5)" });
-    if (p.layers.hot) items.push({ label: `${t("land.sync_key.hotspot_detections")} ${hotN == null ? (hq.error ? t((hq.error as { status?: number }).status === 429 ? "shell.err.rate_limited" : "shell.err.request") : "…") : t("shell.map.real_n", { n: hotN })}`, kind: "dot", c: "var(--map-viirs)" });
+    if (p.layers.hot) items.push({ label: `${t("land.sync_key.hotspot_detections")} ${hotN == null ? (hq.error ? t((hq.error as { status?: number }).status === 429 ? "shell.err.rate_limited" : "shell.err.request") : "…") : t("shell.map.real_n", { n: hotN })}`, kind: "dot", c: "var(--data-viirs)" });
     return items;
   }, [view, p.layers, t, hotN, hq.error, p.events?.length]);
 
@@ -353,7 +351,7 @@ export function LandMap(p: LandMapProps) {
           </div>
         ) : null}
         {key.length ? (
-          <div className={cx("map-key")} data-tick-avoid="">
+          <div className={cx("map-key")}>
             {key.map((it) => (
               <span key={it.label}>
                 {it.f ? (
@@ -361,7 +359,7 @@ export function LandMap(p: LandMapProps) {
                     <FireMark f={it.f} sel={false} />
                   </i>
                 ) : (
-                  <i className={cx(it.kind === "dash" ? "k-dash" : it.kind === "ring" ? "k-ring" : it.kind === "dot" ? "k-dot" : it.kind === "sq" ? "k-sq" : "")} style={{ ["--c" as string]: it.c }} />
+                  <i className={cx(it.kind === "dash" ? "k-dash" : it.kind === "ring" ? "k-ring" : it.kind === "dot" ? "k-dot" : "")} style={{ ["--c" as string]: it.c }} />
                 )}
                 {it.label}
               </span>

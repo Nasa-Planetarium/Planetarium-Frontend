@@ -6,12 +6,11 @@
   "qx": { "aria": "Change country and period", "country": "Country", "all": "All (every country)", "year": "Year", "month": "Month", "month_n": "{m}", "apply": "Apply", "export": "Export data" }
  },
  "shell": {
-  "cont": { "NA": "North America", "SA": "South America" },
   "err": { "range_too_large": "Area too large to fetch at once (server limit 100 sq. deg) — narrow the region", "rate_limited": "Too many requests — try again shortly" },
   "fwi": {"label": "Fire weather", "short": "Fire wx", "asof": "as of {m}/{d}", "none": "No data for this area", "abs_k": "absolute class", "title": "Fire weather index (Canadian FWI) {v} · vs normal: {rel} · absolute class: {abs} · {d} (NASA POWER daily data, about 4 days behind). Weather-based danger only; it does not predict ignition or spread", "rel": {"below_normal": "Below normal", "normal": "Normal", "above_normal": "Above normal", "well_above_normal": "Well above normal"}, "abs": {"low": "Low", "moderate": "Moderate", "high": "High", "very_high": "Very high", "extreme": "Extreme"}},
   "nowcast": {"layer": "Next-day spread chance (satellite)", "title": "Next-day spread chance", "dates": "{a} detections → {b}", "n": "{n} candidate cells", "none": "No data for this area", "empty": "No detections today — no candidate cells", "error": "Could not load spread chance data", "lv": {"low": "Low", "moderate": "Moderate", "high": "High"}, "tip_p": "Spread chance {p}%", "tip_active": "Detected today", "tip_cand": "Candidate cell (within about 7.5 km of today's detections)", "notice_k": "About this layer", "notice": "Short-term spread chance from satellite detections. Not a physical simulation; spread beyond about 7.5 km from today's detections and new ignitions are not predicted."},
   "det": { "partial": "Partial points ({n}/{m} tiles) — server rate limit" },
-  "map": { "loading": "Loading map…", "jump": "Jump to continent", "cells_wide": "Wide area — monthly detections, 1° cells ({p}, {n} cells). Zoom in for points", "cells_wide_year": "Wide area — {p} monthly detections summed, 1° cells ({n} cells). Narrow the region for points", "cells_key": "Monthly detections, 1° cells", "cells_month": "{m} detections, 1° cells", "real_n": "{n} real" },
+  "map": { "cells_wide": "Wide area — monthly detections, 1° cells ({p}, {n} cells). Zoom in for points", "cells_wide_year": "Wide area — {p} monthly detections summed, 1° cells ({n} cells). Narrow the region for points", "cells_key": "Monthly detections, 1° cells", "cells_month": "{m} detections, 1° cells", "real_n": "{n} real" },
   "nav": {
    "calendar": { "label": "Calendar", "short": "Calendar" },
    "method": { "label": "Method & validation", "short": "Method" }
