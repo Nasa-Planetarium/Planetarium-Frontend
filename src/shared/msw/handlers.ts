@@ -17,6 +17,7 @@ import {
   type CountriesSnap,
   type KoreaSnap,
 } from "./snapshot";
+import { occurrenceHandlers } from "./occurrence";
 
 const SNAP = "/data/snap";
 let korea: Promise<KoreaSnap> | null = null;
@@ -78,6 +79,8 @@ export function createHandlers(base: string) {
   }
 
   return [
+    // 다음 달 발생 확률(F15) + 시군구 경계 — 앞에 둔다(경계는 시군구만 답하고 나머지는 아래 503 으로 넘긴다)
+    ...occurrenceHandlers(at, () => getKorea().then((k) => k.method_version)),
     http.get(at("/aois"), async ({ request }) => {
       const [k, c] = await Promise.all([getKorea(), getCountries()]);
       const u = new URL(request.url);
