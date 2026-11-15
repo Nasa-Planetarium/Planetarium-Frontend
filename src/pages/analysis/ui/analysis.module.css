@@ -423,7 +423,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 .an-vsent{margin:0 0 var(--sp-2);font-size:var(--fs-4);line-height:1.45;color:var(--text-1)}
 .an-vsent b{font-weight:600}
 .an-calp .panel-h{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3)}
-.an-trend,.an-stepp{border-top:var(--hair) solid var(--seam);min-width:0}
+.an-trend,.an-stepp,.an-regp{border-top:var(--hair) solid var(--seam);min-width:0}
 .an-trend .panel-h,.an-stepp .panel-h{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);flex-wrap:wrap}
 .an-trc{display:flex;align-items:flex-end;gap:var(--sp-3) var(--sp-4);flex-wrap:wrap;min-width:0}
 .an-trl{display:flex;flex-direction:column;gap:var(--sp-1);font-size:var(--fs-2);color:var(--text-2)}
@@ -444,7 +444,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 :global(html[data-device="phone"]) .an-trx{margin-left:0}
 :global(html[data-device="phone"]) .an-trl{flex:1 1 40%}
 :global(html[data-device="phone"]) .an-trl input{width:100%}
-@media print{.an-trend,.an-stepp{display:none}}
+@media print{.an-trend,.an-stepp,.an-regp{display:none}}
 .an-stepp .seg,.an-trend .panel-h .seg{flex-wrap:nowrap}
 
 

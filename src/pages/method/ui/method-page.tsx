@@ -7,13 +7,15 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { countryName, useCountry } from "@/entities/country";
 import { calendarQuery } from "@/entities/month-value";
 import { methodQuery } from "@/entities/release";
+import { satMonthsQuery, satSpans } from "@/entities/satellite-status";
 import { api, qk, unwrap } from "@/shared/api";
 import { ORDER } from "@/shared/data-cases";
 import { useT, type TFn } from "@/shared/i18n";
 import { useDevice } from "@/shared/lib/use-device";
+import { FRP_RATIOS } from "../model/frp-ratios.gen";
 import {
   CONTRACT,
-  LIMS,
+  DN_IDS,
   SAT,
   SECS,
   STS,
@@ -21,12 +23,15 @@ import {
   VS_INFO,
   VS_KIND,
   aoiOfCountry,
+  displayName,
   harmKeys,
   inRange,
   isSec,
+  limsOf,
   monthsOf,
   periods,
   pooledOrder,
+  removedRows,
   runs,
   scopeKey,
   scopeOrder,
@@ -67,6 +72,8 @@ interface Ctx {
   aoiName: string;
   aoiId: string;
   web: boolean;
+  /** 표시 이름(화면에만 — FireBridge 등). 없으면 null */
+  dn: (id: string | null | undefined) => string | null;
 }
 
 function MethodScreen() {
@@ -112,7 +119,9 @@ function MethodScreen() {
     { key: "status" as Sec, label: T("k.missing_months", { a: aoiName }), value: cal ? cal.filter((x) => x.status === "missing").length : null },
   ];
   const ready = !!M && (cq.isFetched || !mv);
-  const ctx: Ctx | null = M ? { t, T, W, nf, lang, M, cal, calErr, aoiName, aoiId, web: device === "web" } : null;
+  const dict = (id: string) => (t(`v12frs.dn.${id}`) === `v12frs.dn.${id}` ? null : t(`v12frs.dn.${id}`));
+  const dn = (id: string | null | undefined) => displayName(M, id, dict);
+  const ctx: Ctx | null = M ? { t, T, W, nf, lang, M, cal, calErr, aoiName, aoiId, web: device === "web", dn } : null;
 
   return (
     <div className="h-full min-h-0 min-w-0" data-page="method">
@@ -139,7 +148,7 @@ function MethodScreen() {
           <div className={cx("seg mt-sec")} role="group" aria-label={T("ui.sections")}>
             {SECS.map((s) => (
               <button key={s} ref={(el) => void (secRefs.current[s] = el)} type="button" data-sec={s} aria-pressed={sec === s} onClick={() => setSec(s)}>
-                {T("sec." + s)}
+                {s === "v12" ? t("v12frs.sec") : T("sec." + s)}
               </button>
             ))}
           </div>
@@ -161,7 +170,7 @@ function MethodScreen() {
 }
 
 /* 절 → 그리는 함수(처리기 맵 — switch 금지) */
-const SEC_VIEW: Record<Sec, (c: Ctx) => ReactNode> = { method: (c) => <SecMethod {...c} />, v11: (c) => <SecV11 {...c} />, validation: (c) => <SecValidation {...c} />, status: (c) => <SecStatus {...c} />, sources: (c) => <SecSources {...c} /> };
+const SEC_VIEW: Record<Sec, (c: Ctx) => ReactNode> = { method: (c) => <SecMethod {...c} />, v11: (c) => <SecV11 {...c} />, v12: (c) => <SecV12 {...c} />, validation: (c) => <SecValidation {...c} />, status: (c) => <SecStatus {...c} />, sources: (c) => <SecSources {...c} /> };
 
 /* 원문(한국어) 칸: ko 는 그대로(웹은 줄 수를 묶고 눌러 펼침), en 은 접은 행 */
 function Src({ txt, c }: { txt: string | null | undefined; c: Ctx }) {
@@ -202,6 +211,20 @@ function VsMark({ vs, c }: { vs: string; c: Ctx }) {
   );
 }
 const Num = ({ children }: { children: ReactNode }) => <span className={cx("num")}>{children}</span>;
+/* 모델 이름: 표시 이름(FireBridge 등, 화면에만)이 있으면 그것, 없으면 내부 id. 내부 id 는 title 로 남긴다 */
+function ModelName({ id, c, short }: { id: string | null | undefined; c: Ctx; short?: boolean }) {
+  if (!id) return <>–</>;
+  const full = c.dn(id);
+  /* 좁은 칸(기간 표·계수 표)은 괄호 풀이를 뺀 짧은 이름(FireBridge (MODIS-to-VIIRS Harmonizer) → FireBridge) */
+  const d = full && short ? full.replace(/\s*\(.*\)\s*$/, "") : full;
+  return d ? (
+    <b className={cx("mt-dn")} title={id} data-model={id}>
+      {d}
+    </b>
+  ) : (
+    <Num>{id}</Num>
+  );
+}
 
 /* ── ① 통합 방식 ── */
 function SecMethod(c: Ctx) {
@@ -225,7 +248,7 @@ function SecMethod(c: Ctx) {
         <td>{(inf?.satellites ?? []).map((s) => SAT[s] ?? s).join(" · ") || "–"}</td>
         <td className={cx("mt-hp")}>{inf?.instrument ?? "–"}</td>
         <td className={cx("mt-hp")}>
-          <Num>{inf?.model ?? "–"}</Num>
+          <ModelName id={inf?.model} c={c} short />
         </td>
       </tr>
     );
@@ -243,10 +266,10 @@ function SecMethod(c: Ctx) {
     </tr>
   );
   const coef = [
-    cRow(<>{T("c.n20")} <Num>n20_bridge</Num></>, nf(CONTRACT.n20_bridge, 3), <><span className={cx("mt-src is-con")}>{T("ui.contract")}</span> <Src txt={meta.harmonization?.n20_bridge} c={c} /></>, "n20"),
-    cRow(<>{T("c.rounds")} <Num>m2v_xgb</Num></>, nf(nr.m2v_xgb), rel, "r1"),
-    cRow(<>{T("c.rounds")} <Num>m2v_xgb_terra</Num></>, nf(nr.m2v_xgb_terra), rel, "r2"),
-    cRow(<>{T("c.rounds")} <Num>m2v_q10_q90</Num></>, nf(nr.m2v_q10_q90), rel, "r3"),
+    cRow(<>{T("c.n20")} <ModelName id="n20_bridge" c={c} short /></>, nf(CONTRACT.n20_bridge, 3), <><span className={cx("mt-src is-con")}>{T("ui.contract")}</span> <Src txt={meta.harmonization?.n20_bridge} c={c} /></>, "n20"),
+    cRow(<>{T("c.rounds")} <ModelName id="m2v_xgb" c={c} short /></>, nf(nr.m2v_xgb), rel, "r1"),
+    cRow(<>{T("c.rounds")} <ModelName id="m2v_xgb_terra" c={c} short /></>, nf(nr.m2v_xgb_terra), rel, "r2"),
+    cRow(<>{T("c.rounds")} <ModelName id="m2v_q10_q90" c={c} short /></>, nf(nr.m2v_q10_q90), rel, "r3"),
     cRow(T("c.lr"), nf(pr.learning_rate as number, 2), rel, "lr"),
     cRow(T("c.depth"), nf(pr.max_depth as number), rel, "dp"),
     cRow(T("c.features"), `${nf((ev.features ?? []).length)} · Terra ${nf((ev.terra_only_features ?? []).length)}`, rel, "ft"),
@@ -262,7 +285,7 @@ function SecMethod(c: Ctx) {
       <Panel title={T("p.model")}>
         <Kv
           pairs={[
-            [T("m.final"), <Fragment key="v"><Num>{fm ?? "–"}</Num>{fm && names[fm] ? <> · <Src txt={names[fm]} c={c} /></> : null}</Fragment>],
+            [T("m.final"), <Fragment key="v"><ModelName id={fm} c={c} />{fm && names[fm] ? <> · <Src txt={names[fm]} c={c} /></> : null}</Fragment>],
             [T("m.version"), <Num key="v">{meta.method_version ?? "–"}</Num>],
             [T("m.train"), <Num key="v">{meta.train_period ?? "–"}</Num>],
             [T("m.target"), <Src key="v" txt={meta.target} c={c} />],
@@ -311,7 +334,7 @@ function SecValidation(c: Ctx) {
   const rows = order.map((k) => (
     <tr key={k} className={k === ad ? cx("is-sel") : undefined}>
       <td>
-        <Num>{k}</Num>
+        <ModelName id={k} c={c} />
         {k === ad ? <> <span className={cx("mt-ad")}>{T("v.adopted")}</span></> : null}
         <small className={cx("mt-nm2")}>
           <Src txt={names[k]} c={c} />
@@ -476,6 +499,7 @@ function SecStatus(c: Ctx) {
       </Panel>
       <Panel title={T("p.vs_aoi")} n={vsRows.length}>
         <Table heads={[[T("t.value")], [T("t.period")]]} rows={vsRows} />
+        {files.satellite_day_status ? <SatBlock c={c} /> : null}
       </Panel>
       <Panel title={T("p.files")}>
         <Table
@@ -589,9 +613,9 @@ function SecSources(c: Ctx) {
           ]}
         />
       </Panel>
-      <Panel title={T("p.limits")} wide w2 n={LIMS.length}>
+      <Panel title={T("p.limits")} wide w2 n={limsOf(M.files).length}>
         <ul className={cx("mt-lims")}>
-          {LIMS.map((k) => (
+          {limsOf(M.files).map((k) => (
             <li key={k}>{W("lim." + k)}</li>
           ))}
         </ul>
@@ -693,4 +717,103 @@ function useResidSum(aoiId: string, mv: string | null, asOf: string | null) {
     }),
   );
   return { sum, n };
+}
+
+/* ── 자료 상태: 위성 일별 상태(계약 /satellite-status?freq=month — release satellite_month_status, 날은 UTC) ── */
+function SatBlock({ c }: { c: Ctx }) {
+  const { T, nf } = c;
+  const V = (k: string, v?: Record<string, string | number>) => c.t("v12frs." + k, v);
+  const q = useQuery(satMonthsQuery(c.M.method_version ?? null));
+  const spans = satSpans(q.data?.months);
+  const ym = (d: string | null) => (d ? d.slice(0, 7) : "–");
+  return (
+    <div className={cx("mt-sat")} data-testid="method-sat">
+      {q.isPending ? (
+        <p className={cx("mt-err")}>…</p>
+      ) : q.isError || !spans.length ? (
+        <None c={c} k="ui.not_provided" />
+      ) : (
+        <Table
+          heads={[[V("sat_title")], [<span key="p" title={`UTC · ${q.data?.through ?? "–"}`}>{T("t.period")} <span className={cx("mt-dim")}>UTC</span></span>], [V("st.low"), 1], [V("st.missing"), 1]]}
+          rows={spans.map((r) => (
+            <tr key={r.satellite} data-sat={r.satellite}>
+              <td className={cx("nw")}>{r.satellite}</td>
+              <td className={cx("num nw")} title={`${r.first ?? "–"} – ${r.last ?? "–"}`} data-span={`${r.first ?? ""}/${r.last ?? ""}`}>
+                {ym(r.first)} – {ym(r.last)}
+              </td>
+              <td className={cx("r num")}>{nf(r.low)}</td>
+              <td className={cx("r num")}>{nf(r.missing)}</td>
+            </tr>
+          ))}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ── v1.2 변경점: 표시 이름 · 성능 문구 · 산업 열원 제거 · FRP 환산 비율 ── */
+function SecV12(c: Ctx) {
+  const { M, T, nf } = c;
+  const V = (k: string, v?: Record<string, string | number>) => c.t("v12frs." + k, v);
+  const meta = M.meta ?? {};
+  const se = meta.static_exclusion;
+  const perf = M.performance_copy ?? V("perf");
+  const dnRows = DN_IDS.map((id) => (
+    <tr key={id} data-model={id}>
+      <td>
+        <b>{c.dn(id) ?? id}</b>
+      </td>
+      <td>
+        <Num>{id}</Num>
+      </td>
+    </tr>
+  ));
+  const rs = removedRows(se?.removed_share);
+  const per = Array.from(new Set(rs.flatMap((r) => Object.keys(r.periods))));
+  const rsRows = rs.map((r) => (
+    <tr key={r.aoi} data-aoi={r.aoi}>
+      <td>{V("aoi." + r.aoi) === "v12frs.aoi." + r.aoi ? r.aoi : V("aoi." + r.aoi)}</td>
+      {per.map((p) => (
+        <td key={p} className={cx("r num")}>
+          {r.periods[p] == null ? "–" : `${nf((r.periods[p] as number) * 100, 1)}%`}
+        </td>
+      ))}
+    </tr>
+  ));
+  const sats = Array.from(new Set(FRP_RATIOS.map((r) => r.satellite)));
+  const rat = (s: string, d: "D" | "N") => FRP_RATIOS.find((r) => r.satellite === s && r.daynight === d);
+  const frpRows = sats.map((s) => {
+    const d = rat(s, "D");
+    const n = rat(s, "N");
+    return (
+      <tr key={s} data-sat={s}>
+        <td className={cx("nw")}>{SAT[s] ?? s}</td>
+        <td className={cx("r num")}>{nf(d?.ratio, 3)}</td>
+        <td className={cx("r num")}>
+          {nf(n?.ratio, 3)}
+          {s === "Terra" ? <sup>*</sup> : null}
+        </td>
+        <td className={cx("r num nw")}>{d ? (nf(d.year_min, 2) === nf(d.year_max, 2) ? nf(d.year_min, 2) : `${nf(d.year_min, 2)}–${nf(d.year_max, 2)}`) : "–"}</td>
+      </tr>
+    );
+  });
+  return (
+    <div className={cx("mt-grid mt-g3")} data-g="v12">
+      <Panel title={V("p_names")} attrs={{ "data-testid": "method-v12-names" }}>
+        <Table heads={[[V("t_display")], [V("t_internal")]]} rows={dnRows} />
+        <Kv pairs={[[V("k_perf"), <b key="v" data-perf="">{perf}</b>]]} />
+        <p className={cx("mt-foot")}>{V("names_foot")}</p>
+      </Panel>
+      <Panel title={V("p_static")} attrs={{ "data-testid": "method-v12-static" }}>
+        <p className={cx("mt-foot")}>{V("static_rule")}</p>
+        {rsRows.length ? <Table heads={[[T("t.scope")], ...per.map((p) => [<Num key={p}>{p.split("..")[0]} –<br />{p.split("..")[1]}</Num>, 1] as [ReactNode, 1])]} rows={rsRows} /> : <None c={c} />}
+        <p className={cx("mt-foot")}>{V("static_foot")}</p>
+      </Panel>
+      <Panel title={V("p_frp")} attrs={{ "data-testid": "method-v12-frp" }}>
+        <Table heads={[[T("t.sat")], [V("t_day"), 1], [V("t_night"), 1], [V("t_years"), 1]]} rows={frpRows} />
+        <p className={cx("mt-foot")}>{V("frp_rule")}</p>
+        <p className={cx("mt-foot")}>{V("frp_limit")}</p>
+      </Panel>
+    </div>
+  );
 }

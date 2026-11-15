@@ -6,6 +6,7 @@ import { useLocale } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useT } from "@/shared/i18n";
+import { RegimeFrp, SatDays } from "@/widgets/fire-month";
 import { useQueryParams } from "@/shared/lib/nav";
 import { comparisonQuery } from "../api/queries";
 import type { CalendarData, CalView, MonthRow } from "../model/calendar";
@@ -18,6 +19,7 @@ import { DistChart, type DistItem } from "./dist-chart";
 /**
  * D 선택 달 상세(목업 drawDetail · vdLine · drawDist). 값은 /calendar 행 그대로, 판정 기준 연수·같은 달 분포는 /comparison.
  * 진행 중 달: 「…까지 X (이 추세면 한 달 약 Y)」 한 줄 · 백분위·배수는 누계로 계산된 값이라 「–」.
+ * v1.2: 불 유형 배지 · FRP 요약 · 위성 일별 상태(widgets/fire-month).
  */
 export function CalDetail({ cal, aoi, view, y, m, mv, onPick, touch }: { cal: CalendarData; aoi: string; view: CalView; y: number; m: number; mv: string | null; onPick: (y: number, m: number) => void; touch: boolean }) {
   const t = useT();
@@ -225,6 +227,13 @@ export function CalDetail({ cal, aoi, view, y, m, mv, onPick, touch }: { cal: Ca
             </div>
           ) : null}
         </div>
+        {/* v1.2: 불 유형 배지 · 불 세기 FRP(S-NPP 기준) · 위성 일별 상태 — /api/v1 값 그대로, 자료 없는 지역은 한 줄 */}
+        {inRange(y, m) ? (
+          <div className={cx("cl-v12")} data-v12="">
+            <RegimeFrp aoi={aoi} ym={ym} mv={mv} testId="cal-regime-frp" />
+            <SatDays ym={ym} mv={mv} testId="cal-sat-days" />
+          </div>
+        ) : null}
         <button type="button" className={cx("btn primary cl-go")} onClick={toAnalysis}>
           {T("act.to_analysis")}
           <ChevronRight aria-hidden="true" />
