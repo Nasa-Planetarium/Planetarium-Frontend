@@ -7,7 +7,6 @@ import { useCountry } from "@/entities/country";
 import { useCoarseCells } from "@/entities/world-grid";
 import { ApiError, cellsTooMany } from "@/shared/api";
 import { API_BASE, DATA_MODE } from "@/shared/config";
-import { displayInterval, hasSpread } from "@/shared/lib/interval";
 import { aoisQuery, cellsQuery, monthPointsQuery, summaryQuery, type CellsData } from "../api/queries";
 import {
   TRMAX,
@@ -36,6 +35,7 @@ import { cx } from "./cx";
 import { DistChart } from "./dist-chart";
 import { VdMark } from "./vd-mark";
 import type { Ctx } from "./types";
+import { displayInterval, hasSpread } from "@/shared/lib/interval";
 
 /** 보기 낱말 = 셸 사전 한 곳(shell.view.* — 캘린더 탭과 같은 낱말, 목업 g7 EM.viewWord) */
 export const viewWord = (x: Pick<Ctx, "W">, v: CalView) => x.W(`view.${v}`);

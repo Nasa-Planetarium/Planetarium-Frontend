@@ -6,7 +6,6 @@ import { useLocale } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useT } from "@/shared/i18n";
-import { displayInterval, hasSpread } from "@/shared/lib/interval";
 import { useQueryParams } from "@/shared/lib/nav";
 import { comparisonQuery } from "../api/queries";
 import type { CalendarData, CalView, MonthRow } from "../model/calendar";
@@ -14,6 +13,7 @@ import { caseOf, fmtVal, inRange, monthWord, partialOf, Y0, Y1, ymIso } from "..
 import { Status, Verdict } from "./bits";
 import { partialLine, unitWord } from "./cal-grid";
 import { cx } from "./cx";
+import { displayInterval, hasSpread } from "@/shared/lib/interval";
 import { DistChart, type DistItem } from "./dist-chart";
 
 /**

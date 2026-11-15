@@ -7,13 +7,13 @@ import { boundaryQuery } from "@/entities/country";
 import { useCoarseCells, type CoarseAoi } from "@/entities/world-grid";
 import { ApiError, cellsTooMany, hotspotsTooWide } from "@/shared/api";
 import { useT } from "@/shared/i18n";
-import { displayInterval, hasSpread } from "@/shared/lib/interval";
 import { aoisQuery, boundaryApiQuery, cellsQuery, hotspotsMonthQuery, type CellsData } from "../api/queries";
 import type { CalView } from "../model/calendar";
 import { caseFor, cellCase, fmtNum, fmtVal, iso3OfAoi, monthIndex, ymIso } from "../model/calendar";
 import { Status } from "./bits";
 import { unitWord } from "./cal-grid";
 import { cx } from "./cx";
+import { displayInterval, hasSpread } from "@/shared/lib/interval";
 import { DotMap, type DotCell } from "./dot-map";
 import { WorldReplay } from "./world-replay";
 
