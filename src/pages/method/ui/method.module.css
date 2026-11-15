@@ -176,6 +176,11 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 :global(html[data-device="web"]) .mt-kpis .kp{padding:var(--sp-2) var(--sp-4)}
 :global(html[data-device="web"]) .mt-g3{grid-template-columns:repeat(3,minmax(0,1fr))}
 :global(html[data-device="web"]) .mt-wide.mt-w1{grid-column:auto}
+/* 웹 · 자료 상태: 네 판 한 줄(달 상태 | 값 출처 | 위성 일별 상태 | release 파일) — 1280×800 에서도 세로 스크롤 없이 */
+:global(html[data-device="web"]) .mt-grid[data-g="status"]{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.3fr) minmax(0,1fr)}
+:global(html[data-device="web"]) .mt-grid[data-g="status"] .mt-fwrap td{overflow-wrap:anywhere}
+:global(html[data-device="web"]) .mt-grid[data-g="status"] .tbl :is(td,th){padding-inline:var(--sp-2)}
+.mt-p .panel-b>.mt-sat:first-child{margin-top:0}
 :global(html[data-device="web"]) .mt-wide.mt-w2{grid-column:span 2}
 :global(html[data-device="web"]) .mt .panel-h{padding:var(--sp-2) var(--sp-4) var(--sp-1)}
 :global(html[data-device="web"]) .mt .panel-b{padding:0 var(--sp-4) var(--sp-3)}

@@ -113,3 +113,21 @@ export function sortOcc<T extends { p_any: number | null; baseline_p: number | n
     return (typeof x === "string" ? x.localeCompare(String(y), lang) : (x as number) - (y as number)) * dir;
   });
 }
+
+/** 칸 중심 고르기에 필요한 몫(GridOccurrenceCell 의 부분) */
+export interface CellLike {
+  lat: number;
+  lon: number;
+  p_any: number;
+  persistent_source: boolean;
+}
+/**
+ * 나라 상위 칸(격자 요약 top_cells 가 응답에 없을 때) — 서버 격자 요약과 같은 규칙으로 고른다:
+ * 칸 중심이 지역 경계 안(inside 판정은 호출하는 쪽) · 지속 열원 제외 · p_any 큰 순 · 최대 n 개. 값은 격자 응답 그대로(다시 계산 없음).
+ */
+export function topCells<T extends CellLike>(cells: readonly T[], inside: (lon: number, lat: number) => boolean, n = 10): T[] {
+  return cells
+    .filter((c) => !c.persistent_source && Number.isFinite(c.p_any) && inside(c.lon, c.lat))
+    .sort((a, b) => b.p_any - a.p_any)
+    .slice(0, n);
+}
