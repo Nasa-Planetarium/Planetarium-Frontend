@@ -3,7 +3,7 @@
 .map{position:relative;overflow:hidden;background:var(--map-void);border-radius:var(--r-l);border:0;box-shadow:var(--seam-ring);min-height:300px;touch-action:none;user-select:none}
 .gl,.map>.gl.gl{position:absolute;inset:0}
 .gl :global(.maplibregl-canvas):focus:not(:focus-visible){outline:none}
-.gl :global(.maplibregl-canvas):focus-visible{outline:2px solid var(--focus-ring);outline-offset:-2px}
+.gl :global(.maplibregl-canvas):focus-visible{outline:2px solid var(--map-focus);outline-offset:-2px;box-shadow:inset 0 0 0 4px var(--map-halo)}
 .map :global(.maplibregl-marker){position:absolute;left:0;top:0;will-change:transform}
 .ui{position:absolute;inset:0;pointer-events:none;z-index:2}
 .ui>*{pointer-events:auto}
@@ -14,9 +14,10 @@
 .zoom button+button{border-top:1px solid var(--line-strong)}
 .ic{width:var(--ic-map);height:var(--ic-map)}
 :global(html[data-device="phone"]) .zoom [data-z="1"],:global(html[data-device="phone"]) .zoom [data-z="-1"]{display:none}
-.scale{position:absolute;right:var(--sp-3);bottom:var(--sp-3);font-family:var(--font-data);font-size:var(--fs-1);font-variant-numeric:tabular-nums;color:var(--text-2);display:flex;align-items:center;gap:var(--sp-1);pointer-events:none}
-.scale i{display:block;height:5px;border:1px solid var(--text-2);border-top:0}
-.attrib{position:absolute;left:var(--sp-3);bottom:10px;font-size:var(--fs-1);color:var(--text-3);font-family:var(--font-body);pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 축척·출처: 밝은 지도 위 글자(F14 B7) — 지도 이름표와 같은 잉크 + 흰 halo */
+.scale{position:absolute;right:var(--sp-3);bottom:var(--sp-3);font-family:var(--font-data);font-size:var(--fs-1);font-variant-numeric:tabular-nums;color:var(--map-label);text-shadow:0 0 2px var(--map-halo),0 0 3px var(--map-halo),0 0 4px var(--map-halo);display:flex;align-items:center;gap:var(--sp-1);pointer-events:none}
+.scale i{display:block;height:5px;border:1px solid var(--map-label);border-top:0;box-shadow:0 1px 0 var(--map-halo)}
+.attrib{position:absolute;left:var(--sp-3);bottom:10px;font-size:var(--fs-1);color:var(--map-label);text-shadow:0 0 2px var(--map-halo),0 0 3px var(--map-halo),0 0 4px var(--map-halo);font-family:var(--font-body);pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tipbox{position:absolute;pointer-events:none;background:color-mix(in srgb,var(--surface-1) 95%,transparent);border:1px solid var(--line-strong);border-radius:var(--r-s);box-shadow:var(--elev-2);padding:var(--sp-2) var(--sp-3);font-size:var(--fs-2);min-width:150px;max-width:240px;transform:translate(12px,-50%);z-index:5;color:var(--text-1)}
 .tipbox .sub{color:var(--text-2);font-family:var(--font-data);font-size:var(--fs-1);margin-top:var(--sp-half)}
 .drawhint{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:var(--accent);color:var(--on-accent);font-size:var(--fs-2);font-weight:var(--fw-strong);border-radius:var(--r-xs);padding:var(--sp-1) var(--sp-4);pointer-events:none;white-space:nowrap;box-shadow:var(--elev-2);z-index:4;max-width:calc(100% - 140px);overflow:hidden;text-overflow:ellipsis}
@@ -31,7 +32,9 @@
 .ticksOut .mticks{inset:calc(-1 * var(--tick-band));width:calc(100% + 2 * var(--tick-band));height:calc(100% + 2 * var(--tick-band))}
 .mticks line{stroke:var(--cosmo-tick);stroke-width:1;shape-rendering:crispEdges}
 .mticks text{fill:var(--cosmo-label);font-family:var(--font-data);font-size:var(--fs-1);font-variant-numeric:tabular-nums}
-.map:not(.ticksOut) .mticks text{paint-order:stroke;stroke:var(--map-halo);stroke-width:3px;stroke-linejoin:round}
+/* 지도 안 눈금 글자(F14 B8): 지도 이름표 잉크 + 흰 halo. 지도 밖 띠(ticksOut)는 어두운 셸 위라 cosmo-label 그대로 */
+.map:not(.ticksOut) .mticks text{fill:var(--map-label);paint-order:stroke;stroke:var(--map-halo);stroke-width:3px;stroke-linejoin:round}
+.map:not(.ticksOut) .mticks line{stroke:var(--map-boundary)}
 @media print{.mticks{display:none}}
 
 /* 이름표(지역·하천) */
@@ -59,8 +62,8 @@
 .isNew .pulse{animation:m3pulse 1.6s var(--ease-out) infinite}
 @media (prefers-reduced-motion: reduce){.isNew .pulse{animation:none}}
 @keyframes m3pulse{0%{transform:scale(.45);opacity:.95}100%{transform:scale(1.35);opacity:0}}
-.sel .pin{outline:2px solid var(--cosmo-star);outline-offset:3px}
-.flabel{position:absolute;left:30px;top:50%;transform:translateY(-50%);white-space:nowrap;font:var(--fw-strong) var(--fs-2) var(--font-body);color:var(--text-1);text-shadow:0 0 3px var(--map-halo),0 0 3px var(--map-halo),0 0 6px var(--map-halo);display:none;pointer-events:none}
+.sel .pin{outline:2px solid var(--map-sel);outline-offset:3px}
+.flabel{position:absolute;left:30px;top:50%;transform:translateY(-50%);white-space:nowrap;font:var(--fw-strong) var(--fs-2) var(--font-body);color:var(--map-label-hi);text-shadow:0 0 3px var(--map-halo),0 0 3px var(--map-halo),0 0 6px var(--map-halo);display:none;pointer-events:none}
 .showLabel:not(.past) .flabel,.sel .flabel{display:block}
 
 /* 대응 자원 표지 + 묶음 배지(목업 _ucPass) */
@@ -107,19 +110,21 @@
 .offv .btn{flex:none}
 
 /* 점 자료 상태 한 줄(목업 .m3-state) */
-.state{position:absolute;left:var(--sp-3);bottom:var(--sp-7);z-index:3;display:inline-flex;align-items:center;height:var(--sp-7);padding:0 var(--sp-3);border-radius:var(--r-xs);background:var(--surface-2);border:1px solid var(--line-soft);font-size:var(--fs-2);color:var(--text-2);white-space:nowrap;pointer-events:none}
+/* 확대 단추 열(오른쪽 아래)을 피하는 폭. 화면 범례(상황판 hm-ov-bl · 지휘 map-key)는 [data-state] 일 때 이 줄 위로 올라간다(F14 L8) */
+.state{position:absolute;left:var(--sp-3);bottom:var(--sp-7);z-index:3;display:block;height:var(--sp-7);line-height:calc(var(--sp-7) - 2px);max-width:calc(100% - 3 * var(--sp-3) - max(32px,var(--hit)));padding:0 var(--sp-3);border-radius:var(--r-xs);background:var(--surface-2);border:1px solid var(--line-soft);font-size:var(--fs-2);color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
 /* 폰 「다음 통과」 줄(목업 .m3-passln) — 경보·출동 지도 왼쪽 위 */
 .passln{position:absolute;left:var(--sp-3);top:var(--sp-3);z-index:3;display:inline-flex;align-items:center;gap:var(--sp-2);height:var(--sp-7);padding:0 var(--sp-3);border-radius:var(--r-xs);background:var(--surface-2);font-size:var(--fs-2);color:var(--text-2);white-space:nowrap;pointer-events:none!important}
 .passln b{font-family:var(--font-data);font-weight:var(--fw-medium);color:var(--text-1);font-variant-numeric:tabular-nums}
 
 /* 붙은 불 벌리기(목업 home.css .hm-pin-lead·.hm-pin-tail·.hm-pin-n·.hm-hid — 상황판 spreadFires) */
 .splead{position:absolute;left:50%;top:50%;z-index:-1;height:1.5px;background:var(--c);transform-origin:0 50%;pointer-events:none;opacity:.9}
-.sptail{position:absolute;width:4px;height:4px;transform:translate(-50%,-50%);border:2px solid var(--map-halo);box-sizing:content-box;border-radius:var(--r-round);background:var(--c);pointer-events:none}
+.sptail{position:absolute;width:4px;height:4px;transform:translate(-50%,-50%);border:2px solid var(--map-halo);box-shadow:0 0 0 1px var(--map-label-hi);box-sizing:content-box;border-radius:var(--r-round);background:var(--c);pointer-events:none}
 .sphid{visibility:hidden}
 .sphid .sptail{visibility:visible}
 .spn{position:absolute;right:-8px;top:-8px;min-width:18px;height:18px;padding:0 var(--sp-1);border-radius:var(--r-2xs);background:var(--marker-bg);border:1.5px solid var(--c);color:var(--text-1);font-size:var(--fs-1);font-weight:var(--fw-strong);line-height:15px;text-align:center;pointer-events:none;font-variant-numeric:tabular-nums}
 .spread{z-index:2}
-/* 월 감지량 칸 범례(cellsKey) — 왼쪽 위 · 열 색 띠(h1→h5) */
+/* 월 감지량 칸 범례(cellsKey) — 왼쪽 위 · 지도 램프 띠(mh1→mh5, 땅색 칩 위 — 지도에서 보이는 그대로). 폰 「다음 통과」 줄이 있으면 그 아래로(F14 L8) */
 .ckey{position:absolute;left:var(--sp-3);top:var(--sp-3);z-index:3;display:inline-flex;align-items:center;gap:var(--sp-2);padding:var(--sp-1) var(--sp-3);border-radius:var(--r-xs);background:color-mix(in srgb,var(--surface-2) 92%,transparent);border:1px solid var(--line-soft);font-size:var(--fs-1);color:var(--text-2);pointer-events:none;white-space:nowrap}
 .ckey b{color:var(--text-1);font-weight:var(--fw-medium)}
-.ckey i{display:block;width:56px;height:8px;border-radius:2px;background:linear-gradient(90deg,var(--h1),var(--h2),var(--h3),var(--h4),var(--h5))}
+.ckey i{display:block;width:56px;height:8px;border-radius:2px;background:linear-gradient(90deg,var(--mh1),var(--mh2),var(--mh3),var(--mh4),var(--mh5));box-shadow:0 0 0 2px var(--map-land)}
+.ui:has(.passln) .ckey{top:calc(2 * var(--sp-3) + var(--sp-7))}

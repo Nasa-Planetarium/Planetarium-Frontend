@@ -273,7 +273,7 @@ export function HomeMap(c: Ctx) {
       status={wide ? c.t("shell.map.cells_wide", { p: mTxt, n: c.fmt.num(cells.length) }) : hotErr?.status === 429 ? c.t("shell.err.rate_limited") : null}
     >
       <div ref={tlRef} className={cx("hm-ov hm-ov-tl")} style={{ pointerEvents: "none" }}>
-        <div className={cx("hm-search")} role="search">
+        <div className={cx("hm-search")} role="search" data-tick-avoid="">
           <Search className={cx("ic ic-btn")} aria-hidden="true" strokeWidth={1.9} />
           <input
             type="search"
@@ -362,7 +362,7 @@ export function HomeMap(c: Ctx) {
           </>
         ) : null}
       </div>
-      <div ref={blRef} className={cx("hm-ov hm-ov-bl")} style={{ pointerEvents: "none" }}>
+      <div ref={blRef} className={cx("hm-ov hm-ov-bl")} style={{ pointerEvents: "none" }} data-tick-avoid="">
         {outside.length ? (
           /* 과거 기간을 볼 때 지금 진행 중인 불(기간 밖) 안내(목업 renderOutside · L10) */
           <div className={cx("hm-outv")} role="note" data-outv="">
@@ -400,7 +400,8 @@ export function HomeMap(c: Ctx) {
             </span>
             {wide ? (
               <span className={cx("hm-lgs")} data-lg-cells="">
-                <i className={cx("hm-lgd")} style={{ borderRadius: 1, background: "var(--h3)" }} aria-hidden="true" />
+                {/* 월 칸은 지도에서 mh 램프(많을수록 진하게) — 어두운 셸 램프 h3 한 칸은 지도 칸 색과 달랐다(F14) */}
+                <i className={cx("hm-lgd")} style={{ width: 14, borderRadius: 1, background: "linear-gradient(90deg,var(--mh1),var(--mh3),var(--mh5))" }} aria-hidden="true" />
                 {c.t("shell.map.cells_key")}
               </span>
             ) : null}

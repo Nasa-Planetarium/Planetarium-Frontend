@@ -61,7 +61,8 @@ test("계정 창: 다음 위성 칸(머리줄과 같은 값)", async ({ page }) 
 });
 
 test("내려받기 토스트: 캘린더 PNG = 「… 저장」 + 「W × H PNG」", async ({ page }) => {
-  await page.goto("/ko/calendar/");
+  /* #15 부터 aoi 없는 /calendar/ 첫 화면은 전 세계 재생(PNG 단추는 지역 캘린더 연×월 칸에 있다) → 지역을 적어 연다 */
+  await page.goto("/ko/calendar/?aoi=KR");
   const btn = page.locator("button[data-png]").first();
   await expect(btn).toBeEnabled({ timeout: 30000 });
   await btn.click();

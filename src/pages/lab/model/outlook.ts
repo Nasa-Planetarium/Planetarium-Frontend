@@ -96,6 +96,8 @@ export const lvOf = (r: Row | null | undefined): LvKey => (r && r.level ? r.leve
 /** 지도 원 = 평년 대비 수준 3단(표 「수준」 열과 같은 말) · 0 = 자료 부족(빗금) */
 export const LV_CLS: Record<Level, number> = { low: 1, normal: 2, high: 3 };
 export const CLS_TOK = ["hatch-bg", "lv-low", "lv-normal", "lv-high"] as const;
+/** 밝은 지도 위 면 색(F14 C4·B11): 옅음 → 진함 = 낮음 → 높음 · 0 = 자료 부족(옅은 회색 + 빗금 층). 표(어두운 셸)는 CLS_TOK 그대로 */
+export const MAP_CLS_TOK = ["map-lv-na", "map-lv-low", "map-lv-normal", "map-lv-high"] as const;
 export const clsOf = (r: Row | null | undefined) => (r && r.median != null && r.level ? LV_CLS[r.level] : 0);
 export const LV_RANK: Record<LvKey, number> = { high: 3, normal: 2, low: 1, na: 0 };
 
