@@ -7,7 +7,7 @@ import { usePath, useQueryParams } from "@/shared/lib/nav";
 import { useLocale } from "next-intl";
 import { useCountry, countryName, clockTz, pickableIso3 } from "@/entities/country";
 import { useSession } from "@/entities/session";
-import { useNowMs, useSituation } from "@/entities/situation";
+import { useClockMs, useSituation } from "@/entities/situation";
 import { methodQuery } from "@/entities/release";
 import { calendarQuery } from "@/entities/month-value";
 import { nextPass } from "@/entities/satellite-pass";
@@ -84,7 +84,7 @@ export function TopBar() {
   const role = session?.role ?? null;
   const { iso3, info, list, busy, setCountry, recent } = useCountry();
   const { data: sit } = useSituation();
-  const nowMs = useNowMs();
+  const nowMs = useClockMs(cur === "ops" && iso3 === "KOR");
   const [clockUTC] = usePref("clockUTC");
   const tz = clockTz(info, { utc: clockUTC === "1", regionChosen: !!sp.get("r"), nowMs: nowMs ?? 0 });
   const KOR = iso3 === "KOR";

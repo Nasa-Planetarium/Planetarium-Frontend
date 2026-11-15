@@ -4,7 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocale } from "next-intl";
 import { Bell, Check, X } from "lucide-react";
-import { useNowMs, useSituation } from "@/entities/situation";
+import { useScenarioNowMs, useSituation } from "@/entities/situation";
 import { useAgency } from "@/shared/agency";
 import { useT, useTl } from "@/shared/i18n";
 import { useDevice } from "@/shared/lib/use-device";
@@ -100,7 +100,7 @@ export function OpsScreen({ role }: { role: Role }) {
   const isFF = role === "firefighter";
   const w = useWorld();
   const { data: situation } = useSituation();
-  const nowMs = useNowMs();
+  const nowMs = useScenarioNowMs();
   const clock = nowMs != null ? hmOf(nowMs, KST_MIN) : "14:20";
   const clockRef = useRef(clock);
   useEffect(() => {

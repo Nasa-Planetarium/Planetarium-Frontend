@@ -7,7 +7,7 @@ import { ChevronRight, Helicopter, Layers, RadioTower, Truck, Users } from "luci
 import { useLocale } from "next-intl";
 import { methodQuery } from "@/entities/release";
 import { nextPass, SATS, type Pass } from "@/entities/satellite-pass";
-import { useNowMs } from "@/entities/situation";
+import { useScenarioNowMs } from "@/entities/situation";
 import type { Weather } from "@/shared/agency";
 import { useT, useTl } from "@/shared/i18n";
 import { api, unwrap } from "@/shared/api";
@@ -118,7 +118,7 @@ const SWATH_MIN = 15;
 
 /** 다음 통과(15분 안이면) — 칩과 가장자리선이 같은 값을 쓴다 */
 function useSwath(at: readonly [number, number] | null) {
-  const nowMs = useNowMs();
+  const nowMs = useScenarioNowMs();
   const lat = at ? at[0] : 36.6;
   const lon = at ? at[1] : 128.7;
   const min = nowMs != null ? Math.floor(nowMs / 60000) : null;
@@ -163,7 +163,7 @@ export function OpsMap(p: OpsMapProps) {
   const [frame, setFrame] = useState(0);
   const [pop, setPop] = useState(false);
   const [fitN, setFitN] = useState(0);
-  const nowMs = useNowMs();
+  const nowMs = useScenarioNowMs();
   /* 바탕 경계 = 시나리오 시도(경상북도)의 시군구(실제 API 경계) · 스냅숏(MSW)은 나라 1급 */
   const lang = useLocale();
   const mv = useQuery(methodQuery()).data?.method_version ?? null;

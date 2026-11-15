@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { clockTz, countriesQuery } from "@/entities/country";
 import { nextPass } from "@/entities/satellite-pass";
-import { useNowMs } from "@/entities/situation";
+import { useClockMs } from "@/entities/situation";
 import { useT } from "@/shared/i18n";
 import { usePath } from "@/shared/lib/nav";
 import { localHM } from "@/shared/lib/time";
@@ -27,7 +27,7 @@ export function PassLine({ iso3, off }: { iso3: string; off?: boolean }) {
   // 나라 색인은 react-query 로 바로(useCountry 는 주소 ?c= 를 읽어 Suspense 가 필요하다 — 지도는 어디서나 쓰인다)
   const { data: list } = useQuery(countriesQuery());
   const info = list?.find((c) => c.iso3 === iso3);
-  const nowMs = useNowMs();
+  const nowMs = useClockMs(page === "ops" && iso3 === "KOR");
   const [clockUTC] = usePref("clockUTC");
   const nowMin = nowMs != null ? Math.floor(nowMs / 60000) : null;
   const atLat = info ? info.c[1] : KOR_C[0];

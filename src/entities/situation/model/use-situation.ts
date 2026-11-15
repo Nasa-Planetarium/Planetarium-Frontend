@@ -41,11 +41,37 @@ const getElapsed = () => elapsed;
 const getServerElapsed = () => 0;
 
 /**
- * 화면 시계(epoch ms) = 시나리오 기준점 + 실제 경과(목업 EM.nowMs). 글자는 30초마다 바뀐다.
+ * 시나리오 시계(epoch ms) = 시나리오 기준점 + 실제 경과(목업 EM.nowMs). 글자는 30초마다 바뀐다.
+ * 경보·출동 한국 시나리오(목)에서만 쓴다 — 실제 자료 화면에 시나리오 날짜·시각이 「실시간」으로 보이면 안 된다.
  * 기준점이 없으면(불러오는 중) null.
  */
-export function useNowMs(): number | null {
+export function useScenarioNowMs(): number | null {
   const { data } = useSituation();
   const e = useSyncExternalStore(subscribe, getElapsed, getServerElapsed);
   return data ? data.now_ms + e : null;
+}
+
+/* 벽시계: 구독할 때와 30초마다 Date.now() 를 읽는다(렌더 중에는 읽지 않는다). 서버 렌더·구독 전은 null */
+let wall = 0;
+function subscribeWall(cb: () => void) {
+  wall = Date.now();
+  const id = window.setInterval(() => {
+    wall = Date.now();
+    cb();
+  }, TICK_MS);
+  return () => window.clearInterval(id);
+}
+const getWall = () => (wall ? wall : null);
+const getServerWall = () => null;
+
+/** 실제 시계(epoch ms) — 실제 /api/v1 자료 화면(머리줄 시계·지난 24시간 감지)이 쓴다. 30초마다 바뀐다 */
+export function useNowMs(): number | null {
+  return useSyncExternalStore(subscribeWall, getWall, getServerWall);
+}
+
+/** 시나리오 화면이면 시나리오 시계, 아니면 실제 시계 */
+export function useClockMs(scenario: boolean): number | null {
+  const s = useScenarioNowMs();
+  const w = useNowMs();
+  return scenario ? s : w;
 }

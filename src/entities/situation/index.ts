@@ -1,1 +1,1 @@
-export { useSituation, useNowMs } from "./model/use-situation";
+export { useSituation, useNowMs, useScenarioNowMs, useClockMs } from "./model/use-situation";
