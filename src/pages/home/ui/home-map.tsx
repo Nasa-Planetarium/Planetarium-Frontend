@@ -2,11 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import type { Map as MlMap } from "maplibre-gl";
 import { Check, Info, Search, Truck, X } from "lucide-react";
 import { focusBoundaryQuery, geomMainBounds, linesQuery, MapCanvas, type Bbox, type LayerKey, type MapCanvasHandle, type MapHotspot } from "@/widgets/map-canvas";
 import { useCoarseSum } from "@/entities/world-grid";
 import { useEventLayer } from "@/widgets/fire-events";
 import { iso3OfAoi } from "@/features/pick-aoi";
+import { SpreadLegend, SpreadTip, useSpreadLayer } from "@/features/spread-nowcast-layer";
+import { spreadNowcastQuery } from "@/entities/spread-nowcast";
 import { inbox, type Alert, type Fire } from "@/shared/agency";
 import { ApiError } from "@/shared/api";
 import { pageHref, type Locale } from "@/shared/config";
@@ -58,6 +61,13 @@ export function HomeMap(c: Ctx) {
   const months = useMemo(() => (c.range ? monthsOf(c.range.start, c.range.end) : []), [c.range]);
   const co = useCoarseSum({ aoiId: c.aoi, aois: S.aois, months, on: wide });
   const cells = wide ? (co.data?.cells ?? []) : [];
+
+  /* 확산 nowcast(실제 release spread_nowcast_latest — 결정 F15): 고른 지역(나라·시도·시군구·아르헨티나 1급) 경계 안 칸.
+     자료 범위 밖(한국·아르헨티나 밖)이면 범례가 「이 지역 자료 없음」 한 줄 — 칸을 지어내지 않는다 */
+  const [glMap, setGlMap] = useState<MlMap | null>(null);
+  const [ncOn, setNcOn] = useState(true);
+  const ncQ = useQuery(spreadNowcastQuery(S.chosen ?? null, c.mv));
+  const nc = useSpreadLayer(glMap, ncQ.data, ncOn);
   const ymTxt = (x: [number, number]) => `${x[0]}.${String(x[1]).padStart(2, "0")}`;
   const mTxt = months.length ? (months.length > 1 ? `${ymTxt(months[0]!)}–${ymTxt(months[months.length - 1]!)}` : ymTxt(months[0]!)) : "";
   const raw = useMemo(
@@ -123,6 +133,7 @@ export function HomeMap(c: Ctx) {
     { k: "boundaries", label: c.t("home.over.boundaries") },
     { k: "rivers", label: c.t("home.set_layer_k.river") },
     { k: "relief", label: c.t("maplab.relief") },
+    { k: "nowcast", label: c.t("shell.nowcast.layer") },
   ];
 
   /* 검색(목업 PLACES) — 지금 나라의 모든 지역(실제 /aois 이름) + 한국 시나리오 원장(불·과거 산불·면리 지명·하천·자원).
@@ -273,6 +284,8 @@ export function HomeMap(c: Ctx) {
       tools={["layers", "bbox", "polygon", "point"]}
       pointBounds={view}
       layerMenu={menu}
+      onLayers={(l) => setNcOn(l.nowcast)}
+      onReady={setGlMap}
       ticks
       offView={!c.drawn && !isCountry && view ? { pts: [[(view[1] + view[3]) / 2, (view[0] + view[2]) / 2]], label: c.aoiLabel } : c.drawn ? { pts: [[(c.drawn.type === "bbox" ? (c.drawn.south + c.drawn.north) / 2 : c.drawn.type === "point" ? c.drawn.lat : c.drawn.pts[0]![0]), (c.drawn.type === "bbox" ? (c.drawn.west + c.drawn.east) / 2 : c.drawn.type === "point" ? c.drawn.lon : c.drawn.pts[0]![1])]], label: c.drawnKind } : null}
       status={wide ? c.t("shell.map.cells_wide", { p: mTxt, n: c.fmt.num(cells.length) }) : hotErr?.status === 429 ? c.t("shell.err.rate_limited") : null}
@@ -367,7 +380,9 @@ export function HomeMap(c: Ctx) {
           </>
         ) : null}
       </div>
+      <SpreadTip hover={nc.hover} />
       <div ref={blRef} className={cx("hm-ov hm-ov-bl")} style={{ pointerEvents: "none" }}>
+        {ncOn ? <SpreadLegend data={ncQ.data} pending={ncQ.isPending && !!S.chosen} error={ncQ.isError} className="self-start phone:mb-20" /> : null}
         {outside.length ? (
           /* 과거 기간을 볼 때 지금 진행 중인 불(기간 밖) 안내(목업 renderOutside · L10) */
           <div className={cx("hm-outv")} role="note" data-outv="">

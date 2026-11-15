@@ -8,6 +8,8 @@ import { useLocale } from "next-intl";
 import { methodQuery } from "@/entities/release";
 import { nextPass, SATS, type Pass } from "@/entities/satellite-pass";
 import { useScenarioNowMs } from "@/entities/situation";
+import { spreadNowcastQuery } from "@/entities/spread-nowcast";
+import { SpreadLegend, SpreadTip, useSpreadLayer } from "@/features/spread-nowcast-layer";
 import type { Weather } from "@/shared/agency";
 import { useT, useTl } from "@/shared/i18n";
 import { api, heavyRetry, heavyRetryDelay, unwrap } from "@/shared/api";
@@ -17,7 +19,7 @@ import { setSlotOf, useWorld, type Merged } from "../model/store";
 import { cx } from "./cx";
 
 type GeoData = Parameters<GeoJSONSource["setData"]>[0];
-type LayerKey = "heat" | "spread" | "units" | "routes";
+type LayerKey = "heat" | "spread" | "units" | "routes" | "nowcast";
 
 /** 자원 종류 아이콘(목업 EM.icon heli · users · command · truck) */
 const UNIT_IC: Record<string, typeof Truck> = { heli: Helicopter, crew: Users, command: RadioTower };
@@ -177,6 +179,10 @@ export function OpsMap(p: OpsMapProps) {
     m.addLayer({ id: "op-routes", type: "line", source: "op-routes", paint: { "line-color": tok("route"), "line-width": 2, "line-dasharray": [2, 2] } });
     setMap(m);
   }, []);
+
+  /* 확산 nowcast(실제 release spread_nowcast_latest — 결정 F15): 한국 경계 안 칸(aoi_id=KR). 시나리오 불의 목 확산 부채꼴(spread)과 따로 켜고 끈다 */
+  const ncQ = useQuery(spreadNowcastQuery("KR", mv));
+  const nc = useSpreadLayer(map, ncQ.data, p.layers.nowcast);
 
   const fires = useMemo(() => p.M.fires.filter((f) => !f.historical && (f.current || !isClosed(f.status))), [p.M.fires]);
 
@@ -620,7 +626,9 @@ export function OpsMap(p: OpsMapProps) {
             </span>
           </div>
           <OpsSwath sw={sw} />
+          {p.layers.nowcast ? <SpreadLegend data={ncQ.data} pending={ncQ.isPending} error={ncQ.isError} /> : null}
         </div>
+        <SpreadTip hover={nc.hover} />
         <div className={cx("op-legend")} aria-hidden="true">
           <span>
             <i className={cx("op-pip standby")} />
@@ -654,6 +662,7 @@ export function OpsMap(p: OpsMapProps) {
             [
               ["heat", "ops.sel_alert.hotspots"],
               ["spread", "ops.sel_alert.spread_forecast"],
+              ["nowcast", "shell.nowcast.layer"],
               ["units", "ops.sel_alert.units"],
               ["routes", "ops.sel_alert.routes"],
             ] as const

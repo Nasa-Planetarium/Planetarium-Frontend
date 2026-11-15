@@ -19,6 +19,7 @@ import {
 } from "./snapshot";
 import { occurrenceHandlers } from "./occurrence";
 import { createFireEventHandlers } from "./fire-events";
+import { createV12FwiSpreadHandlers } from "./v12-fwi-spread";
 
 const SNAP = "/data/snap";
 let korea: Promise<KoreaSnap> | null = null;
@@ -84,6 +85,8 @@ export function createHandlers(base: string) {
     ...occurrenceHandlers(at, () => getKorea().then((k) => k.method_version)),
     /* v1.2 화재 사건(F15) — fire-events.ts */
     ...createFireEventHandlers(base, () => getKorea().then((k) => k.method_version)),
+    /* v1.2 새 층: FWI · 확산 nowcast(public/data/snap/v12 — release v1.2 에서 자른 값) */
+    ...createV12FwiSpreadHandlers(base, () => getKorea().then((k) => k.method_version)),
 
     http.get(at("/aois"), async ({ request }) => {
       const [k, c] = await Promise.all([getKorea(), getCountries()]);
