@@ -196,12 +196,10 @@ function LabScreen() {
       { key: "tot", label: ph ? T_("lab.ui.forecast") : T_("lab.ui.area_forecast"), value: tt?.median == null ? "–" : F.n1(tt.median), delta: ratio == null ? null : T_("lab.ui.vs_normal") + ratio.toFixed(1) + T_("lab.ui.s101"), unit: null as string | null, pressed: !lvf && !selId },
       { key: "high", label: t("data.fc.level.high"), value: String(nHigh), delta: null, unit: T_(nHigh === 1 ? "lab.ui.s324_one" : "lab.ui.s324"), pressed: lvf === "high" },
     ];
-    const scope = FC ? T_("lab.g6.scope", { a: FC.total.region_name, m: FC.targets.map(F.ymS).join(" · ") }) : "";
     return (
       <header className={cx("pghd")}>
         <div className={cx("ph-1")}>
           <h1>{T_("lab.ui.forecast2")}</h1>
-          {scope ? <span className={cx("ph-scope")}>{scope}</span> : null}
           {kor ? (
             <div className={cx("ph-tools")}>
               <ScopeButton s={S} size="sm" />

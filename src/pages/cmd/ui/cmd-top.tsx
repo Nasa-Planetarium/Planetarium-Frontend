@@ -136,7 +136,6 @@ function Head(c: Ctx) {
     <header className={cx("pghd cm-head")}>
       <div className={cx("ph-1")}>
         <h1>{T_("cmd.ui.command_stats")}</h1>
-        <span className={cx("ph-scope")}>{(q.regions.length ? regionLabel(c, q.regions, nAll) : c.aoiLabel) + T_("cmd.ui.this_year")}</span>
         <div className={cx("ph-tools cm-filt")} role="group" aria-label={T_("cmd.ui.page_filters")}>
           <ScopeButton s={c.scope} label={T_("cmd.ui.region")} />
           <div className={cx("cm-rgwrap")} ref={wrap}>
