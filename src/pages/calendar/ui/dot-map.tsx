@@ -71,12 +71,13 @@ const DEF_FIT: LL = [
 /* 고른 지역 바깥 가림막: 세계 상자에서 고른 지역 고리를 구멍으로(구멍은 바깥 고리와 반대 방향 — MapLibre 는 감김 방향으로 구멍을 가른다) */
 const area2 = (r: number[][]) => r.reduce((s, p, i) => s + (p[0] as number) * ((r[(i + 1) % r.length] as number[])[1] as number) - ((r[(i + 1) % r.length] as number[])[0] as number) * (p[1] as number), 0);
 function maskOf(rings: number[][][]) {
+  /* 바깥 고리는 ±180 안(세계 사본을 넘으면 타일 자르기가 고리를 쪼개 구멍이 사라진다) */
   const outer = [
-    [-540, -85],
-    [540, -85],
-    [540, 85],
-    [-540, 85],
-    [-540, -85],
+    [-180, -85],
+    [180, -85],
+    [180, 85],
+    [-180, 85],
+    [-180, -85],
   ];
   const holes = rings.filter((r) => r.length >= 3).map((r) => (area2(r) > 0 ? [...r].reverse() : r));
   return { type: "Feature" as const, properties: {}, geometry: { type: "Polygon" as const, coordinates: [outer, ...holes] } };
@@ -189,7 +190,7 @@ export function DotMap(o: DotMapProps) {
             cells: { type: "geojson", data: empty },
             pts: { type: "geojson", data: empty },
           },
-          /* 층 순서(R9): 바다 → 땅 → 경계 → 가림막 → 자료 층 */
+          /* 층 순서: 바다 → 땅 → 경계 → 자료 층 → 가림막(고른 지역 밖) */
           layers: [
             { id: "bg", type: "background", paint: { "background-color": tokVal("map-sea") } },
             { id: "land", type: "fill", source: "land", paint: { "fill-color": tokVal("map-land") } },
@@ -197,11 +198,12 @@ export function DotMap(o: DotMapProps) {
                world.json 에 없는 작은 섬이 선만 남는 것을 막는다(PR #11) */
             { id: "outf", type: "fill", source: "outf", paint: { "fill-color": tokVal("map-land") } },
             { id: "outl", type: "line", source: "outl", paint: { "line-color": tokVal("map-boundary"), "line-opacity": 0.5, "line-width": 0.8 } },
-            { id: "mask", type: "fill", source: "mask", paint: { "fill-color": tokVal("map-mask"), "fill-opacity": 0.5 } },
             { id: "isl", type: "circle", source: "isl", paint: { "circle-radius": 4, "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 1, "circle-stroke-color": tokVal("map-boundary"), "circle-stroke-opacity": 0.8 } },
             { id: "cells", type: "circle", source: "cells", paint: { "circle-radius": 2, "circle-opacity": CELL_OPACITY, "circle-stroke-width": 0.5, "circle-stroke-color": tokVal("map-land"), "circle-stroke-opacity": 0.7 } },
             { id: "pts-static", type: "circle", source: "pts", filter: ["==", ["get", "s"], 1], paint: { "circle-radius": dotRadiusExpr() as never, "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 1.2, "circle-stroke-color": tokVal(STATIC_TOKEN) } },
             { id: "pts", type: "circle", source: "pts", filter: ["==", ["get", "s"], 0], paint: { "circle-radius": dotRadiusExpr() as never, "circle-color": tokVal(DOT_TOKEN), "circle-stroke-width": 0.75, "circle-stroke-color": tokVal(DOT_EDGE_TOKEN) } },
+            /* 가림막(R2): 고른 지역 밖을 흐리게 — 자료 층 위에 두어 이웃 나라 칸·점도 같이 흐려진다(고른 지역 칸과 같은 진하기로 보이지 않게) */
+            { id: "mask", type: "fill", source: "mask", paint: { "fill-color": tokVal("map-mask"), "fill-opacity": 0.6 } },
           ],
         },
       });
@@ -391,7 +393,7 @@ export function DotMap(o: DotMapProps) {
         <div className={cx("cl-dmmap")} ref={host} role="region" aria-label={o.label} />
         <MapLoading show={!map} />
         {map ? <MapStatus kind={o.status.kind} tail={o.status.tail} vars={o.status.vars} /> : null}
-        {map ? <MapKey level={o.level} win={o.win} tail={o.status.tail} nPts={o.level === "L3" || o.level === "L4" ? nNow : null} staticPts={hasStatic} fmt={(n) => fmtNum(lang, n)} /> : null}
+        {map ? <MapKey level={o.level} win={o.win} tail={o.status.tail} nPts={(o.level === "L3" || o.level === "L4") && (o.status.kind == null || o.status.kind === "empty") ? nNow : null} staticPts={hasStatic} fmt={(n) => fmtNum(lang, n)} /> : null}
         {pop && popXY && popBody ? (
           <div className={cx("cl-popbox")} style={{ left: popXY.x, top: popXY.y }}>
             <button type="button" className={cx("cl-popx")} aria-label={t("calendar.act.close")} onClick={() => setPop(null)}>

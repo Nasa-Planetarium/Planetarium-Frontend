@@ -200,6 +200,7 @@ export function WorldReplay(o: WorldReplayProps) {
   const D = useMemo(() => (data ? prep(data.meta, data.buf, data.band) : null), [data]);
   /* 단계 색 5개(R4) — 모든 지도와 같은 색 · 같은 경계(0.1° 칸당 0.1 · 1 · 10 · 100, 1° 칸은 합 ÷ 100) */
   const colors = useStepColors();
+  const dark = useStepColors(true);
   const [i, setI] = useState(o.month ?? NM - 1);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(0);
@@ -456,13 +457,13 @@ export function WorldReplay(o: WorldReplayProps) {
       rows.forEach((j, r) => {
         const x0 = v[j] == null ? 0 : (v[j] as number) / 10;
         if (!(x0 >= 10)) return;
-        /* 위도 띠 합(5° 띠 × 달)은 칸이 아니라 띠 전체 양 — 같은 5색을 쓰되 경계는 띠 눈금(100 · 1천 · 1만 · 10만) */
-        g.fillStyle = colors[stepOf(x0 / 1000) ?? 0] as string;
+        /* 위도 띠 합(5° 띠 × 달)은 칸이 아니라 띠 전체 양이고 어두운 셸 위 — 셸 쌍(h1·2·4·5·6, R4) 5단계, 경계는 띠 눈금(1천 · 1만 · 10만 · 100만) */
+        g.fillStyle = dark[stepOf(x0 / 10000) ?? 0] as string;
         g.fillRect(k * cw, (rows.length - 1 - r) * rh, Math.ceil(cw), Math.ceil(rh));
       });
     }
     lbBase.current = g.getImageData(0, 0, c.width, c.height);
-  }, [D, colors]);
+  }, [D, dark]);
   useEffect(() => {
     const c = lbEl.current;
     const g = c?.getContext("2d");
@@ -470,7 +471,7 @@ export function WorldReplay(o: WorldReplayProps) {
     g.putImageData(lbBase.current, 0, 0);
     g.fillStyle = tok("text-1");
     g.fillRect(Math.round(((i + 0.5) / NM) * c.width) - 1, 0, 2, c.height);
-  }, [i, D, colors]);
+  }, [i, D, dark]);
 
   /* 재생: 초당 6 × 배속 달 */
   useEffect(() => {

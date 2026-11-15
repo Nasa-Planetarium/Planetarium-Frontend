@@ -1485,7 +1485,7 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
         ) : null}
         {/* 범례 하나(표시 규칙서 R7): 칸이 있으면 칸 단계(1° = L1 · 0.1° = L2), 점만 있으면 점(L3) */}
         {map && (shownCells || shownPts) && p.mapKey !== false ? (
-          <MapKey level={shownCells ? ((cells ?? []).find((c) => c.value > 0)?.size ?? 0.1) >= 1 ? "L1" : "L2" : "L3"} win={p.keyWin ?? p.cellsKey ?? null} nPts={shownPts ? (hot ?? []).length : null} lift={p.keyLift} />
+          <MapKey level={shownCells ? ((cells ?? []).find((c) => c.value > 0)?.size ?? 0.1) >= 1 ? "L1" : "L2" : "L3"} win={p.keyWin ?? p.cellsKey ?? null} nPts={shownPts ? (hot ?? []).length : null} lift={p.keyLift ?? (p.status ? 72 : 24)} />
         ) : null}
         {p.status ? (
           <div className={s.state} role="status" title={p.status}>
