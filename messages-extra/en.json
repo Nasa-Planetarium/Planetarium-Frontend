@@ -26,5 +26,6 @@
   "key": {"title": "Monthly detections (per 0.1° cell)", "few": "Few", "many": "Many", "pts_n": "{n} detections", "static": "Industrial heat (excluded from totals)", "lv": {"L1": "1° cell average", "L2": "0.1° cells", "L3": "Detections", "L4": "Pixels"}},
   "level": {"L1": "Wide view — 1° cell average. Zoom in for 0.1° cells", "L2": "0.1° cells. Zoom in further for detections", "L3": "{n} detections in view", "L3_cut": "First {m} of {n} — zoom in to see all", "fixed": "Too wide for {window} detections — zoom in"},
   "status": {"loading": "Loading data…", "empty": "No detections in this view this month", "no_data": "No data for this area", "error": "Could not load data — retry", "mismatch": "Data versions do not match", "partial": "In progress — through {at}", "partial0": "Month in progress (to date)", "nrt": "Near-real-time data (NRT)", "recent": "Last 24 hours", "agency": "Agency data is a Gyeongbuk example scenario only", "to_gb": "Go to Gyeongbuk"}
- }
+ },
+ "csv": {"files": "{n} files", "err": "Download failed — try again shortly", "events": "Fire events CSV · {a} · {p}", "regime": "Fire regime CSV · {a} · {p}", "frp": "FRP cells CSV · {a} · {p}", "sat": "Satellite status CSV · {p} (UTC)", "fwi": "Fire weather index (FWI) daily CSV · {a} · {p}", "fwi_s": "FWI CSV", "cells": "Cells CSV", "cells_aria": "Monthly cell values CSV · {a} · {p} · {deg}° cells", "bundle": "Download analysis data", "bundle_d": "Calendar · comparison · cells · trend CSVs (zip) · {a} · {p}", "bundle_busy": "Packing…"}
 }

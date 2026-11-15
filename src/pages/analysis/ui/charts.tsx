@@ -2,7 +2,8 @@
 
 import { useId } from "react";
 import { useLocale } from "next-intl";
-import { downloadBlob } from "@/shared/ui/download";
+import type { CsvFile } from "@/shared/ui";
+import { downloadBlob, downloadCsv } from "@/shared/ui/download";
 import { BarPaintDefs, topRoundPath } from "@/shared/ui";
 import { CELL_OPACITY, DOT_EDGE_TOKEN, DOT_TOKEN, F, RMAX, RMIN, stepOfCell, stepVar } from "@/shared/lib/display";
 import { cellFrame, ringsPath, type LandPart } from "../model/cell-frame";
@@ -356,4 +357,5 @@ export async function svgToPng(svg: SVGSVGElement, name: string) {
 export function saveBlob(blob: Blob, name: string) {
   downloadBlob(name, blob);
 }
-export const saveText = (name: string, text: string, type = "text/csv") => saveBlob(new Blob(["﻿", text], { type: `${type};charset=utf-8` }), name);
+/** CSV 저장 — BOM + 메타 첫 줄(data_version · 지역 · 기간) + 본문(shared/lib/csv 규칙) */
+export const saveCsv = (f: CsvFile) => downloadCsv(f.name, f.text, f.meta);

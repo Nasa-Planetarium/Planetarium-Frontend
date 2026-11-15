@@ -12,7 +12,7 @@ import { methodQuery } from "@/entities/release";
 import { calendarQuery } from "@/entities/month-value";
 import { FWI_REL_LEVEL, fwiQuery, hasFwi, mdOf } from "@/entities/fire-weather";
 import { nextPass } from "@/entities/satellite-pass";
-import { AccountDialog } from "@/features/account-menu";
+import { AccountDialog, FwiCsv } from "@/features/account-menu";
 import { AlertBell, AlertToaster } from "@/features/alert-drawer";
 import { LoginDialog } from "@/features/auth-login";
 import { aoiIndexQuery } from "@/features/pick-aoi";
@@ -279,6 +279,11 @@ export function TopBar() {
                   <span className="mono text-fs2 text-t2 tf3:hidden phone:hidden" data-fwi-asof="">
                     {fwiAsOf}
                   </span>
+                  {fwiAoi && fwi?.as_of_date ? (
+                    <span className="tf3:hidden phone:hidden">
+                      <FwiCsv aoi={fwiAoi} asOf={fwi.as_of_date} label="" />
+                    </span>
+                  ) : null}
                 </>
               )}
             </span>
@@ -420,7 +425,7 @@ export function TopBar() {
         onSwitchLang={go}
         pass={nx}
         anom={doneM ? { ratio: doneM.ratio_to_median ?? null, verdict: doneM.verdict ?? null, ym: anomYm } : null}
-        fwi={fwiAoi ? { value: fwiDay?.fwi_mean ?? null, rel: fwiDay?.fwi_rel_class ?? null, abs: fwiDay?.fwi_class ?? null, asOf: fwiAsOf, none: !!fwi && !fwi.coverage.available } : null}
+        fwi={fwiAoi ? { value: fwiDay?.fwi_mean ?? null, rel: fwiDay?.fwi_rel_class ?? null, abs: fwiDay?.fwi_class ?? null, asOf: fwiAsOf, none: !!fwi && !fwi.coverage.available, aoi: fwiAoi, asOfDate: fwi?.as_of_date ?? null } : null}
       />
     </header>
   );

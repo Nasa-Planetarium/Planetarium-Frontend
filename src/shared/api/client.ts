@@ -12,6 +12,9 @@ import type { paths } from "./schema";
  */
 let lastMethodVersion: string | null = null;
 export const getLastMethodVersion = () => lastMethodVersion;
+/** 응답 헤더 X-Data-Version(자료 판) — 내려받기 CSV 메타 줄이 쓴다 */
+let lastDataVersion: string | null = null;
+export const getLastDataVersion = () => lastDataVersion;
 
 const problemMiddleware: Middleware = {
   async onRequest({ request }) {
@@ -21,6 +24,8 @@ const problemMiddleware: Middleware = {
   async onResponse({ response }) {
     const mv = response.headers.get("X-Method-Version");
     if (mv) lastMethodVersion = mv;
+    const dv = response.headers.get("X-Data-Version");
+    if (dv) lastDataVersion = dv;
     if (response.ok) return response;
     let problem: Problem | null = null;
     try {

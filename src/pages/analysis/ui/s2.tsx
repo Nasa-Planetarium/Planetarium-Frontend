@@ -5,12 +5,12 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { useCountry } from "@/entities/country";
 import { useCoarseCells } from "@/entities/world-grid";
-import { MapKey } from "@/shared/ui";
+import { CsvButton, MapKey, type CsvFile } from "@/shared/ui";
 import { ApiError, cellsTooMany } from "@/shared/api";
 import { API_BASE, DATA_MODE } from "@/shared/config";
 import { MonthEvents } from "@/widgets/fire-events";
 import { RegimeFrp } from "@/widgets/fire-month";
-import { aoisQuery, cellsQuery, monthPointsQuery, summaryQuery, type CellsData } from "../api/queries";
+import { aoisQuery, cellsQuery, monthPointsQuery, summaryQuery, type CellsData, type SummaryData } from "../api/queries";
 import {
   TRMAX,
   daysBetween,
@@ -32,7 +32,7 @@ import {
 import { calInput, cellCase, fmtCompact, inRange, monthWord, VIEWS, ymIso, type CalView } from "../model/core";
 import { Status, useRamp } from "./bits";
 import { CalSvg } from "./cal-svg";
-import { Bars, CellDots, Lines, saveText, svgToPng, type CellDot, type CellPt } from "./charts";
+import { Bars, CellDots, Lines, saveCsv, svgToPng, type CellDot, type CellPt } from "./charts";
 import { useCellLand } from "./cell-land";
 import { cx } from "./cx";
 import { DistChart } from "./dist-chart";
@@ -507,7 +507,54 @@ export function trendCSVMonth(x: Ctx, tr: TrState) {
     release: rel,
   }));
   rows.push({ row_type: "total", aoi_id: x.aoi, date: `${tr.start.slice(0, 7)}/${tr.end.slice(0, 7)}`, value: Math.round(ms.reduce((s, r) => s + (r.value ?? 0), 0) * 1000) / 1000, freq: "month", method_version: mv, release: rel });
-  return toCSV(rows, ["row_type", "aoi_id", "date", "value", "value_projected", "as_of_date", "days_in_range", "days_in_month", "residual_prorated", "freq", "method_version", "release"]);
+  return toCSV(rows, TR_COLS);
+}
+const TR_COLS = ["row_type", "aoi_id", "date", "value", "value_projected", "as_of_date", "days_in_range", "days_in_month", "residual_prorated", "freq", "method_version", "release"];
+const metaOf = (x: Ctx, period: string, extra: Record<string, string | number | null> = {}) => ({ data_version: x.M?.data_version ?? null, aoi: x.aoi, aoi_name: x.aoiName(x.rec), period, ...extra });
+/** 날짜 범위 추이 CSV(월별) — /calendar 값 그대로 */
+export function trendMonthFile(x: Ctx, tr: TrState): CsvFile {
+  return { name: `emberline_summary_${safeName(x.aoi)}_${tr.start}_${tr.end}_month.csv`, text: trendCSVMonth(x, tr), meta: metaOf(x, `${tr.start}/${tr.end}`, { freq: "month", source: `/api/v1/aois/${x.aoi}/calendar` }) };
+}
+/** 날짜 범위 추이 CSV(일별) — /summary 응답 그대로. 행 종류 day | month_residual | total(월 추정분은 날짜 행에 섞지 않는다 · 목업 trendCSV) */
+export function trendDayFile(x: Ctx, tr: TrState, R: SummaryData): CsvFile {
+  const mv = x.M?.method_version ?? "";
+  const rel = String(x.M?.data_version ?? "");
+  const rows: Record<string, unknown>[] = R.series.map((d) => ({ row_type: "day", aoi_id: x.aoi, date: d.date, value: d.value, freq: "day", method_version: mv, release: rel }));
+  (R.month_residual ?? []).forEach((q) => {
+    if (q.month_residual) rows.push({ row_type: "month_residual", aoi_id: x.aoi, date: ymIso(q.year, q.month), value: q.month_residual, days_in_range: q.included_days ?? "", days_in_month: q.days_in_month ?? "", freq: "day", method_version: mv, release: rel });
+  });
+  const tv = R.total?.value ?? R.series.reduce((s, d) => s + (d.value ?? 0), 0);
+  rows.push({ row_type: "total", aoi_id: x.aoi, date: `${R.start}/${R.end}`, value: Math.round(tv * 1000) / 1000, residual_prorated: R.total?.residual_prorated ?? "", freq: "day", method_version: mv, release: rel });
+  return { name: `emberline_summary_${safeName(x.aoi)}_${tr.start}_${tr.end}_day.csv`, text: toCSV(rows, TR_COLS), meta: metaOf(x, `${R.start}/${R.end}`, { freq: "day", source: `/api/v1/aois/${x.aoi}/summary` }) };
+}
+/** 칸 월 값 앞 열 — 나머지 속성은 응답 순서대로 뒤에 */
+const CELL_FIRST = ["cell_id", "cell_lat", "cell_lon", "cell_size_deg", "value", "value_lo", "value_hi", "value_source", "status"];
+const CELL_ALWAYS = ["cell_lat", "cell_lon", "cell_size_deg", "value", "value_lo", "value_hi", "value_source", "status"];
+/**
+ * 칸(0.1°) 월 값 CSV — /cells 응답 속성 그대로(원값). 넓은 지역(1° 묶음)은 정적 world-1deg 를 복원한 값(양자화)이라 cell_size_deg=1 과 메타 grid 로 밝힌다.
+ * cell_lat·cell_lon 이 없는 칸은 칸 테두리 중심(지도와 같은 셈).
+ */
+export function cellsFile(x: Ctx, data: CellsData, ym: string): CsvFile {
+  const props = data.properties as { cell_size_deg?: number; month_status?: string; coarse?: boolean } | undefined;
+  const deg = props?.cell_size_deg ?? 0.1;
+  const coarse = !!props?.coarse || deg >= 1;
+  const rows = data.features.map((f) => {
+    const p: Record<string, unknown> = { ...(f.properties as Record<string, unknown>) };
+    if ((p.cell_lat == null || p.cell_lon == null) && f.geometry?.coordinates?.[0]) {
+      const ring = f.geometry.coordinates[0];
+      p.cell_lat = ring.reduce((s, c) => s + (c[1] ?? 0), 0) / ring.length;
+      p.cell_lon = ring.reduce((s, c) => s + (c[0] ?? 0), 0) / ring.length;
+    }
+    p.cell_size_deg = deg;
+    return p;
+  });
+  const keys = [...new Set(rows.flatMap((r) => Object.keys(r)))];
+  const cols = [...CELL_FIRST.filter((k) => keys.includes(k) || CELL_ALWAYS.includes(k)), ...keys.filter((k) => !CELL_FIRST.includes(k))];
+  return {
+    name: `emberline_cells_${safeName(x.aoi)}_${ym}_${coarse ? "1deg" : "0.1deg"}.csv`,
+    text: toCSV(rows, cols),
+    meta: metaOf(x, ym, { cell_size_deg: deg, grid: coarse ? "1deg aggregate of the static world grid (quantized values)" : "0.1deg cells", month_status: props?.month_status ?? null, source: coarse ? "world-1deg grid" : "/api/v1/cells" }),
+  };
 }
 const isKorAoi = (id: string) => /^(KR|SIDO_|SGG_|group:)/.test(id);
 
@@ -624,19 +671,9 @@ function Trend({ x }: { x: Ctx }) {
     chart = n ? <Bars items={items} width={wid} height={200} ticks={n <= 31 ? 16 : 12} allLabels={n > 31 && n <= 400} label={T("g6.tr_title")} hi={(k) => k.slice(0, 7) === hm} hiValue={peak && peak.value ? peak.date : null} /> : <div className={cx("an-empty sm")}><span>{T("ui.no_data_to_plot")}</span></div>;
   }
   const csv = () => {
-    if (freq === "month") return saveText(`emberline_summary_${safeName(x.aoi)}_${tr.start}_${tr.end}_month.csv`, trendCSVMonth(x, tr));
+    if (freq === "month") return saveCsv(trendMonthFile(x, tr));
     if (!sq.data) return;
-    const mv = x.M?.method_version ?? "";
-    const rel = String(x.M?.data_version ?? "");
-    /* 행 종류 day | month_residual | total — 월 추정분은 날짜 행에 섞지 않는다(목업 trendCSV) */
-    const R = sq.data;
-    const rows: Record<string, unknown>[] = R.series.map((d) => ({ row_type: "day", aoi_id: x.aoi, date: d.date, value: d.value, freq: "day", method_version: mv, release: rel }));
-    (R.month_residual ?? []).forEach((q) => {
-      if (q.month_residual) rows.push({ row_type: "month_residual", aoi_id: x.aoi, date: ymIso(q.year, q.month), value: q.month_residual, days_in_range: q.included_days ?? "", days_in_month: q.days_in_month ?? "", freq: "day", method_version: mv, release: rel });
-    });
-    const tv = R.total?.value ?? R.series.reduce((s, d) => s + (d.value ?? 0), 0);
-    rows.push({ row_type: "total", aoi_id: x.aoi, date: `${R.start}/${R.end}`, value: Math.round(tv * 1000) / 1000, residual_prorated: R.total?.residual_prorated ?? "", freq: "day", method_version: mv, release: rel });
-    saveText(`emberline_summary_${safeName(x.aoi)}_${tr.start}_${tr.end}_day.csv`, toCSV(rows, ["row_type", "aoi_id", "date", "value", "value_projected", "as_of_date", "days_in_range", "days_in_month", "residual_prorated", "freq", "method_version", "release"]));
+    saveCsv(trendDayFile(x, tr, sq.data));
   };
   return (
     <section className={cx("panel an-trend")} aria-label={T("g6.tr_title")} aria-busy={(freq === "day" && sq.isPlaceholderData) || undefined}>
@@ -853,6 +890,11 @@ function CellPanel({ x }: { x: Ctx }) {
               · {q.data?.properties?.cell_size_deg ?? 0.1}°
             </span>
             {st !== "ok" && q.data ? <Status st={st} /> : null}
+            {q.data && q.data.features.length ? (
+              <span data-cellcsv="">
+                <CsvButton kind="cells" label={x.t("csv.cells")} aria={x.t("csv.cells_aria", { a: x.aoi, p: ym, deg: q.data.properties?.cell_size_deg ?? 0.1 })} make={async () => cellsFile(x, q.data as CellsData, ym)} />
+              </span>
+            ) : null}
             {on && pm === "firms" ? (
               <span className={cx("an-cmeta")} data-lyrmeta="firms">
                 <i className={cx("an-pt")} aria-hidden="true" />
