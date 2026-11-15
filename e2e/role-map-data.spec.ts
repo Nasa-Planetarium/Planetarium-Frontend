@@ -13,7 +13,7 @@ function watch(page: Page) {
 async function open(page: Page, role: string, path: string) {
   await page.addInitScript((r) => {
     localStorage.setItem("em.lang", "ko");
-    localStorage.setItem("em.role", r);
+    sessionStorage.setItem("em.role", r);
   }, role);
   await page.goto(path);
 }

@@ -40,7 +40,7 @@ test("로그인 전 탭 = 캘린더·비교 분석·방법·검증 3개, 예시 
 test("상황판을 로그인 전 직접 열면 잠긴 화면 → 그 자리에서 로그인하면 상황판이 열린다(F12)", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem("em.lang", "ko");
-    localStorage.removeItem("em.role");
+    sessionStorage.removeItem("em.role");
   });
   await page.goto("/ko/home/");
   const locked = page.locator('[data-slot="locked"]');
@@ -62,7 +62,7 @@ test("로그아웃하면 캘린더로 가고 탭은 공개 3개로 돌아간다(
     if (sessionStorage.getItem("f12.once")) return;
     sessionStorage.setItem("f12.once", "1");
     localStorage.setItem("em.lang", "ko");
-    localStorage.setItem("em.role", "commander");
+    sessionStorage.setItem("em.role", "commander");
   });
   await page.goto("/ko/home/");
   const tabs = page.locator("#topbar nav a[data-tab]");
@@ -89,7 +89,7 @@ test("머리줄: 탭 3개(로그인 전)·5개(로그인 뒤) 모두 가로 넘�
     });
   await page.addInitScript(() => {
     localStorage.setItem("em.lang", "ko");
-    if (!sessionStorage.getItem("f12.role")) localStorage.removeItem("em.role");
+    if (!sessionStorage.getItem("f12.role")) sessionStorage.removeItem("em.role");
   });
   await page.goto("/ko/calendar/");
   await expect(page.locator("#topbar nav a[data-tab]")).toHaveCount(3);
@@ -98,7 +98,7 @@ test("머리줄: 탭 3개(로그인 전)·5개(로그인 뒤) 모두 가로 넘�
   const pub = await probe();
   await page.evaluate(() => {
     sessionStorage.setItem("f12.role", "1");
-    localStorage.setItem("em.role", "scientist");
+    sessionStorage.setItem("em.role", "scientist");
   });
   await page.goto("/ko/lab/");
   await expect(page.locator("#topbar nav a[data-tab]")).toHaveCount(5);
