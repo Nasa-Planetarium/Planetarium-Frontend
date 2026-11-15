@@ -69,6 +69,8 @@ function CalendarScreen() {
   const sp = useQueryParams();
   const { iso3, list: countries } = useCountry();
   const ramp = useRamp();
+  /* 밝은 지도 위(점 지도·전 세계 재생)는 지도 램프(F14) — 연×월 칸(CalGrid)은 어두운 셸 위라 ramp 그대로 */
+  const mapRamp = useRamp("mh");
   const mq = useQuery(methodQuery());
   const mv = mq.data?.method_version ?? null;
   const release = (mq.data as { data_version?: string } | undefined)?.data_version ?? mv ?? "";
@@ -276,16 +278,16 @@ function CalendarScreen() {
                 <span className={cx("cl-unit")}>{t("shell.unit.snpp_equiv")}</span>
               </div>
               <div className={cx("cl-wbox")}>
-                <WorldReplay
+                {mapRamp ? <WorldReplay
                   mv={mv}
                   month={inRange(y, m) ? monthIndex(y, m) : null}
-                  ramp={ramp}
+                  ramp={mapRamp}
                   partialLine={(o) => t("calendar.ui.partial_line", o)}
                   onCountry={(i3, i) => {
                     const [yy, mm] = ymOfIndex(i);
                     setAoi(aoiOfIso3(i3), { mode: null, ym: ymIso(yy, mm) });
                   }}
-                />
+                /> : null}
               </div>
             </section>
           ) : (
@@ -315,13 +317,14 @@ function CalendarScreen() {
                   ) : null}
                 </div>
                 <div className={cx("panel-b")}>
-                  <CalMap key={`${aoi}|${ymIso(y, m)}|${view}`} aoi={aoi} aois={aois} y={y} m={m} view={view} mv={mv} inGb={inGb(aoi, byId)} ramp={ramp} onCountry={(i3, i) => {
+                  {/* key 에 달을 넣지 않는다: 달을 바꿔도 지도를 유지하고 칸·점만 바꾼다(달마다 지도를 새로 만들며 덮개가 번쩍이던 것, LF-1·2) */}
+                  {mapRamp ? <CalMap key={`${aoi}|${view}`} aoi={aoi} aois={aois} y={y} m={m} view={view} mv={mv} inGb={inGb(aoi, byId)} ramp={mapRamp} onCountry={(i3, i) => {
                     const [yy, mm] = ymOfIndex(i);
                     setAoi(aoiOfIso3(i3), { ym: ymIso(yy, mm) });
                   }} onWorldMonth={(i) => {
                     const [yy, mm] = ymOfIndex(i);
                     if (yy !== y || mm !== m) selectMonth(yy, mm);
-                  }} />
+                  }} /> : null}
                 </div>
               </section>
               <CalGrid
