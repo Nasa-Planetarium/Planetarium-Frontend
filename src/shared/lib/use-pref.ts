@@ -5,7 +5,7 @@ import { prefs } from "./prefs";
 
 const EVT = "em:pref";
 
-/** 저장값(prefs — 사용자 상태는 sessionStorage, 언어·시계는 localStorage) 하나를 여러 컴포넌트가 같이 읽고 쓴다(예 clockUTC — 머리줄 시계와 계정 메뉴) */
+/** 저장값(prefs — 탭 안 sessionStorage) 하나를 여러 컴포넌트가 같이 읽고 쓴다(예 clockUTC — 머리줄 시계와 계정 메뉴) */
 export function usePref(key: string): [string | null, (v: string | null) => void] {
   const subscribe = useCallback((cb: () => void) => {
     const on = (e: Event) => {
