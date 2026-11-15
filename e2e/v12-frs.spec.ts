@@ -39,7 +39,7 @@ test("캘린더 상세: 위성 일별 상태 — ok 아닌 날(2026-10 S-NPP 낮
 });
 
 test("자료 없는 지역: 「이 지역 자료 없음」 한 줄(가짜 값 없음)", async ({ page }) => {
-  await page.goto("/ko/calendar/?c=USA");
+  await page.goto("/ko/calendar/?c=USA&mode=cal"); // 첫 화면이 전 세계 재생(PR #15) — 지역 캘린더로
   const root = page.locator('[data-testid="calendar"][data-ready="1"]');
   await expect(root).toBeVisible({ timeout: 30000 });
   const rf = root.locator('[data-testid="cal-regime-frp"][data-ready="1"]');
