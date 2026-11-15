@@ -113,6 +113,8 @@ export function ForecastView({ t, lang, tabs }: { t: T; lang: string; tabs: Reac
         { label: "as_of", get: () => r.as_of },
         { label: "region", get: () => r.region },
       ]),
+      undefined,
+      { aoi: region.kind === "aoi" ? region.id : region.kind, period: r.daily.length ? `${r.daily[0]!.date}/${r.daily[r.daily.length - 1]!.date}` : r.start, as_of: r.as_of, source: "/api/v1/forecast" },
     );
   };
 

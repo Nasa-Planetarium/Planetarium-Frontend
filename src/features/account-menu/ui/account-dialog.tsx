@@ -10,7 +10,8 @@ import { DEFAULT_PAGE, ROLE_DEF, ROLE_IDS, pageHref, type Locale } from "@/share
 import { LANGS, useT, useTl } from "@/shared/i18n";
 import { localHM, tzAbbr } from "@/shared/lib/time";
 import { usePref } from "@/shared/lib/use-pref";
-import { Button, Icon } from "@/shared/ui";
+import { fwiCsv, fwiWindow } from "@/entities/fire-weather";
+import { Button, CsvButton, Icon } from "@/shared/ui";
 import { Dialog } from "@/shared/ui/dialog";
 
 /**
@@ -43,7 +44,7 @@ export function AccountDialog({
   /** 다른 나라: 최근 완결 달 배수·판정·달(머리줄 칸과 같은 release 값) */
   anom?: { ratio: number | null; verdict: string | null; ym: string } | null;
   /** 한국·아르헨티나(기관 역할): 산불 기상 위험도 FWI — 머리줄 칸과 같은 release 값(fwi_aoi_day 마지막 날). 없으면 null */
-  fwi?: { value: number | null; rel: string | null; abs: string | null; asOf: string; none: boolean } | null;
+  fwi?: { value: number | null; rel: string | null; abs: string | null; asOf: string; none: boolean; aoi?: string; asOfDate?: string | null } | null;
 }) {
   const t = useT();
   const tl = useTl();
@@ -131,7 +132,8 @@ export function AccountDialog({
                 ) : (
                   <span data-who-fwi={fwi.rel ?? ""}>
                     <span className="mono">{fwi.value != null ? fwi.value.toFixed(1) : "–"}</span> {fwi.rel ? t(`shell.fwi.rel.${fwi.rel}`) : "–"}
-                    {fwi.abs ? ` · ${t("shell.fwi.abs_k")} ${t(`shell.fwi.abs.${fwi.abs}`)}` : ""} · {fwi.asOf}
+                    {fwi.abs ? ` · ${t("shell.fwi.abs_k")} ${t(`shell.fwi.abs.${fwi.abs}`)}` : ""} · {fwi.asOf}{" "}
+                    {fwi.aoi && fwi.asOfDate ? <FwiCsv aoi={fwi.aoi} asOf={fwi.asOfDate} /> : null}
                   </span>
                 ),
               )
@@ -211,5 +213,20 @@ export function AccountDialog({
         ) : null}
       </div>
     </Dialog>
+  );
+}
+
+/** FWI 일별 CSV(서버 CSV 그대로 · 마지막 자료일까지 365일) */
+export function FwiCsv({ aoi, asOf, label }: { aoi: string; asOf: string; label?: string }) {
+  const t = useT();
+  const w = fwiWindow(asOf);
+  const p = `${w.start}/${w.end}`;
+  return (
+    <CsvButton
+      kind="fwi"
+      label={label}
+      aria={t("csv.fwi", { a: aoi, p })}
+      make={async () => ({ name: `emberline_fwi_${aoi}_${w.start}_${w.end}.csv`, text: await fwiCsv(aoi, w.start, w.end), meta: { aoi, period: p, source: `/api/v1/aois/${aoi}/fwi`, date_basis: "local solar day (NASA POWER LST)", as_of_date: asOf } })}
+    />
   );
 }

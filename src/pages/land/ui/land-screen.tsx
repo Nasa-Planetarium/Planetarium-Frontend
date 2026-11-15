@@ -566,7 +566,7 @@ function Parcels(p: {
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
     const lines = [head, ...p.rows.map((r) => [p.f.id, p.addrOf(r), t(`land.jimok.${r.jimok}`), t(`land.owner.${r.owner}`), r.area, t(DMG[r.dmg]), r.prio, p.req.includes(r.id) ? "Y" : "", "Y", t("land.export_parcels.satellite_burn_extent_x")])];
-    downloadText(`parcels_${p.f.id}.csv`, lines.map((l) => l.map(q).join(",")).join("\n"));
+    downloadText(`parcels_${p.f.id}.csv`, lines.map((l) => l.map(q).join(",")).join("\n"), undefined, { aoi: p.f.id, note: "example scenario (mock parcels)" });
   };
   const th = (col: SortCol, children: ReactNode, cls?: string) =>
     sortable ? (

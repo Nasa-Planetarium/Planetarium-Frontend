@@ -8,7 +8,7 @@ import { ApiError } from "@/shared/api";
 import { hotspotsQuery } from "../api/queries";
 import { cx } from "./cx";
 import type { Ctx } from "./home-page";
-import { download, toCSV } from "./use-ui";
+import { download, downloadCsv, toCSV } from "./use-ui";
 
 /** 시나리오 권역 지도 범위(경북 북부 원장 bounds 와 같은 범위 — 서,남,동,북) */
 export const KR_VIEW: [number, number, number, number] = [128.05, 36.15, 129.55, 37.05];
@@ -70,7 +70,8 @@ export function HomeDownload(c: Ctx) {
       { label: "ratio_to_median", get: (r) => r.ratio_to_median },
       { label: "method_version", get: () => c.mv },
     ]);
-    download(`${base}_calendar.csv`, new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const ms = c.months.filter((r) => r.value != null || r.status !== "out_of_range");
+    downloadCsv(`${base}_calendar.csv`, csv, { aoi: c.aoi, aoi_name: c.dataAoiName, period: ms.length ? `${ms[0]!.year}-${String(ms[0]!.month).padStart(2, "0")}/${ms[ms.length - 1]!.year}-${String(ms[ms.length - 1]!.month).padStart(2, "0")}` : "", sensor: c.sensor, source: `/api/v1/aois/${c.aoi}/calendar` });
   };
   const hotCsv = async () => {
     if (!c.range) return;
@@ -82,7 +83,7 @@ export function HomeDownload(c: Ctx) {
         return;
       }
       const keys = Object.keys(rows[0]!);
-      download(`${base}_hotspots_${c.range.start}_${c.range.end}.csv`, new Blob([toCSV(rows, keys.map((k) => ({ label: k, get: (r) => r[k] as string | number | null })))], { type: "text/csv;charset=utf-8" }));
+      downloadCsv(`${base}_hotspots_${c.range.start}_${c.range.end}.csv`, toCSV(rows, keys.map((k) => ({ label: k, get: (r) => r[k] as string | number | null }))), { aoi: c.aoi, aoi_name: c.dataAoiName, period: `${c.range.start}/${c.range.end}`, source: "/api/v1/hotspots" });
       setOpen(false);
     } catch (e) {
       setNote(c.t(e instanceof ApiError && e.code === "data_not_loaded" ? "shell.err.data_not_loaded" : "shell.err.request"));

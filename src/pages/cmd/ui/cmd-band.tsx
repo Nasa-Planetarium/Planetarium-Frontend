@@ -110,6 +110,8 @@ function CalPanel(c: Ctx & { board: Board }) {
         { label: "data_version", get: () => board.provenance.data_version },
         { label: "method_version", get: () => board.provenance.method_version },
       ]),
+      undefined,
+      { data_version: board.provenance.data_version, aoi: q.regions.length ? q.regions.join(" ") : c.scope.scope, period: `${a.year}-${String(a.month).padStart(2, "0")}`, metric: a.metric },
     );
   };
   const png = () => {
@@ -437,6 +439,8 @@ function QueryPanel(c: Ctx & { board: Board }) {
         { label: "data_version", get: () => board.provenance.data_version },
         { label: "method_version", get: () => board.provenance.method_version },
       ]),
+      undefined,
+      { data_version: board.provenance.data_version, period: board.provenance.updated_at.slice(0, 10), condition: cond(run.q) },
     );
   const at = new Date(run.at);
   const hhmm = c.kor ? board.provenance.updated_at.slice(11, 16) : `${String(at.getUTCHours()).padStart(2, "0")}:${String(at.getUTCMinutes()).padStart(2, "0")}`;

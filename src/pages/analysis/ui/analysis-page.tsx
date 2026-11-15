@@ -19,6 +19,7 @@ import { aoiOfIso3, iso3OfAoi, LAST, lastMonth, monthIndex, monthWord, nameEn, V
 import { AoiPicker } from "./aoi-picker";
 import { Status, StIcon } from "./bits";
 import { Track, useNf } from "./charts";
+import { BundleButton } from "./bundle";
 import { cx } from "./cx";
 import { S2 } from "./s2";
 import { BoundaryPreview, Eras } from "./s1-side";
@@ -202,6 +203,8 @@ function AnalysisScreen() {
             <span className={cx("an-hst")}>
               {!inScope && cal ? <Status st="out_of_range" /> : step > 1 && c ? c.verdict ? <VdMark v={c.verdict} p={c.percentile ?? null} /> : <Status st={c.status} /> : null}
             </span>
+            {/* 분석 자료 내려받기(zip) — 결과가 있는 2·3단계에서 */}
+            {step > 1 && c ? <BundleButton x={ctx} /> : null}
           </div>
           <div className={cx("an-steps")}>
             <ol className={cx("stages is-nav is-num")} aria-label={T("ui.analysis_steps")}>

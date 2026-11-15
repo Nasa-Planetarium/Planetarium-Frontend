@@ -474,6 +474,8 @@ function AnnualLine(c: Ctx & { F: ReturnType<typeof useFmt> }) {
     downloadText(
       `emberline_cmd_annual_${q.regions.length ? q.regions.slice().sort().join("-") : "all"}_${c.board?.provenance.updated_at.slice(0, 10) ?? ""}.csv`,
       toCSV(c.ann, [{ label: "연도", get: (r) => r.year }, ...series.map((s) => ({ label: name[s.k] ?? s.k, get: (r: (typeof c.ann)[number]) => r[s.k as Sensor] }))]),
+      undefined,
+      { data_version: c.board?.provenance.data_version ?? null, aoi: q.regions.length ? q.regions.slice().sort().join(" ") : "all", period: c.ann.length ? `${c.ann[0]!.year}/${c.ann[c.ann.length - 1]!.year}` : "", freq: "year" },
     );
   };
   return (

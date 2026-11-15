@@ -3,9 +3,10 @@
 import { useMemo, type ReactNode } from "react";
 import { useLocale } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
-import { fireRegimeQuery, frpMonthQuery, frpSummary, isRegime, sharePct, type Regime } from "@/entities/fire-month";
+import { fireRegimeQuery, frpCsv, frpMonthQuery, frpSummary, isRegime, monthSpan, regimeCsv, sharePct, type Regime } from "@/entities/fire-month";
 import { ApiError } from "@/shared/api";
 import { useT } from "@/shared/i18n";
+import { CsvButton } from "@/shared/ui";
 import s from "./fire-month.module.css";
 
 const cx = (...n: (string | false | null | undefined)[]) =>
@@ -129,11 +130,32 @@ export function RegimeFrp({ aoi, ym, mv, testId = "regime-frp" }: { aoi: string;
   return (
     <div className={cx("fm")} data-testid={testId} data-ready={world || (!rq.isPending && !fq.isPending) ? "1" : "0"} data-regime={row?.fire_regime ?? ""}>
       <div className={cx("fm-part")}>
-        <span className={cx("fm-pk")}>{V("regime_title")}</span>
+        <span className={cx("fm-pk fm-pkr")}>
+          {V("regime_title")}
+          {!world && reg?.coverage.available ? (
+            <CsvButton
+              kind="fire-regime"
+              aria={t("csv.regime", { a: aoi, p: ym })}
+              make={async () => ({ name: `emberline_fire-regime_${aoi}_${ym}.csv`, text: await regimeCsv(aoi, ym, ym), meta: { aoi, aoi_name: reg?.name ?? null, period: ym, source: `/api/v1/aois/${aoi}/fire-regime` } })}
+            />
+          ) : null}
+        </span>
         {regimeNode}
       </div>
       <div className={cx("fm-part")} data-frp="">
-        <span className={cx("fm-pk")}>{V("frp_title")}</span>
+        <span className={cx("fm-pk fm-pkr")}>
+          {V("frp_title")}
+          {!world && fq.data?.coverage.available ? (
+            <CsvButton
+              kind="frp"
+              aria={t("csv.frp", { a: aoi, p: ym })}
+              make={async () => {
+                const sp = monthSpan(ym);
+                return { name: `emberline_frp_cells_${aoi}_${ym}.csv`, text: await frpCsv(aoi, ym), meta: { aoi, period: `${sp.start}/${sp.end}`, source: "/api/v1/cells/frp", freq: "month", cell_size_deg: 0.1, unit: "MW (S-NPP equiv)" } };
+              }}
+            />
+          ) : null}
+        </span>
         {frpNode}
         <p className={cx("fm-note")}>{V("frp_note")}</p>
       </div>

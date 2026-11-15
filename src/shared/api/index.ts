@@ -1,7 +1,8 @@
-export { api, unwrap, getLastMethodVersion } from "./client";
+export { api, unwrap, getLastMethodVersion, getLastDataVersion } from "./client";
 export { ApiError, ERROR_HANDLING, heavyRetry, heavyRetryDelay, rateWaitMs } from "./errors";
 export type { Problem, ErrorCode } from "./errors";
 export { qk, normalizeParams } from "./query-keys";
+export { getCsvText } from "./csv";
 export { listAllAois } from "./aois";
 export { CELLS_MAX, HOTSPOT_MAX_AREA, bboxSqDeg, cellsTooMany, hotspotsTooWide } from "./limits";
 export type { RangeAoi } from "./limits";

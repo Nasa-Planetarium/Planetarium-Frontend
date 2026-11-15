@@ -7,11 +7,12 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { countryName, useCountry } from "@/entities/country";
 import { calendarQuery } from "@/entities/month-value";
 import { methodQuery } from "@/entities/release";
-import { satMonthsQuery, satSpans } from "@/entities/satellite-status";
+import { satelliteCsv, satMonthsQuery, satSpans } from "@/entities/satellite-status";
 import { api, qk, unwrap } from "@/shared/api";
 import { ORDER } from "@/shared/data-cases";
 import { useT, type TFn } from "@/shared/i18n";
 import { useDevice } from "@/shared/lib/use-device";
+import { CsvButton } from "@/shared/ui";
 import { FRP_RATIOS } from "../model/frp-ratios.gen";
 import {
   CONTRACT,
@@ -727,6 +728,18 @@ function SatBlock({ c }: { c: Ctx }) {
   const ym = (d: string | null) => (d ? d.slice(0, 7) : "–");
   return (
     <div className={cx("mt-sat")} data-testid="method-sat">
+      {q.data && spans.length ? (
+        <div className={cx("mt-satx")}>
+          <CsvButton
+            kind="satellite-status"
+            aria={c.t("csv.sat", { p: `${spans[0]?.first?.slice(0, 7) ?? ""}–${q.data.through ?? ""}` })}
+            make={async () => {
+              const r = await satelliteCsv({ freq: "month" });
+              return { name: "emberline_satellite-status_month.csv", text: r.text, meta: { period: `all/${r.through}`, source: "/api/v1/satellite-status", freq: "month", date_basis: "UTC", through: r.through } };
+            }}
+          />
+        </div>
+      ) : null}
       {q.isPending ? (
         <p className={cx("mt-err")}>…</p>
       ) : q.isError || !spans.length ? (

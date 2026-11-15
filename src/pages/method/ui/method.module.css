@@ -201,3 +201,4 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 @media (max-height:860px){:global(html[data-device="web"]) .mt-ctab{--lc:1}:global(html[data-device="web"]) .mt .tbl td{padding-block:3px}}
 .mt-dn{font-weight:var(--fw-strong)}
 .mt-sat{margin-top:var(--sp-3);min-width:0}
+.mt-satx{display:flex;justify-content:flex-end;margin-bottom:var(--sp-2)}

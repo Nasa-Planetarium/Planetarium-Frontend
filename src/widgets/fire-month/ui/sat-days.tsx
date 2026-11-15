@@ -4,9 +4,10 @@ import { useMemo } from "react";
 import { useLocale } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { monthSpan } from "@/entities/fire-month";
-import { satDaysQuery, satDaySummary, type DaySt } from "@/entities/satellite-status";
+import { satDaysQuery, satDaySummary, satelliteCsv, type DaySt } from "@/entities/satellite-status";
 import { ApiError } from "@/shared/api";
 import { useT } from "@/shared/i18n";
+import { CsvButton } from "@/shared/ui";
 import s from "./fire-month.module.css";
 
 const cx = (...n: (string | false | null | undefined)[]) =>
@@ -38,8 +39,20 @@ export function SatDays({ ym, mv, testId = "sat-days" }: { ym: string; mv: strin
   return (
     <div className={cx("fm")} data-testid={testId} data-ready={q.isPending ? "0" : "1"}>
       <div className={cx("fm-part")}>
-        <span className={cx("fm-pk")}>
-          {V("sat_title")} <span className={cx("fm-sub")}>UTC</span>
+        <span className={cx("fm-pk fm-pkr")}>
+          <span>
+            {V("sat_title")} <span className={cx("fm-sub")}>UTC</span>
+          </span>
+          {q.data ? (
+            <CsvButton
+              kind="satellite-status"
+              aria={t("csv.sat", { p: `${start}/${end}` })}
+              make={async () => {
+                const r = await satelliteCsv({ freq: "day", start, end });
+                return { name: `emberline_satellite-status_${ym}.csv`, text: r.text, meta: { period: `${start}/${end}`, source: "/api/v1/satellite-status", freq: "day", date_basis: "UTC", through: r.through } };
+              }}
+            />
+          ) : null}
         </span>
         {q.isPending ? (
           <p className={cx("fm-na")}>…</p>
