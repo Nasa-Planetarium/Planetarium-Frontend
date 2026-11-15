@@ -4,10 +4,9 @@
   "qx": { "aria": "Change country and period", "country": "Country", "all": "All (every country)", "year": "Year", "month": "Month", "month_n": "{m}", "apply": "Apply", "export": "Export data" }
  },
  "shell": {
-  "cont": { "NA": "North America", "SA": "South America" },
   "err": { "range_too_large": "Area too large to fetch at once (server limit 100 sq. deg) — narrow the region", "rate_limited": "Too many requests — try again shortly" },
   "det": { "partial": "Partial points ({n}/{m} tiles) — server rate limit" },
-  "map": { "loading": "Loading map…", "jump": "Jump to continent", "cells_wide": "Wide area — monthly detections, 1° cells ({p}, {n} cells). Zoom in for points", "cells_wide_year": "Wide area — {p} monthly detections summed, 1° cells ({n} cells). Narrow the region for points", "cells_key": "Monthly detections, 1° cells", "cells_month": "{m} detections, 1° cells", "real_n": "{n} real" },
+  "map": { "cells_wide": "Wide area — monthly detections, 1° cells ({p}, {n} cells). Zoom in for points", "cells_wide_year": "Wide area — {p} monthly detections summed, 1° cells ({n} cells). Narrow the region for points", "cells_key": "Monthly detections, 1° cells", "cells_month": "{m} detections, 1° cells", "real_n": "{n} real" },
   "nav": {
    "calendar": { "label": "Calendar", "short": "Calendar" },
    "method": { "label": "Method & validation", "short": "Method" }

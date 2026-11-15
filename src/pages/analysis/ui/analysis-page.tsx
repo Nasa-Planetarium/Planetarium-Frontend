@@ -300,8 +300,7 @@ function S1({ x, KOR, yr, setYr, inScope, iso3 }: { x: Ctx; KOR: boolean; yr: nu
   const curVs = monthRec(cal, x.y, x.m)?.value_source ?? null;
   const rows = Array.from({ length: 12 }, (_, i) => monthRec(cal, y, i + 1) ?? { year: y, month: i + 1, status: "out_of_range", data_source: null, value_source: null });
   const allMiss = (cal?.months ?? []).filter((r) => r.status === "missing");
-  /* 전 세계 재생은 밝은 지도 위 — 지도 램프(F14, 많을수록 진하게) */
-  const ramp = useRamp("mh");
+  const ramp = useRamp();
   /* 재생 지도에서 나라를 누르면 그 나라 단위 분석(같은 나라면 그 달만) — 목업 mountWorld onCountry */
   const onCountry = (i3: string, i: number) => {
     const [yy, mm] = ymOfIndex(i);
