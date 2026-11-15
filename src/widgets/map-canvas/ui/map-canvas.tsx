@@ -9,7 +9,7 @@ import { useDevice } from "@/shared/lib/use-device";
 import { adm1RegionsQuery, demManifestQuery, linesQuery } from "../api/basemap";
 import { aoiBounds, aoiGeometry, checkPoint, clusterUnits, curve, fireMarkOf, heatGain, hotWeight, isClosedFire, maskPolygon, niceScale, pixelSquare, placeLabels, tickLabel, tickStep, type Box, type LabelItem } from "../lib/geo";
 import { buildStyle, demLayer, LAYER_IDS, type Tok } from "../lib/style";
-import { DEFAULT_LAYERS, type Bbox, type DrawMode, type DrawnAoi, type GeoCollection, type Geom, type LatLon, type LayerKey, type Layers, type MapBurn, type MapFire, type MapHotspot, type MapRegion, type MapRoute, type MapUnit, type TickOpts, type ToolKey } from "../model/types";
+import { DEFAULT_LAYERS, type Bbox, type DrawMode, type DrawnAoi, type GeoCollection, type Geom, type LatLon, type LayerKey, type Layers, type MapBurn, type MapCell, type MapFire, type MapHotspot, type MapRegion, type MapRoute, type MapUnit, type TickOpts, type ToolKey } from "../model/types";
 import s from "./map-canvas.module.css";
 import { PassLine } from "./pass-line";
 import { moveBounds } from "../lib/bounds";
@@ -41,6 +41,10 @@ export interface MapCanvasProps {
   /** 초점 지역 윤곽: 그 밖을 어둡게 가린다(없으면 나라 밖만 가림) */
   focus?: Geom | null;
   hotspots?: MapHotspot[];
+  /** 월 감지량 칸(실제 /cells · 넓으면 1° 묶음) — 감지 점 아래 열 색 사각형 */
+  cells?: MapCell[];
+  /** 칸 범례 이름(주면 왼쪽 위에 「이름 · 적음 ▮▮▮ 많음」) — 화면이 따로 범례를 그리면 비운다 */
+  cellsKey?: string | null;
   /** 밀도 보기(열 지도) — 기본은 또렷한 점 */
   density?: boolean;
   heatGain?: number;
@@ -337,6 +341,25 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
     const f = heatGain(H) * (p.heatGain ?? 1);
     map.setPaintProperty("heat", "heatmap-intensity", ["interpolate", ["linear"], ["zoom"], 7, 0.55 * f, 10, 0.9 * f, 13, 1.4 * f]);
   }, [map, hot, p.heatGain, src]);
+
+  /* ── 월 감지량 칸(사각형 · 값 단계 t = 로그 비율) ── */
+  const cells = p.cells;
+  useEffect(() => {
+    if (!map) return;
+    const C = (cells ?? []).filter((c) => c.value > 0);
+    const mx = Math.log1p(Math.max(1e-9, ...C.map((c) => c.value)));
+    src(
+      "cells",
+      fc(
+        C.map((c) => {
+          const h = c.size / 2;
+          const w = c.lon - h;
+          const e = c.lon + h;
+          return { type: "Feature", properties: { t: mx > 0 ? Math.log1p(c.value) / mx : 0, v: c.value }, geometry: { type: "Polygon", coordinates: [[[w, c.lat - h], [e, c.lat - h], [e, c.lat + h], [w, c.lat + h], [w, c.lat - h]]] } };
+        }),
+      ),
+    );
+  }, [map, cells, src]);
 
   /* ── 소실 범위 · 그린 영역 · 경로 ── */
   useEffect(() => {
@@ -1251,6 +1274,8 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
       data-dem={dem ? "1" : "0"}
       data-draw={drawMode ?? ""}
       data-aoi={aoi ? JSON.stringify(aoi) : ""}
+      data-n-hot={map ? String(hot?.length ?? 0) : ""}
+      data-n-cells={map ? String(cells?.filter((c) => c.value > 0).length ?? 0) : ""}
     >
       <div ref={glEl} className={s.gl} />
       {ticks ? (
@@ -1384,6 +1409,13 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
             <button type="button" className={s.btn} onClick={goOff}>
               {t("home.offv.go")}
             </button>
+          </div>
+        ) : null}
+        {p.cellsKey && layers.cells && (cells ?? []).some((c) => c.value > 0) ? (
+          <div className={s.ckey} data-ckey="" data-noobs="">
+            <b>{p.cellsKey}</b>
+            <span>{t("cmd.ui.low_high")}</span>
+            <i aria-hidden="true" />
           </div>
         ) : null}
         {p.status ? (

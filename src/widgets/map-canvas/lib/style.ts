@@ -11,7 +11,7 @@ import { withAlpha } from "./geo";
 export type Tok = (name: string) => string;
 
 const empty = () => ({ type: "geojson" as const, data: { type: "FeatureCollection" as const, features: [] } });
-export const SOURCES = ["land", "regions", "lines", "mask", "world", "hot", "hotpx", "burns", "aoi", "routes", "draft"] as const;
+export const SOURCES = ["land", "regions", "lines", "mask", "world", "cells", "hot", "hotpx", "burns", "aoi", "routes", "draft"] as const;
 
 export function buildStyle(T: Tok, iso3: string, worldUrl: string): StyleSpecification {
   const sources: StyleSpecification["sources"] = {};
@@ -64,6 +64,17 @@ export function buildStyle(T: Tok, iso3: string, worldUrl: string): StyleSpecifi
     { id: "roads", type: "line", source: "lines", filter: ["==", ["get", "kind"], "road"], layout: { "line-join": "round" }, paint: { "line-color": T("map-road"), "line-opacity": ["interpolate", ["linear"], ["zoom"], 12, 0.32, 13, 0], "line-width": ["interpolate", ["linear"], ["zoom"], 8, 1, 12, 2.2] } },
     { id: "reg-line", type: "line", source: "regions", paint: { "line-color": T("map-boundary"), "line-opacity": ["interpolate", ["linear"], ["zoom"], 12, 0.55, 13.5, 0], "line-width": bw, "line-dasharray": [3, 2] } },
     { id: "reg-hi-line", type: "line", source: "regions", filter: ["in", ["get", "id"], ["literal", []]], paint: { "line-color": T("accent"), "line-width": 2.2 } },
+    // 월 감지량 칸(넓은 범위 = 1° 묶음 · 좁은 범위 = 0.1° 칸): 값 단계 t(0–1, 화면 안 최댓값 대비 로그)로 열 색 — 감지 점 아래
+    {
+      id: "cells",
+      type: "fill",
+      source: "cells",
+      paint: {
+        "fill-color": ["interpolate", ["linear"], ["get", "t"], 0, T("h1"), 0.35, T("h2"), 0.6, T("h3"), 0.8, T("h4"), 1, T("h5")],
+        "fill-opacity": ["interpolate", ["linear"], ["zoom"], 3, 0.6, 9, 0.45, 12, 0.3],
+        "fill-outline-color": withAlpha(T("map-halo"), 0.35),
+      },
+    },
     { id: "burn-fill", type: "fill", source: "burns", paint: { "fill-color": ["case", ["get", "sel"], T("h4"), T("h3")], "fill-opacity": ["case", ["get", "sel"], 0.34, 0.24] } },
     { id: "burn-line", type: "line", source: "burns", paint: { "line-color": ["case", ["get", "sel"], T("h5"), T("h4")], "line-width": ["case", ["get", "sel"], 2, 1.3], "line-dasharray": [3, 2] } },
     // 밀도 열 지도: density 일 때만. 상한 0.8 · h0 투명 시작(바탕이 비친다)
@@ -146,6 +157,7 @@ export const LAYER_IDS: Record<string, (dens: boolean) => [string, boolean][]> =
   boundaries: () => [["reg-line", true]],
   rivers: () => [["rivers", true], ["rivers-w", true]],
   roads: () => [["roads", true]],
+  cells: () => [["cells", true]],
   heat: (dens) => [["heat", dens], ["hotdot", !dens]],
   hotspots: () => [["hotpx", true], ["hotpx-modis", true]],
   burns: () => [["burn-fill", true], ["burn-line", true]],

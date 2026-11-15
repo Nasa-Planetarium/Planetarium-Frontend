@@ -3,6 +3,7 @@
  "shell": {
   "err": { "rate_limited": "요청이 많음 — 잠시 뒤 다시 시도" },
   "det": { "partial": "점 일부만 받음(조각 {n}/{m}) — 서버 요청 한도" },
+  "map": { "cells_wide": "넓은 범위 — 월 감지량 1° 칸({p}, {n}칸). 확대하면 감지 점", "cells_wide_year": "넓은 범위 — {p}년 월 감지량 1° 칸 합({n}칸). 지역을 좁히면 감지 점", "cells_key": "월 감지량 1° 칸", "cells_month": "{m} 감지량 1° 칸", "real_n": "실제 {n}개" },
   "nav": {
    "calendar": { "label": "캘린더", "short": "캘린더" },
    "method": { "label": "방법·검증", "short": "방법" }

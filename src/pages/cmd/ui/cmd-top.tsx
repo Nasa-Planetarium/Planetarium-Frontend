@@ -447,7 +447,11 @@ function Det(c: Ctx) {
           ? c.T_("cmd.real.det_n", { y: c.view.year, a: c.aoiLabel, n: new Intl.NumberFormat().format(c.ptsTotal) })
           : c.ptsState === "wide"
             ? c.T_("cmd.real.pts_wide")
-            : c.T_("shell.err.data_not_loaded")}
+            : c.ptsState === "pending"
+              ? c.T_("cmd.real.loading")
+              : c.ptsState === "rate"
+                ? c.T_("shell.err.rate_limited")
+                : c.T_("shell.err.request")}
       </p>
     </div>
   );
