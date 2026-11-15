@@ -1,5 +1,8 @@
 {
  "_note": "Keys the mockup dictionary does not have yet. Mockup values win when the same key appears (src/shared/i18n/messages.ts).",
+ "analysis": {
+  "qx": { "aria": "Change country and period", "country": "Country", "all": "All (every country)", "year": "Year", "month": "Month", "month_n": "{m}", "apply": "Apply", "export": "Export data" }
+ },
  "shell": {
   "cont": { "NA": "North America", "SA": "South America" },
   "err": { "range_too_large": "Area too large to fetch at once (server limit 100 sq. deg) — narrow the region", "rate_limited": "Too many requests — try again shortly" },

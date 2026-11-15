@@ -22,6 +22,7 @@ import { cx } from "./cx";
 import { S2 } from "./s2";
 import { BoundaryPreview, Eras } from "./s1-side";
 import { PrintDoc, S3 } from "./s3";
+import { QuickPick } from "./quick-pick";
 import type { Ctx, MethodDoc } from "./types";
 import { VdMark } from "./vd-mark";
 import { WorldReplay } from "./world";
@@ -86,6 +87,10 @@ function AnalysisScreen() {
   const cq = useQuery({ ...calendarAllQuery(aoi ?? "KR", mv), enabled: !!mv && !!aoi });
   const cal = cq.data && cq.data.aoi_id === aoi ? cq.data : null;
   const inScope = !!rec && rec.has_data !== false && !!cal;
+  /* 나라 드롭다운의 「전체」(WORLD)는 전 세계 캘린더가 실제로 받아질 때만 — 목 스냅숏은 지역 목록에 WORLD 가 있어도 캘린더가 404 라
+     고르면 달·단계·분석 보기가 모두 잠겨 빠져나오기 어렵다(로컬). 같은 질의 키라 WORLD 를 고르면 캐시를 그대로 쓴다 */
+  const wq = useQuery({ ...calendarAllQuery("WORLD", mv), enabled: !!mv && has("WORLD") });
+  const worldOk = !!wq.data;
 
   const view: CalView = isView(sp.get("view")) ? (sp.get("view") as CalView) : "value";
   /* 주소 ym 이 없으면 고른 지역 캘린더의 마지막 관측 달(고정 사례 달 아님) */
@@ -219,6 +224,7 @@ function AnalysisScreen() {
               })}
             </ol>
           </div>
+          {step > 1 ? <QuickPick T={T} lang={lang} countries={countries} pick={pickableIso3(countries, aq.data)} iso3={aoi === "WORLD" ? "WORLD" : (aoi && iso3OfAoi(aoi)) || iso3} hasWorld={worldOk} y={qy} m={month ?? qm} step={step} writeQ={writeQ} /> : null}
           {counts.length ? (
             <div className={cx("cntbar")} role="group" aria-label={W("counts.aria")}>
               {counts.map((k) => (
