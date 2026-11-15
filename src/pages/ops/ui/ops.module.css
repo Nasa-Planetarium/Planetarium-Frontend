@@ -64,9 +64,9 @@
 .map .zoom button:focus-visible{outline-offset:-2px}
 .map .zoom button+button{border-top:1px solid var(--line-strong)}
 .map .zoom svg{width:var(--ic-map);height:var(--ic-map)}
-.map .scale{position:absolute;right:var(--sp-3);bottom:var(--sp-3);font-family:var(--font-data);font-size:var(--fs-1);font-variant-numeric:tabular-nums;color:var(--text-2);display:flex;align-items:center;gap:var(--sp-1);pointer-events:none}
-.map .scale i{display:block;height:5px;border:1px solid var(--text-2);border-top:0}
-.map .attrib{position:absolute;left:var(--sp-3);bottom:10px;font-size:var(--fs-1);color:var(--text-3);font-family:var(--font-body);pointer-events:none;white-space:nowrap}
+.map .scale{position:absolute;right:var(--sp-3);bottom:var(--sp-3);font-family:var(--font-data);font-size:var(--fs-1);font-variant-numeric:tabular-nums;color:var(--map-label);text-shadow:0 0 2px var(--map-halo),0 0 3px var(--map-halo),0 0 4px var(--map-halo);display:flex;align-items:center;gap:var(--sp-1);pointer-events:none}
+.map .scale i{display:block;height:5px;border:1px solid var(--map-label);border-top:0;box-shadow:0 1px 0 var(--map-halo)}
+.map .attrib{position:absolute;left:var(--sp-3);bottom:10px;font-size:var(--fs-1);color:var(--map-label);text-shadow:0 0 2px var(--map-halo),0 0 3px var(--map-halo),0 0 4px var(--map-halo);font-family:var(--font-body);pointer-events:none;white-space:nowrap}
 .map .map-key{position:absolute;left:var(--sp-3);bottom:var(--sp-7);z-index:2;display:flex;align-items:center;gap:var(--sp-3);max-width:calc(100% - 72px);min-height:28px;padding:var(--sp-1) var(--sp-2);border-radius:var(--r-2xs);border:0;background:color-mix(in srgb,var(--surface-0) 72%,transparent);font-size:var(--fs-1);line-height:1.3;color:var(--text-2);white-space:nowrap;overflow:hidden;pointer-events:none}
 .map .map-key[hidden]{display:none}
 .map .map-key>span{display:inline-flex;align-items:center;gap:var(--sp-1);flex:none}
@@ -76,7 +76,8 @@
 .map .map-key i.ring{background:transparent;border:2px solid var(--c,var(--text-2));border-radius:var(--r-round)}
 .map .map-key i.line{width:14px;height:2px}
 .map .map-key i.dash{width:14px;height:0;background:none;border-top:2px dashed var(--c,var(--text-2))}
-.map .map-key i.ramp{width:56px;height:8px;background:linear-gradient(90deg,var(--h1),var(--h3),var(--h4),var(--h5),var(--h6))}
+/* 지도 범례 = 지도 램프(땅색 칩 위 — 지도에서 보이는 그대로, F14 L1) */
+.map .map-key i.ramp{width:56px;height:8px;background:linear-gradient(90deg,var(--mh1),var(--mh3),var(--mh4),var(--mh5),var(--mh6));box-shadow:0 0 0 2px var(--map-land)}
 .map .map-key i.hatch{background:var(--hatch);border:1px solid var(--text-3)}
 :global(html[data-device="phone"]) .map .map-key{flex-wrap:wrap;row-gap:var(--sp-1);column-gap:var(--sp-2);padding:var(--sp-1) var(--sp-2);max-width:calc(100% - 64px)}
 /* 폰: 줌 단추 대신 핀치, 「전체 보기」만 남긴다 */
@@ -344,7 +345,7 @@
 /* 범례 견본(데이터 램프라 그라데이션 허용) */
 .op-legend-fan::before{content:"";width:14px;height:10px;border-radius:0 var(--r-xs) var(--r-xs) 0;background:linear-gradient(90deg,var(--alert-4),color-mix(in srgb,var(--alert-3) 30%,transparent))}
 .op-legend-vil::before{content:"";width:10px;height:10px;border:var(--sp-half) solid var(--text-1);border-radius:var(--r-2xs);clip-path:polygon(50% 0,100% 40%,100% 100%,0 100%,0 40%)}
-.op-legend-heat::before{content:"";width:22px;height:6px;border-radius:var(--r-2xs);background:linear-gradient(90deg,var(--h2),var(--h4),var(--h6))}
+.op-legend-heat::before{content:"";width:22px;height:6px;border-radius:var(--r-2xs);background:linear-gradient(90deg,var(--mh1),var(--mh3),var(--mh6));box-shadow:0 0 0 2px var(--map-land)}
 
 /* ── 상세 ── */
 .op-dtop{padding:var(--sp-3) var(--sp-4);border-bottom:1px solid var(--line-soft)}

@@ -31,11 +31,29 @@ html[data-device="phone"] { --strip-h: calc(var(--hit) + var(--hair)); }
    tokens.css(생성물)는 고치지 않고 같은 이름을 그 뒤·층 밖에서 덮는다. 모든 MapLibre 지도(공통 지도·캘린더 점 지도·전 세계 재생)가 이 값을 읽는다.
    땅이 밝아져서 지도 위 글자는 어둡게, 글자 테두리(halo)는 흰색으로 뒤집는다. 값은 MapLibre 가 읽을 수 있게 hex/rgba 만 */
 :root {
-  --map-void: #0d3b66; --map-bg: #12497d; --map-mask: #0a2540;
   --map-sea: #B4DEF6; --map-land: #F5FEF4;
-  --map-shade-dark: #8c9aa8; --map-shade-light: #ffffff; --map-shade-accent: #dfe7ee;
-  --map-water: #4f9be0; --map-water-label: #1d5f9e; --map-road: #b9c0c8; --map-boundary: #8b97a5;
-  --map-label: #273444; --map-label-hi: #0b1724; --map-halo: #ffffff; --map-grid: rgba(255,255,255,.10);
+  --map-water: #4f9be0; --map-water-label: #1d5f9e;
+  --map-label: #273444; --map-label-hi: #0b1724; --map-halo: #ffffff;
+  /* 밝은 바탕 세부(F14, 2026-11-15 — 측정 C1–C4·H1–H6·M1–M5·B1–B14·LF-1–5·L1–L10 에 맞춰). 대비는 src/shared/lib/map-color.test.ts 가 이 파일을 읽어 잰다.
+     지도 칸 바탕·불러오는 중 덮개 = 바다색(남색 #0d3b66 이 밝은 지도로 바뀔 때 번쩍이던 것). 가림 = 바다 쪽 옅은 청회 — 가린 이웃 땅이 바다보다 밝게 남는다 */
+  --map-void: #B4DEF6; --map-bg: #B4DEF6; --map-mask: #b4cfdf;
+  /* 음영: 땅이 거의 흰색이라 밝은 쪽(#fff)은 효과가 작다 → 그림자를 옅은 따뜻한 회녹으로 낮춰 땅이 탁해지지 않게(#4 의 땅 색은 그대로) */
+  --map-shade-dark: #a3ab9c; --map-shade-light: #ffffff; --map-shade-accent: #e4ebe0;
+  --map-road: #8a939e; --map-boundary: #5d6b7a; --map-grid: rgba(13,59,102,.16);
+  /* 지도 강조(UI accent 와 분리 — accent 는 흰색이라 흰 땅에서 1.1:1): 고른 지역·관심 영역·그리기·고른 나라 · 지도 위 조작부 포커스 고리 */
+  --map-sel: #0d3b66; --map-focus: #0b1724;
+  /* 지도 위 데이터 잉크: 출동 경로 · 확산 예측 시간 · 소실 범위 · 센서 점(VIIRS/MODIS) · 작은 점 테두리 */
+  --map-route: #0b6e86; --map-warn-ink: #b4410c; --map-burn: #b3300f; --map-burn-sel: #8f1f12;
+  --map-viirs: #c4470f; --map-modis: #a86c00; --map-dot-edge: #0b1724;
+  /* 지도 감지량 램프(밝은 바탕용): 많을수록 진하게. mh0 은 0 근처 기준점(열 지도 투명 시작 · 가장 적은 칸 색)이고 mh0–mh6 모두 땅 대비 3:1 이상(분석 칸 지도 적은 값 2.1–2.9 이던 것).
+     캘린더 연×월 칸·분석 달력 칸은 어두운 셸 위라 --h0..h6(많을수록 밝게)을 그대로 쓴다 — 같은 뜻(「많음 = 바탕에서 가장 튐」)을 바탕 밝기에 맞춰 뒤집은 것 */
+  --mh0: #b87500; --mh1: #a86c00; --mh2: #c4470f; --mh3: #b3300f; --mh4: #8f1f12; --mh5: #6b150e; --mh6: #3f0b08;
+  /* 예측(lab) 지역 면 3단: 옅음 → 진함 = 낮음 → 높음 · 자료 부족 = 옅은 회색(+빗금) */
+  --map-lv-na: #d8dcd6; --map-lv-low: #f0d3a4; --map-lv-normal: #d98b4a; --map-lv-high: #a6461a;
+  /* 대륙 바로 가기 견본(감지량 램프와 겹치지 않는 청·녹·자 계열) */
+  --map-cont-na: #2f6fb5; --map-cont-sa: #2e8b57; --map-cont-eu: #6a4fb3; --map-cont-af: #0f8a8a; --map-cont-as: #8c3f8f; --map-cont-oc: #4a5b6e;
+  /* 지도 표지 고리: 흰 1px + 어두운 1px(흰 땅·밝은 바다 어디서나 경계가 남는다) */
+  --mk-halo: 0 0 0 1px var(--map-halo), 0 0 0 2px var(--map-label-hi);
 }
 
 /* 움직임 줄이기: 전역. 살아 있는 상태 표시(맥동)도 멈춘다 */
