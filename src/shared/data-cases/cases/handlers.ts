@@ -63,7 +63,7 @@ export class MissingCase extends BaseCase {
   }
 }
 
-/** E3: 값이 [value_lo, value_hi] 밖 → 값은 그대로, 구간을 버리고 플래그 */
+/** E3: 값이 [value_lo, value_hi] 밖 → 값은 그대로, 플래그만. 구간은 버리지 않고 값까지 넓힌다(F16 — registry 의 displayInterval) */
 export class IntervalOutCase extends BaseCase {
   readonly id = "interval_out";
   override readonly flag = true;
@@ -72,9 +72,6 @@ export class IntervalOutCase extends BaseCase {
     const lo = loOf(r);
     const hi = hiOf(r);
     return viewOf(c) === "value" && hasNum(r.value) && hasNum(lo) && hasNum(hi) && (r.value < lo || r.value > hi);
-  }
-  override apply(): CasePatch {
-    return { lo: null, hi: null };
   }
 }
 

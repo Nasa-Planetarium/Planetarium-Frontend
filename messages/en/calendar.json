@@ -41,7 +41,7 @@
    "zoom_out": "Zoom out"
   },
   "flag": {
-   "interval_out": "Outside interval · interval dropped"
+   "interval_out": "Outside interval · widened to value"
   },
   "k": {
    "interval": "Interval",
