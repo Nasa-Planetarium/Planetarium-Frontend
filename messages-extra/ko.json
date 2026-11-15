@@ -1,7 +1,7 @@
 {
  "_note": "목업 사전에 아직 없는 키만 둔다. 목업에 같은 키가 생기면 목업 값이 이긴다(src/shared/i18n/messages.ts). 쓰이는 키는 README 「사전」 절 참고.",
  "shell": {
-  "err": { "rate_limited": "요청이 많음 — 잠시 뒤 다시 시도" },
+  "err": { "range_too_large": "범위가 넓어 한 번에 받을 수 없음(서버 100 제곱도 이하) — 지역을 좁혀 주세요", "rate_limited": "요청이 많음 — 잠시 뒤 다시 시도" },
   "det": { "partial": "점 일부만 받음(조각 {n}/{m}) — 서버 요청 한도" },
   "map": { "cells_wide": "넓은 범위 — 월 감지량 1° 칸({p}, {n}칸). 확대하면 감지 점", "cells_wide_year": "넓은 범위 — {p}년 월 감지량 1° 칸 합({n}칸). 지역을 좁히면 감지 점", "cells_key": "월 감지량 1° 칸", "cells_month": "{m} 감지량 1° 칸", "real_n": "실제 {n}개" },
   "nav": {

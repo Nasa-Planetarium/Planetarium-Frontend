@@ -5,9 +5,9 @@ import { useLocale } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { boundaryQuery } from "@/entities/country";
 import { useCoarseCells, type CoarseAoi } from "@/entities/world-grid";
-import { ApiError } from "@/shared/api";
+import { ApiError, cellsTooMany, hotspotsTooWide } from "@/shared/api";
 import { useT } from "@/shared/i18n";
-import { boundaryApiQuery, cellsQuery, hotspotsMonthQuery, type CellsData } from "../api/queries";
+import { aoisQuery, boundaryApiQuery, cellsQuery, hotspotsMonthQuery, type CellsData } from "../api/queries";
 import type { CalView } from "../model/calendar";
 import { caseFor, cellCase, fmtNum, fmtVal, iso3OfAoi, monthIndex, ymIso } from "../model/calendar";
 import { Status } from "./bits";
@@ -27,16 +27,24 @@ export function CalMap(o: { aoi: string; aois?: CoarseAoi[] | null; y: number; m
   const lang = useLocale();
   const ym = ymIso(o.y, o.m);
   const world = o.aoi === "WORLD";
-  const cq0 = useQuery(cellsQuery(o.aoi, ym, o.mv, !world));
-  /* 칸 1만 개를 넘는 범위(대륙·큰 나라 — 실서버 400 range_too_large)는 정적 world-1deg 1° 묶음으로 */
-  const wide = cq0.error instanceof ApiError && cq0.error.code === "range_too_large";
+  /* 서버가 400 range_too_large 로 거절할 범위는 /aois 행(n_cells · level · bbox)으로 미리 가려 요청하지 않는다(브라우저 콘솔 400 없게).
+     목록을 받기 전에는 칸·점 요청을 미룬다 — 판정 없이 먼저 보냈다 거절당하던 것(2026-11-15 운영: USA·BRA /cells, JPN·USA·BRA /hotspots) */
+  const aq = useQuery(aoisQuery(o.mv));
+  const known = !aq.isPending;
+  const rec = (aq.data ?? []).find((a) => a.aoi_id === o.aoi) ?? null;
+  const cellsWide = cellsTooMany(rec);
+  const cq0 = useQuery(cellsQuery(o.aoi, ym, o.mv, !world && known && !cellsWide));
+  /* 칸 1만 개를 넘는 범위(대륙·큰 나라)는 정적 world-1deg 1° 묶음으로 — 미리 판정 · 판정 못 한 지역은 서버 400 을 받고(안전망) */
+  const wide = cellsWide || (cq0.error instanceof ApiError && cq0.error.code === "range_too_large");
   const co = useCoarseCells({ aoiId: o.aoi, aois: o.aois, y: o.y, m: o.m, on: wide });
-  const cq: { data: CellsData | undefined; error: unknown; isPending: boolean } = wide ? { data: (co.data ?? undefined) as CellsData | undefined, error: co.isError ? cq0.error : null, isPending: co.isPending } : cq0;
+  const wideErr = cq0.error ?? new ApiError(400, "range_too_large", null);
+  const cq: { data: CellsData | undefined; error: unknown; isPending: boolean } = wide ? { data: (co.data ?? undefined) as CellsData | undefined, error: co.isError ? wideErr : null, isPending: co.isPending } : cq0;
   const bq = useQuery(boundaryApiQuery(o.aoi, o.mv, !world));
   const iso3 = iso3OfAoi(o.aoi);
   const geoQ = useQuery({ ...boundaryQuery(iso3 ?? "KOR"), enabled: !world && bq.isError && !!iso3 && iso3 !== "KOR" });
   const sel = world ? null : caseFor(ym, o.aoi, o.inGb);
-  const hq = useQuery(hotspotsMonthQuery(o.aoi, ym, sel?.caseId ?? null, o.mv, !!sel));
+  const ptsWide = hotspotsTooWide(rec);
+  const hq = useQuery(hotspotsMonthQuery(o.aoi, ym, sel?.caseId ?? null, o.mv, !!sel && known && !ptsWide));
   const ramp = o.ramp;
   const rampAt = useMemo(() => (k: number) => ramp(K_T[k] ?? 1), [ramp]);
 
@@ -88,8 +96,8 @@ export function CalMap(o: { aoi: string; aois?: CoarseAoi[] | null; y: number; m
       </div>
     );
 
-  const tooLarge = hq.error instanceof ApiError && hq.error.code === "range_too_large";
-  const waiting = cq.isPending || bq.isPending || (!!sel && hq.isPending);
+  const tooLarge = ptsWide || (hq.error instanceof ApiError && hq.error.code === "range_too_large");
+  const waiting = cq.isPending || bq.isPending || (!!sel && !ptsWide && hq.isPending);
   const cellErr = cq.error instanceof ApiError ? cq.error : null;
   const size = cq.data?.properties?.cell_size_deg ?? 0.1;
   const st = cq.data?.properties?.month_status ?? "ok";

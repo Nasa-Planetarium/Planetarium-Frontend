@@ -2,11 +2,12 @@ import { queryOptions } from "@tanstack/react-query";
 import { api, unwrap } from "@/shared/api";
 import type { DemManifest, GeoCollection, Geom, MapRegion } from "../model/types";
 import { labelPoint } from "../lib/geo";
+import { hasLines } from "../lib/lines";
 
 /**
  * 바탕 자료 읽기(정적 파일 — 계약 API 아님). 파일이 없으면(404) null 로 받아 지도는 그 층 없이 그린다.
  *  - public/dem/manifest.json      지형 DEM 타일 목록(W0 바탕 자료). 없으면 음영 없음 + 출처 줄에 지형을 적지 않는다
- *  - public/geo/lines/<ISO3>.json  하천·도로 선(FeatureCollection, properties.kind = river|road, name, major?)
+ *  - public/geo/lines/<ISO3>.json  하천·도로 선(FeatureCollection, properties.kind = river|road, name, major?) — 파일이 있는 나라(lib/lines LINES_ISO3)만 요청한다
  */
 async function optionalJson<T>(url: string, signal?: AbortSignal): Promise<T | null> {
   const r = await fetch(url, { signal });
@@ -32,11 +33,11 @@ export const demManifestQuery = () =>
 export const linesQuery = (iso3: string) =>
   queryOptions({
     queryKey: ["static", "geo-lines", iso3] as const,
-    queryFn: ({ signal }) => optionalJson<GeoCollection>(`/geo/lines/${encodeURIComponent(iso3)}.json`, signal),
+    queryFn: ({ signal }) => (hasLines(iso3) ? optionalJson<GeoCollection>(`/geo/lines/${encodeURIComponent(iso3)}.json`, signal) : Promise.resolve(null)),
     staleTime: Infinity,
     gcTime: Infinity,
     retry: false,
-    enabled: !!iso3,
+    enabled: hasLines(iso3),
   });
 
 /* ── 경계 면 ── */

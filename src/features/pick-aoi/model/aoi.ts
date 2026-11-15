@@ -96,7 +96,7 @@ export function unionBbox(bs: (readonly number[] | null | undefined)[]): Bbox | 
 }
 /** 상자 넓이(제곱도) — 실서버 /hotspots 은 100 제곱도 이하만 낸다(잰 것 2026-11-15, 40101 range_too_large) */
 export const bboxArea = (b: readonly number[] | null | undefined) => (b && b.length === 4 ? ((b[2] as number) - (b[0] as number)) * ((b[3] as number) - (b[1] as number)) : Infinity);
-export const HOTSPOT_MAX_AREA = 100;
+export { HOTSPOT_MAX_AREA } from "@/shared/api"; // 한도 값은 shared/api/limits 한 곳(캘린더·분석 미리 판정과 같은 값)
 /** 실서버 /hotspots(layer=reference) 은 한 번에 92일 이하만 낸다(잰 것 2026-11-15) */
 export const HOTSPOT_MAX_DAYS = 92;
 
