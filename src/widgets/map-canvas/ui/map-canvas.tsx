@@ -285,7 +285,11 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
   useEffect(() => {
     if (!map || !dem) return;
     if (!map.getSource("dem")) {
-      const { source, layer } = demLayer(tokReader(), dem, location.origin);
+      const { source, layer, base } = demLayer(tokReader(), dem, location.origin);
+      if (base) {
+        map.addSource("dem-w", base.source);
+        map.addLayer(base.layer, "world-mask");
+      }
       map.addSource("dem", source);
       map.addLayer(layer, "world-mask");
     }
@@ -1137,9 +1141,13 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
   const demBox = dem?.bounds;
   const demInView = !!geo && (!demBox || (geo.b.getWest() < demBox[2] && geo.b.getEast() > demBox[0] && geo.b.getSouth() < demBox[3] && geo.b.getNorth() > demBox[1]));
   const attrVariants = useMemo(() => {
-    const kor = demOn && !!dem && demInView;
-    return { list: t(kor ? "shell.map.attr_kr" : "shell.map.attr_gl").split("|"), title: kor ? t("shell.map.attr_kr_full") : "Natural Earth v5.1.2 (public domain) · NASA FIRMS MODIS C6.1 · VIIRS 375 m" };
-  }, [demOn, dem, demInView, t]);
+    // 한국 고해상 겹은 목록 minzoom(5) 부터 그려진다 — 그 아래 확대나 한국 밖은 전 세계 바탕(base) 원천을 적는다
+    const kor = demOn && !!dem && demInView && (geo?.z ?? 0) >= (dem.minzoom ?? 5);
+    const wld = !kor && demOn && !!dem?.base;
+    const key = kor ? "attr_kr" : wld ? "attr_gl_dem" : "attr_gl";
+    const full = kor ? t("shell.map.attr_kr_full") : wld ? t("shell.map.attr_gl_dem_full") : "Natural Earth v5.1.2 (public domain) · NASA FIRMS MODIS C6.1 · VIIRS 375 m";
+    return { list: t(`shell.map.${key}`).split("|"), title: full };
+  }, [demOn, dem, demInView, geo?.z, t]);
   const scW = geo?.scale.px ?? 0;
   useEffect(() => {
     const at = attrEl.current;

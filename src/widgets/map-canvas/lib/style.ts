@@ -4,7 +4,7 @@ import { withAlpha } from "./geo";
 
 /**
  * 공통 지도 스타일(목업 map3d _styleKor · _styleGlobal 을 한 판으로).
- * 층 순서(아래 → 위): bg(바다) · land-world(다른 나라 육지) · land(지금 나라 육지, 나라 1급 면) · hs(지형 음영) · world-mask · world-line · mask · reg-hi · rivers · roads · reg-line · reg-hi-line ·
+ * 층 순서(아래 → 위): bg(바다) · land-world(다른 나라 육지) · land(지금 나라 육지, 나라 1급 면) · hs-w(전 세계 저해상 음영) · hs(한국 고해상 음영) · world-mask · world-line · mask · reg-hi · rivers-w · rivers · roads · reg-line · reg-hi-line ·
  *   burn-fill · burn-line · heat · hotdot · hotpx · hotpx-modis · aoi-fill · aoi-line · route-glow · route-dash · draft-fill · draft-line · draft-pt
  * 나라·자료와 무관하게 층 id 는 같다(화면이 setLayer 로 켜고 끈다). 음영은 DEM 목록(W0)이 있을 때만 addDem() 이 더한다.
  */
@@ -19,6 +19,8 @@ export function buildStyle(T: Tok, iso3: string, worldUrl: string): StyleSpecifi
     sources[s] = empty();
   });
   sources.world = { type: "geojson", data: worldUrl };
+  // 전 세계 하천(Natural Earth 10m) — 남한 안쪽만 있는 선(kr)은 나라 상세 선(lines)이 맡아 뺀다
+  sources["rivers-w"] = { type: "geojson", data: worldUrl.replace(/world\.json$/, "rivers-world.json") };
   const bw = parseFloat(T("map-boundary-w")) || 1.1;
   const layers: LayerSpecification[] = [
     { id: "bg", type: "background", paint: { "background-color": T("map-sea") } },
@@ -32,6 +34,19 @@ export function buildStyle(T: Tok, iso3: string, worldUrl: string): StyleSpecifi
     { id: "mask", type: "fill", source: "mask", paint: { "fill-color": T("map-mask"), "fill-opacity": 0.5 } },
     { id: "reg-hit", type: "fill", source: "regions", paint: { "fill-color": "#000", "fill-opacity": 0 } },
     { id: "reg-hi", type: "fill", source: "regions", filter: ["in", ["get", "id"], ["literal", []]], paint: { "fill-color": T("accent"), "fill-opacity": 0.13 } },
+    {
+      id: "rivers-w",
+      type: "line",
+      source: "rivers-w",
+      filter: ["!", ["get", "kr"]],
+      layout: { "line-join": "round", "line-cap": "round" },
+      paint: {
+        "line-color": T("map-water"),
+        // 큰 강(rank 낮음)부터: 저확대엔 rank 5 이하만, 확대할수록 작은 강
+        "line-opacity": ["interpolate", ["linear"], ["zoom"], 2, ["case", ["<=", ["get", "rank"], 5], 0.55, 0], 5, ["case", ["<=", ["get", "rank"], 8], 0.7, 0.35], 8, 0.75, 13.5, 0.25],
+        "line-width": ["interpolate", ["linear"], ["zoom"], 2, ["case", ["<=", ["get", "rank"], 3], 0.8, 0.4], 6, ["case", ["<=", ["get", "rank"], 5], 1.4, 0.7], 10, ["case", ["<=", ["get", "rank"], 5], 2.6, 1.4]],
+      },
+    },
     {
       id: "rivers",
       type: "line",
@@ -96,28 +111,40 @@ export function buildStyle(T: Tok, iso3: string, worldUrl: string): StyleSpecifi
  * 목록 경로는 사이트 뿌리 기준이라 앞에 origin 을 붙인다.
  */
 export function demLayer(T: Tok, dem: DemManifest, origin: string) {
-  const url = /^https?:/.test(dem.tiles) ? dem.tiles : `${origin}/${dem.tiles.replace(/^\//, "")}`;
-  const source = { type: "raster-dem" as const, tiles: [url], encoding: dem.encoding ?? "terrarium", tileSize: dem.tileSize ?? 512, minzoom: dem.minzoom ?? 5, maxzoom: dem.maxzoom ?? 11, ...(dem.bounds ? { bounds: dem.bounds } : {}) };
-  const layer: LayerSpecification = {
-    id: "hs",
+  const abs = (t: string) => (/^https?:/.test(t) ? t : `${origin}/${t.replace(/^\//, "")}`);
+  const source = { type: "raster-dem" as const, tiles: [abs(dem.tiles)], encoding: dem.encoding ?? "terrarium", tileSize: dem.tileSize ?? 512, minzoom: dem.minzoom ?? 5, maxzoom: dem.maxzoom ?? 11, ...(dem.bounds ? { bounds: dem.bounds } : {}) };
+  const layer = hsLayer(T, "hs", "dem", ["interpolate", ["linear"], ["zoom"], 5, 0.25, 9, 0.32, 12, 0.5, 13.5, 0.36, 14.5, 0.24]);
+  // 전 세계 저해상 바탕(목록 base): 고해상 겹 아래. 한국 칸은 바탕 z5 타일에서 0 으로 눌러 두 겹이 되지 않는다
+  const b = dem.base;
+  const base = b
+    ? {
+        source: { type: "raster-dem" as const, tiles: [abs(b.tiles)], encoding: b.encoding ?? "terrarium", tileSize: b.tileSize ?? 512, minzoom: b.minzoom ?? 0, maxzoom: b.maxzoom ?? 5 },
+        layer: hsLayer(T, "hs-w", "dem-w", ["interpolate", ["linear"], ["zoom"], 1, 0.4, 5, 0.3, 9, 0.32, 12, 0.4, 14.5, 0.24]),
+      }
+    : null;
+  return { source, layer, base };
+}
+
+function hsLayer(T: Tok, id: string, source: string, exaggeration: unknown[]): LayerSpecification {
+  return {
+    id,
     type: "hillshade",
-    source: "dem",
+    source,
     paint: {
       "hillshade-shadow-color": T("map-shade-dark"),
       "hillshade-highlight-color": T("map-shade-light"),
       "hillshade-accent-color": T("map-shade-accent"),
-      "hillshade-exaggeration": ["interpolate", ["linear"], ["zoom"], 5, 0.25, 9, 0.32, 12, 0.5, 13.5, 0.36, 14.5, 0.24],
+      "hillshade-exaggeration": exaggeration as never,
       "hillshade-illumination-direction": 315,
     },
   };
-  return { source, layer };
 }
 
 /** 레이어 열쇠 → 스타일 층 id(목업 _sync vis). 처리기 표 — switch 금지(결정 E4) */
 export const LAYER_IDS: Record<string, (dens: boolean) => [string, boolean][]> = {
-  relief: () => [["hs", true]],
+  relief: () => [["hs", true], ["hs-w", true]],
   boundaries: () => [["reg-line", true]],
-  rivers: () => [["rivers", true]],
+  rivers: () => [["rivers", true], ["rivers-w", true]],
   roads: () => [["roads", true]],
   heat: (dens) => [["heat", dens], ["hotdot", !dens]],
   hotspots: () => [["hotpx", true], ["hotpx-modis", true]],

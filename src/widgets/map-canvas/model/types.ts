@@ -90,6 +90,8 @@ export interface DemManifest {
   minzoom?: number;
   maxzoom?: number;
   bounds?: Bbox;
+  /** 전 세계 저해상 바탕 DEM(있으면 그 아래 겹으로) — 위 고해상 목록은 bounds 안 높은 확대에서 덮는다 */
+  base?: { tiles: string; encoding?: "terrarium" | "mapbox"; tileSize?: number; minzoom?: number; maxzoom?: number };
 }
 
 /* GeoJSON 최소 모양(@types/geojson 에 기대지 않는다 — 좌표는 [경도, 위도]) */

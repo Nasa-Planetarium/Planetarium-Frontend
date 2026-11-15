@@ -291,6 +291,8 @@
   "logout": "로그아웃",
   "map": {
    "attr_gl": "경계 Natural Earth · NASA FIRMS|Natural Earth · NASA FIRMS|© Natural Earth",
+   "attr_gl_dem": "지형 Mapzen Terrain · 하천·경계 Natural Earth · NASA FIRMS|Mapzen Terrain · Natural Earth · FIRMS|© Mapzen · Natural Earth",
+   "attr_gl_dem_full": "지형 Mapzen Terrain Tiles(AWS Open Data, z0–5 전 세계): Mapzen · ETOPO1 NOAA · GMTED2010·SRTM·3DEP courtesy of the U.S. Geological Survey · EU-DEM Copernicus · ArcticDEM 외 각국 기관 · 하천·경계 Natural Earth v5(public domain) · NASA FIRMS MODIS C6.1 · VIIRS 375 m",
    "attr_kr": "지형 Copernicus GLO-30 · 경계 © OSM|Copernicus GLO-30 · © OSM|© Copernicus · OSM|© Copernicus·OSM",
    "attr_kr_full": "지형 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA (GLO-30, 한국 전역) · 경계·하천·도로 © OpenStreetMap contributors",
    "crew": "{n}명",
