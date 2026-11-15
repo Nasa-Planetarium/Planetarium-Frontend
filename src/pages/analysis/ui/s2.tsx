@@ -91,8 +91,9 @@ export function S2({ x }: { x: Ctx }) {
             </button>
           </div>
         ) : null}
+        {/* QA 2026-11-15: [근거·보고] → [데이터 내보내기] — 누르면 3단계(근거·보고: 인쇄·CSV 내보내기)로 */}
         <button type="button" className={cx("btn primary an-vgo")} data-s3="" onClick={() => x.go(3)}>
-          {T("g3.to_s3")}
+          {T("qx.export")}
         </button>
       </div>
       <div className={cx("an-s2out")}>
@@ -103,12 +104,16 @@ export function S2({ x }: { x: Ctx }) {
           </div>
         ) : (
           <>
-            {/* 칸 지도를 맨 위에(QA 2026-11-15: 지역을 정해 비교 분석하면 지도를 먼저 보여 준다) */}
-            <CellPanel x={x} />
-            <div className={cx("an-grid")}>
+            {/* 맨 위 줄 = 칸 지도 | 연도×월 캘린더 나란히(QA 2026-11-15: 지도를 먼저, 캘린더를 바로 옆에). 연도별 값은 그 아래 한 줄 전체 */}
+            <div className={cx("an-grid an-top")}>
+              <div className={cx("an-gl")}>
+                <CellPanel x={x} />
+              </div>
               <div className={cx("an-gl")}>
                 <CalPanel x={x} onPick={pick} />
               </div>
+            </div>
+            <div className={cx("an-grid an-detrow")}>
               <section className={cx("panel an-det")} aria-busy={x.stale || undefined}>
                 <div className={cx("panel-h")}>
                   <h3>
