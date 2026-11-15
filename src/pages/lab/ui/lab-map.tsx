@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { GeoJSONSource, Map as MlMap, MapLayerMouseEvent } from "maplibre-gl";
-import { useCountry, type CountryInfo } from "@/entities/country";
+import { useQuery } from "@tanstack/react-query";
+import { boundaryQuery, useCountry, type CountryInfo } from "@/entities/country";
 import { MapCanvas, type Bbox, type Geom, type MapCanvasHandle, type MapRegion } from "@/widgets/map-canvas";
 import { CLS_TOK, clsOf, lvOf } from "../model/outlook";
 import type { LabCtx } from "./lab-page";
@@ -16,6 +17,8 @@ const fc = (features: unknown[]) => ({ type: "FeatureCollection" as const, featu
  * 지역별 전망 지도 — 공통 지도(widgets/map-canvas · 목업 map3d) 바탕(지형 음영·하천·경계·눈금) 위에 목업 lab.js 몫:
  * 지역 면 단계 채움(lb-fc — 표 「수준」과 같은 3단 --lv-low·normal·high, 자료 부족 = --hatch-bg) · 선택 강조(--cosmo-star) ·
  * 면 위 표지(이름 + 예측 중앙값). 경계를 못 받은 지역은 중심 원으로 대신한다.
+ * 한국 밖: 전망 스냅숏(outlook.json)에 1급 지역 예측이 없어(나라 단위만 — 잰 것 2026-11-15) 지역 원이 모두 「자료 부족」 빗금이었다 →
+ * 나라 1급 면 전체를 나라 전망 수준(권역 예측 = 표 머리 값)으로 칠하고, 빈 원은 그리지 않는다(지역 값은 표가 「부족」으로 말한다).
  */
 export function LabMap(c: LabCtx) {
   const { FC, F, T_, kor, regions, sel, select, rowOf, fitBbox } = c;
@@ -24,6 +27,8 @@ export function LabMap(c: LabCtx) {
   const [frame, setFrame] = useState(0);
   const tok = useTok();
   const { iso3, info } = useCountry();
+  const bnd = useQuery({ ...boundaryQuery(iso3), enabled: !kor }).data as { geometry?: { features?: { geometry: unknown }[] } } | undefined;
+  const ctryFaces = useMemo(() => (kor ? [] : (bnd?.geometry?.features ?? []).filter((f) => !!f.geometry)), [kor, bnd]);
   const selRef = useRef(select);
   useEffect(() => {
     selRef.current = select;
@@ -72,7 +77,13 @@ export function LabMap(c: LabCtx) {
   useEffect(() => {
     if (!map || !tok) return;
     const r0 = kor ? (regions.length > 12 ? 15 : 22) : 7;
-    const colorOf = (id: string) => tok[CLS_TOK[clsOf(rowOf(id))] as keyof typeof tok] || tok["hatch-bg"];
+    const colorOf = (id: string | null) => tok[CLS_TOK[clsOf(rowOf(id))] as keyof typeof tok] || tok["hatch-bg"];
+    if (!kor && ctryFaces.length && clsOf(rowOf(null)) > 0) {
+      const c = colorOf(null);
+      (map.getSource("lb-face") as GeoJSONSource | undefined)?.setData(fc(ctryFaces.map((f) => ({ type: "Feature", properties: { id: "all", c, on: 0 }, geometry: f.geometry }))) as GeoData);
+      (map.getSource("lb-reg") as GeoJSONSource | undefined)?.setData(fc([]) as GeoData);
+      return;
+    }
     (map.getSource("lb-face") as GeoJSONSource | undefined)?.setData(
       fc(
         regions
@@ -90,7 +101,7 @@ export function LabMap(c: LabCtx) {
           .map((r) => ({ type: "Feature", properties: { id: r.id, c: colorOf(r.id), r: r0, on: sel === r.id ? 1 : 0 }, geometry: { type: "Point", coordinates: [r.lon, r.lat] } })),
       ) as GeoData,
     );
-  }, [map, tok, regions, rowOf, sel, kor]);
+  }, [map, tok, regions, rowOf, sel, kor, ctryFaces]);
 
   /* 공통 지도의 경계 선(점선) · 고른 지역 강조 = 같은 면 */
   const mapRegions: MapRegion[] = useMemo(

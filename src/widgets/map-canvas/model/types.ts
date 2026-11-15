@@ -24,6 +24,14 @@ export interface MapHotspot {
 }
 
 /** 불(원장 목 또는 실제) — 표지 문법은 목업 EM.fireMarkOf 그대로 */
+/** 월 감지량 칸(실제 /cells 0.1° 또는 정적 world-1deg 1° 묶음) — 중심 위경도 · 칸 크기(도) · 값(보정 지표) */
+export interface MapCell {
+  lat: number;
+  lon: number;
+  size: number;
+  value: number;
+}
+
 export interface MapFire {
   id: string;
   lat: number;
@@ -68,9 +76,9 @@ export interface MapRegion {
   geometry: Geom | null;
 }
 
-export type LayerKey = "relief" | "boundaries" | "labels" | "rivers" | "roads" | "heat" | "hotspots" | "fires" | "units" | "routes" | "burns" | "aoi";
+export type LayerKey = "relief" | "boundaries" | "labels" | "rivers" | "roads" | "cells" | "heat" | "hotspots" | "fires" | "units" | "routes" | "burns" | "aoi";
 export type Layers = Record<LayerKey, boolean>;
-export const DEFAULT_LAYERS: Layers = { relief: true, boundaries: true, labels: true, rivers: true, roads: true, heat: true, hotspots: true, fires: true, units: true, routes: true, burns: true, aoi: true };
+export const DEFAULT_LAYERS: Layers = { relief: true, boundaries: true, labels: true, rivers: true, roads: true, cells: true, heat: true, hotspots: true, fires: true, units: true, routes: true, burns: true, aoi: true };
 
 export type ToolKey = "layers" | "bbox" | "polygon" | "point";
 

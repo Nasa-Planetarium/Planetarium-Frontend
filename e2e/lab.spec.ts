@@ -20,11 +20,12 @@ test("예측 분석: 권역 예측·시군 표·고르기·보정 검증", async
   const rows = root.locator("[data-ft] tbody tr");
   await expect(rows).toHaveCount(17);
   await expect(root.locator("[data-aoi-pick]")).toContainText("대한민국");
-  await expect(root.locator('[data-testid="lab-map"]')).toBeVisible();
+  // 지도 칸이 다 뜬 뒤(불러오는 중 덮개 MapLoading 도 aria-live 라 그 전에는 읽기 줄이 둘로 잡힌다)
+  await expect(root.locator('[data-testid="lab-map"][data-ready="1"]')).toBeVisible({ timeout: 30000 });
   /* 17행이면 표가 스크롤되어 첫 행이 고정 머리 밑에 걸린다 — 행 누름 이벤트만 보낸다(동작 같음) */
   await rows.first().dispatchEvent("click");
   await expect(rows.first()).toHaveAttribute("data-r", /.+/);
-  await expect(root.locator('[data-testid="lab-map"] [aria-live="polite"]')).toContainText("80%");
+  await expect(root.locator('[data-testid="lab-map"] [aria-live="polite"]:not([data-map-loading])')).toContainText("80%");
   await expect(root.locator("table").filter({ hasText: "m2v_xgb" })).toContainText("42.1");
 });
 

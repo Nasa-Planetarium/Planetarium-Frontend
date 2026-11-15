@@ -23,7 +23,7 @@ export function OpsDet({ iso3, info }: { iso3: string; info: CountryInfo | undef
       testId="ops-det"
       regions={regs}
       renderMap={(m) => (
-        <MapCanvas className={cx("map")} testId="ops-det-map" iso3={iso3} view={m.view} regions={regs ?? []} hotspots={m.hotspots} layers={{ units: false, routes: false, fires: false, heat: false }} status={m.status} />
+        <MapCanvas className={cx("map")} testId="ops-det-map" iso3={iso3} view={m.view} regions={regs ?? []} hotspots={m.hotspots} cells={m.cells} cellsKey={m.cellsLabel} layers={{ units: false, routes: false, fires: false }} status={m.status} />
       )}
     />
   );

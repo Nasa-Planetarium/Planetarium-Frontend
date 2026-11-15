@@ -9,6 +9,8 @@ export function moveBounds(v: Bbox | null | undefined): [[number, number], [numb
   const sx = v[2] - v[0];
   const sy = v[3] - v[1];
   if (!(sx > 0 && sy > 0) || sx >= 300) return null;
+  // 날짜 변경선을 넘는 나라(미국 172°–293°): ±180 으로 자르면 서쪽 끝(캄차카)에 갇힌다 → 묶지 않는다
+  if (v[0] < -180 || v[2] > 180) return null;
   const dx = Math.max(sx * 0.15, sy * 0.6, 4);
   const dy = Math.max(sy * 0.15, sx * 0.6, 4);
   return [

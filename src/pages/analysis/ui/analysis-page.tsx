@@ -106,6 +106,8 @@ function AnalysisScreen() {
 
   const kq = useQuery(comparisonQuery(aoi ?? "KR", ym || "2000-01", mv, !!aoi && !blocked));
   const c = !blocked && kq.data ? kq.data : null;
+  /* 달을 바꾸면 새 응답이 올 때까지 앞 달 값을 그대로 둔다(빈 화면으로 갔다 오지 않게) — 표시는 은은하게만 */
+  const stale = !!c && kq.isPlaceholderData;
 
   const writeQ = useCallback(
     (patch: Record<string, string | null>, push = false, country?: string) => {
@@ -149,7 +151,7 @@ function AnalysisScreen() {
   const rule = M?.verdict_rule ?? null;
   const base = { from: rule?.baseline?.from ?? rule?.baseline_from ?? 2001, to: rule?.baseline?.to ?? rule?.baseline_to ?? 2025 };
   const fail = kq.error ?? cq.error ?? aq.error ?? mq.error;
-  const errWord = fail ? W(fail instanceof ApiError && fail.code === "data_not_loaded" ? "err.data_not_loaded" : "err.network") : null;
+  const errWord = fail ? W(fail instanceof ApiError && (fail.code === "data_not_loaded" || fail.code === "rate_limited") ? `err.${fail.code}` : "err.network") : null;
   const ready = !!aq.data && (!aoi || !!cal || !!cq.error) && (step === 1 || !!c || !!kq.error);
 
   /* em.an.v3: 주소에 분석 키가 없으면(메뉴로 들어옴) 지난 작업(단계·지역·달·보기)을 주소로 되살린다 — 한 번만 */
@@ -172,7 +174,7 @@ function AnalysisScreen() {
     prefs.set("an.v3", JSON.stringify({ step, aoi, year: qy, month: month ?? null, view }));
   }, [ready, aoi, step, qy, month, view]);
 
-  const ctx: Ctx = { t, T, W, lang, nf, device, aoi: aoi ?? "", rec, cal, c, M, view, y: qy, m: month ?? qm, base, aoiName, writeQ, go, errWord, has };
+  const ctx: Ctx = { t, T, W, lang, nf, device, aoi: aoi ?? "", rec, cal, c, stale, M, view, y: qy, m: month ?? qm, base, aoiName, writeQ, go, errWord, has };
 
   const counts: { key: string; label: string; value: string; unit?: string }[] = [];
   if (step > 1 && c && c.value != null) {
@@ -184,7 +186,7 @@ function AnalysisScreen() {
 
   return (
     <div className="min-h-full min-w-0" data-page="analysis">
-      <div className={cx("an")} data-testid="analysis" data-step={step} data-ready={ready ? "1" : "0"} data-aoi={aoi ?? ""} data-ym={ym} data-view={view}>
+      <div className={cx("an")} data-testid="analysis" data-step={step} data-ready={ready ? "1" : "0"} data-aoi={aoi ?? ""} data-ym={ym} data-view={view} data-busy={stale ? "1" : undefined}>
         <header className={cx("pghd an-head")}>
           <div className={cx("ph-1")}>
             <h1 tabIndex={-1} ref={h1}>

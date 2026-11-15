@@ -28,7 +28,12 @@ const problemMiddleware: Middleware = {
     } catch {
       problem = null;
     }
-    throw new ApiError(response.status, problem?.code ?? "internal", problem);
+    /* Retry-After = 초(정수) 또는 HTTP 날짜. 없으면 본문 「retry after N s」 */
+    const ra = response.headers.get("Retry-After");
+    const raN = ra == null ? NaN : /^\d+$/.test(ra.trim()) ? Number(ra) : (Date.parse(ra) - Date.now()) / 1000;
+    const raB = Number(/retry after (\d+)\s*s/i.exec(problem?.detail ?? "")?.[1] ?? NaN);
+    const retryAfter = Number.isFinite(raN) ? Math.max(0, raN) : Number.isFinite(raB) ? raB : null;
+    throw new ApiError(response.status, problem?.code ?? "internal", problem, undefined, retryAfter);
   },
   async onError({ error }) {
     return new ApiError(0, "network", null, error instanceof Error ? error.message : String(error));

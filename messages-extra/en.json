@@ -1,7 +1,9 @@
 {
  "_note": "Keys the mockup dictionary does not have yet. Mockup values win when the same key appears (src/shared/i18n/messages.ts).",
  "shell": {
+  "err": { "rate_limited": "Too many requests — try again shortly" },
   "det": { "partial": "Partial points ({n}/{m} tiles) — server rate limit" },
+  "map": { "cells_wide": "Wide area — monthly detections, 1° cells ({p}, {n} cells). Zoom in for points", "cells_wide_year": "Wide area — {p} monthly detections summed, 1° cells ({n} cells). Narrow the region for points", "cells_key": "Monthly detections, 1° cells", "cells_month": "{m} detections, 1° cells", "real_n": "{n} real" },
   "nav": {
    "calendar": { "label": "Calendar", "short": "Calendar" },
    "method": { "label": "Method & validation", "short": "Method" }
