@@ -64,6 +64,8 @@ function fmtCompact(lang: string, n: number | null | undefined) {
   if (a < 1000) return a < 10 && !Number.isInteger(+n) ? fmtNum(lang, n, 1) : fmtNum(lang, Math.round(n));
   return intl(lang, "c", { notation: "compact", maximumFractionDigits: 1 }).format(Number(n));
 }
+/* 지운 지도(remove 뒤)를 쓰지 않게 — 개발 중 핫 리로드 때 effect 가 지운 지도로 한 번 더 돌아 getSource 오류로 화면이 깨지던 것 */
+const alive = (m: MlMap | null): m is MlMap => !!m && !(m as unknown as { _removed?: boolean })._removed;
 const tok = (name: string) => (typeof window === "undefined" ? "" : getComputedStyle(document.documentElement).getPropertyValue(`--${name}`).trim());
 
 /**
@@ -233,7 +235,7 @@ export function WorldReplay(o: WorldReplayProps) {
   const mlLib = useRef<typeof import("maplibre-gl") | null>(null);
   useEffect(() => {
     const lib = mlLib.current;
-    if (!map || !lib) return;
+    if (!alive(map) || !lib) return;
     const marks = MAP_LABELS.map((l) => {
       const el = document.createElement("span");
       el.className = (l.kind === "sea" ? lbl.sea : lbl.land) ?? "";
@@ -291,8 +293,11 @@ export function WorldReplay(o: WorldReplayProps) {
             { id: "bg", type: "background", paint: { "background-color": tok("map-sea") } },
             { id: "land", type: "fill", source: "land", paint: { "fill-color": tok("map-land") } },
             { id: "wf", type: "raster", source: "wf", paint: { "raster-resampling": "linear", "raster-fade-duration": 0, "raster-opacity": 0.95 } },
+            /* 고른 나라 강조(QA 2026-11-15) — 데이터를 가리지 않게: 고른 나라는 칠하지 않고 연회색 얇은 테두리(sel-line)만,
+               나머지 나라는 #F9F9F9 막(45%)으로 흐리게(포커스). 나라를 안 골랐으면 막 없음(filter 가 아무것도 안 맞음) */
+            { id: "dim", type: "fill", source: "land", filter: ["==", ["get", "iso3"], "\u0000"], paint: { "fill-color": "#F9F9F9", "fill-opacity": 0.45 } },
             { id: "line", type: "line", source: "land", paint: { "line-color": tok("map-boundary"), "line-opacity": 0.32, "line-width": 0.6 } },
-            { id: "sel", type: "line", source: "land", filter: ["==", ["get", "iso3"], ""], paint: { "line-color": tok("accent"), "line-width": 1.6 } },
+            { id: "sel-line", type: "line", source: "land", filter: ["==", ["get", "iso3"], ""], paint: { "line-color": "#c4c4c4", "line-width": 1.2 } },
           ],
         },
       });
@@ -355,7 +360,7 @@ export function WorldReplay(o: WorldReplayProps) {
       ctx.drawImage(landMask, 0, 0);
       ctx.globalCompositeOperation = "source-over";
     }
-    if (map) {
+    if (alive(map)) {
       const src = map.getSource("wf") as CanvasSource | undefined;
       if (src) {
         src.play();
@@ -368,8 +373,9 @@ export function WorldReplay(o: WorldReplayProps) {
 
   /* 고른 나라 테두리 + 확대 (나라를 안 골랐으면 고른 대륙, 그것도 없으면 전 세계) */
   useEffect(() => {
-    if (!map) return;
-    map.setFilter("sel", ["==", ["get", "iso3"], sel ?? ""]);
+    if (!alive(map)) return;
+    map.setFilter("sel-line", ["==", ["get", "iso3"], sel ?? ""]);
+    map.setFilter("dim", sel ? ["!=", ["get", "iso3"], sel] : ["==", ["get", "iso3"], "\u0000"]);
     if (!sel) {
       const c = CONTINENTS.find((x) => x.id === cont);
       if (c) map.fitBounds([[c.box[0], c.box[1]], [c.box[2], c.box[3]]], { padding: 24, duration: 600 });
@@ -377,7 +383,14 @@ export function WorldReplay(o: WorldReplayProps) {
       return;
     }
     const b = countries.find((c) => c.iso3 === sel)?.bbox;
-    if (b) map.fitBounds([[b[0] as number, Math.max(-58, b[1] as number)], [b[2] as number, Math.min(78, b[3] as number)]], { padding: 24, maxZoom: 5, duration: 600 });
+    if (b) {
+      /* 나라 상자는 날짜 변경선을 넘으면 경도가 180 을 넘게 적혀 있다(미국 172 → 293). 세계 복사본을 그리지 않는 지도라 더 넓은 쪽만 남긴다
+         (QA 2026-11-15: 미국을 고르면 러시아·아시아 쪽으로 가던 것) */
+      let w = b[0] as number;
+      let e = b[2] as number;
+      if (e > 180) [w, e] = e - 180 > 180 - w ? [Math.max(-180, w - 360), e - 360] : [w, 180];
+      map.fitBounds([[w, Math.max(-58, b[1] as number)], [e, Math.min(78, b[3] as number)]], { padding: 24, maxZoom: 5, duration: 600 });
+    }
   }, [map, sel, countries, cont]);
 
   /* 위도 5° 띠 × 달 */
