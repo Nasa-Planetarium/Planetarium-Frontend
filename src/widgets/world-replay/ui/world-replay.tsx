@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ComponentType } from "react";
-import type { CanvasSource, Map as MlMap } from "maplibre-gl";
+import type { GeoJSONSource, Map as MlMap } from "maplibre-gl";
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
 import { useLocale } from "next-intl";
 import { ChevronRight, Play, Square, X } from "lucide-react";
@@ -10,7 +10,7 @@ import { aoiIndexQuery } from "@/features/pick-aoi";
 import { worldGridQuery, type LatBand, type WorldMeta } from "@/entities/world-grid";
 import { useT } from "@/shared/i18n";
 import { aoiOfIso3 } from "@/shared/lib/adm0";
-import { boxBounds, contTok, radiusPx, stepOf, stepOfCell, useStepColors } from "@/shared/lib/display";
+import { boxBounds, CELL_OPACITY, contTok, radiusExpr, stepColorExpr, stepOf, stepOfCell, useStepColors } from "@/shared/lib/display";
 import { MapKey, MapLoading } from "@/shared/ui";
 import cj from "./continent-jump.module.css";
 import lbl from "./map-labels.module.css";
@@ -129,8 +129,6 @@ const yOf = (lat: number) => Math.round((MY0 - merc(Math.max(LAT_S, Math.min(LAT
 const NM = 313;
 const SPEEDS = [1, 2, 4];
 const VS_CLS: Record<string, string> = { modis_m2v_terra: "as", modis_m2v: "as", snpp_observed: "va", n20_bridge: "af" };
-/* 캔버스(가로 1440px = 360°)가 화면에 1:1 로 보이는 줌 — 칸 원 크기는 이 줌에서 R5 규칙(radiusPx)으로 정한다(캔버스는 확대하면 같이 커진다) */
-const Z_CANVAS = Math.log2(CW / 512);
 const ymS = (i: number) => {
   const [y, m] = ymOfIndex(i);
   return ymIso(y, m);
@@ -146,6 +144,8 @@ interface Prep {
   off: number[];
   bx: Int16Array;
   by0: Int16Array;
+  /** 칸 남쪽 위도(°) */
+  la: Int16Array;
   dq: Float32Array;
 }
 function prep(meta: WorldMeta, buf: ArrayBuffer, band: LatBand): Prep {
@@ -157,16 +157,18 @@ function prep(meta: WorldMeta, buf: ArrayBuffer, band: LatBand): Prep {
   meta.counts.forEach((c, k) => off.push((off[k] as number) + c));
   const bx = new Int16Array(n);
   const by0 = new Int16Array(n);
+  const las = new Int16Array(n);
   for (let k = 0; k < n; k++) {
     const g = act[k] as number;
     const la = Math.floor(g / 360) - 90;
     const lo = (g % 360) - 180;
     bx[k] = (lo + 180) * PXD + PXD / 2;
     by0[k] = yOf(la + 0.5);
+    las[k] = la;
   }
   const dq = new Float32Array(256);
   for (let q = 1; q < 256; q++) dq[q] = Math.exp(meta.quant.lnmin + ((q - 1) / 254) * (meta.quant.lnmax - meta.quant.lnmin));
-  return { meta, band, n, bpm, u8, off, bx, by0, dq };
+  return { meta, band, n, bpm, u8, off, bx, by0, la: las, dq };
 }
 
 export interface WorldReplayProps {
@@ -211,13 +213,6 @@ export function WorldReplay(o: WorldReplayProps) {
   useEffect(() => {
     pickRef.current = pick;
   }, [pick]);
-  const cv = useMemo(() => {
-    if (typeof document === "undefined") return null;
-    const c = document.createElement("canvas");
-    c.width = CW;
-    c.height = CH;
-    return c;
-  }, []);
   const mapEl = useRef<HTMLDivElement>(null);
   const lbEl = useRef<HTMLCanvasElement>(null);
   const lbBase = useRef<ImageData | null>(null);
@@ -263,6 +258,43 @@ export function WorldReplay(o: WorldReplayProps) {
       dead = true;
     };
   }, []);
+  /* 칸마다 점 자리 [경도, 위도](NaN = 그리지 않음) — PR #27: 칸 중심이 육지면 중심, 바다면 칸 안 육지 화소의 평균 자리, 육지가 없으면 뺀다 */
+  const pos = useMemo(() => {
+    if (!D) return null;
+    const lon = new Float32Array(D.n);
+    const lat = new Float32Array(D.n);
+    const img = landMask?.getContext("2d")?.getImageData(0, 0, CW, CH).data ?? null;
+    const land = (x: number, y: number) => !img || ((img[(y * CW + x) * 4 + 3] as number) > 0);
+    const latOfY = (y: number) => Math.atan(Math.sinh(MY0 - y / PXR)) * (180 / Math.PI);
+    for (let k = 0; k < D.n; k++) {
+      const la = D.la[k] as number;
+      const x0 = (D.bx[k] as number) - PXD / 2;
+      lon[k] = NaN;
+      lat[k] = NaN;
+      if (la + 0.5 > LAT_N || la + 0.5 < LAT_S) continue;
+      if (land(x0 + PXD / 2, D.by0[k] as number)) {
+        lon[k] = x0 / PXD - 180 + 0.5;
+        lat[k] = la + 0.5;
+        continue;
+      }
+      const yT = Math.max(0, yOf(la + 1));
+      const yB = Math.min(CH, yOf(la));
+      let sx = 0;
+      let sy = 0;
+      let c = 0;
+      for (let y = yT; y < yB; y++)
+        for (let x = x0; x < x0 + PXD; x++)
+          if (land(x, y)) {
+            sx += x + 0.5;
+            sy += y + 0.5;
+            c++;
+          }
+      if (!c) continue;
+      lon[k] = sx / c / PXD - 180;
+      lat[k] = latOfY(sy / c);
+    }
+    return { lon, lat };
+  }, [D, landMask]);
   const mlLib = useRef<typeof import("maplibre-gl") | null>(null);
   useEffect(() => {
     const lib = mlLib.current;
@@ -295,7 +327,6 @@ export function WorldReplay(o: WorldReplayProps) {
 
   /* 지도 */
   useEffect(() => {
-    if (!cv) return;
     let dead = false;
     let made: MlMap | null = null;
     let ro: ResizeObserver | null = null;
@@ -322,12 +353,20 @@ export function WorldReplay(o: WorldReplayProps) {
           sources: {
             land: { type: "geojson", data: "/geo/world.json" },
             /* canvas 원천은 스타일 명세 타입에 없지만 MapLibre 가 실행 때 받는다(목업 worldgrid.js 와 같음) */
-            wf: { type: "canvas", canvas: cv, animate: false, coordinates: [[-180, LAT_N], [180, LAT_N], [180, LAT_S], [-180, LAT_S]] } as never,
+            /* 화재 점(PR #27): 지도 벡터 원 — 어느 확대에서도 또렷하다 */
+            wf: { type: "geojson", data: { type: "FeatureCollection", features: [] } },
           },
           layers: [
             { id: "bg", type: "background", paint: { "background-color": tok("map-sea") } },
             { id: "land", type: "fill", source: "land", paint: { "fill-color": tok("map-land") } },
-            { id: "wf", type: "raster", source: "wf", paint: { "raster-resampling": "linear", "raster-fade-duration": 0, "raster-opacity": 0.95 } },
+            /* 표시 규칙서 R3–R5: 단계 k = 0.1° 칸당(1° 합 ÷ 100) 5단계 · 색 5색 · 반지름 = 화면 px 규칙(단계별 최소·최대) · 불투명도 0.85 · 센 칸이 위 */
+            {
+              id: "wf",
+              type: "circle",
+              source: "wf",
+              layout: { "circle-sort-key": ["get", "k"] },
+              paint: { "circle-radius": radiusExpr(1) as never, "circle-color": stepColorExpr(colors) as never, "circle-opacity": CELL_OPACITY },
+            },
             /* 고른 나라 강조(QA 2026-11-15) — 데이터를 가리지 않게: 고른 나라는 칠하지 않고 연회색 얇은 테두리(sel-line)만,
                나머지 나라는 #F9F9F9 막(45%)으로 흐리게(포커스). 나라를 안 골랐으면 막 없음(filter 가 아무것도 안 맞음) */
             { id: "dim", type: "fill", source: "land", filter: ["==", ["get", "iso3"], "\u0000"], paint: { "fill-color": "#F9F9F9", "fill-opacity": 0.45 } },
@@ -366,14 +405,20 @@ export function WorldReplay(o: WorldReplayProps) {
       /* 지운 지도를 다른 effect 가 계속 쓰지 않게(개발 중 핫 리로드 때 getSource 오류) */
       setMap(null);
     };
-  }, [cv]);
+    // 지도는 한 번만 만든다 — 색이 바뀌면 아래 effect 가 setPaintProperty 로 바꾼다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  /* 한 달 그리기 → 캔버스 원천 갱신 */
+  /* 테마가 바뀌면 점 색만 바꾼다 */
   useEffect(() => {
-    if (!D || !cv) return;
-    const ctx = cv.getContext("2d");
-    if (!ctx) return;
-    ctx.clearRect(0, 0, CW, CH);
+    if (!alive(map)) return;
+    map.setPaintProperty("wf", "circle-color", stepColorExpr(colors) as never);
+  }, [map, colors]);
+
+  /* 한 달 그리기 → 점 원천 갱신(k = 단계 0–4) */
+  useEffect(() => {
+    if (!D || !pos) return;
+    const feats: { type: "Feature"; geometry: { type: "Point"; coordinates: [number, number] }; properties: { k: number } }[] = [];
     const bm = D.n * 2 + i * D.bpm;
     let p = D.off[i] as number;
     for (let k = 0; k < D.n; k++) {
@@ -381,31 +426,13 @@ export function WorldReplay(o: WorldReplayProps) {
       const v = D.dq[D.u8[p++] as number] as number;
       const st = stepOfCell(v, 1);
       if (st == null) continue;
-      const y = D.by0[k] as number;
-      if (y < -3 || y > CH + 3) continue;
-      ctx.fillStyle = colors[st] as string;
-      ctx.globalAlpha = 0.85;
-      ctx.beginPath();
-      ctx.arc(D.bx[k] as number, y, radiusPx(st, 1, Z_CANVAS), 0, 6.2832);
-      ctx.fill();
+      const lo = pos.lon[k] as number;
+      if (Number.isNaN(lo)) continue;
+      feats.push({ type: "Feature", geometry: { type: "Point", coordinates: [lo, pos.lat[k] as number] }, properties: { k: st } });
     }
-    ctx.globalAlpha = 1;
-    /* 바다로 넘친 부분 지우기: 육지 가림판과 겹친 곳만 남긴다 */
-    if (landMask) {
-      ctx.globalCompositeOperation = "destination-in";
-      ctx.drawImage(landMask, 0, 0);
-      ctx.globalCompositeOperation = "source-over";
-    }
-    if (alive(map)) {
-      const src = map.getSource("wf") as CanvasSource | undefined;
-      if (src) {
-        src.play();
-        map.triggerRepaint();
-        map.once("render", () => (map.getSource("wf") as CanvasSource | undefined)?.pause());
-      }
-    }
+    if (alive(map)) (map.getSource("wf") as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: feats });
     onMonth.current?.(i);
-  }, [D, cv, i, colors, map, landMask]);
+  }, [D, pos, i, map]);
 
   /* 고른 나라 테두리 + 확대 (나라를 안 골랐으면 고른 대륙, 그것도 없으면 전 세계) */
   const boxes = useMemo(() => continentBoxes(countries), [countries]);
