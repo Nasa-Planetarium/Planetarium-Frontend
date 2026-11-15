@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { useCountry } from "@/entities/country";
 import { useCoarseCells } from "@/entities/world-grid";
-import { ApiError } from "@/shared/api";
+import { ApiError, cellsTooMany } from "@/shared/api";
 import { API_BASE, DATA_MODE } from "@/shared/config";
 import { aoisQuery, cellsQuery, monthPointsQuery, summaryQuery, type CellsData } from "../api/queries";
 import {
@@ -705,17 +705,20 @@ function CellPanel({ x }: { x: Ctx }) {
   const ramp = useRamp();
   const ym = ymIso(y, m);
   const mv = x.M?.method_version ?? null;
-  const q0 = useQuery(cellsQuery(x.aoi, ym, mv, true));
+  /* 칸 1만 개를 넘는 지역(/aois n_cells · level)은 /cells 를 보내지 않고 바로 1° 묶음으로 — 보냈다 400 을 받으면 콘솔 오류가 남았다(2026-11-15 운영 USA·BRA).
+     목록을 받기 전에는 /cells 를 미룬다. 목록에 없거나 값이 빈 지역은 전처럼 보내 보고 400 이면 넘어간다(안전망) */
+  const aq = useQuery(aoisQuery(mv));
+  const cellsWide = cellsTooMany((aq.data ?? []).find((a) => a.aoi_id === x.aoi));
+  const q0 = useQuery(cellsQuery(x.aoi, ym, mv, !aq.isPending && !cellsWide));
   /* 넓은 범위(400 range_too_large → 1° 묶음) 판정은 지역마다 하나 — 달이 바뀌어 새 응답을 기다리는 동안 앞 판정을 그대로 써서
      「…」 빈 판으로 갔다 오지 않게(2026-11-15 깜빡임). 응답이 오면(성공·오류) 그 판정으로 바꾼다 */
-  const wideNow = q0.error instanceof ApiError && q0.error.code === "range_too_large";
-  const settled = (q0.isError || q0.isSuccess) && !q0.isPlaceholderData;
+  const wideNow = cellsWide || (q0.error instanceof ApiError && q0.error.code === "range_too_large");
+  const settled = cellsWide || ((q0.isError || q0.isSuccess) && !q0.isPlaceholderData);
   const [wideSt, setWideSt] = useState<{ a: string; w: boolean } | null>(null);
   if (settled && (wideSt?.a !== x.aoi || wideSt.w !== wideNow)) setWideSt({ a: x.aoi, w: wideNow });
   const wide = settled ? wideNow : wideSt?.a === x.aoi ? wideSt.w : false;
-  const aq = useQuery(aoisQuery(mv));
   const co = useCoarseCells({ aoiId: x.aoi, aois: aq.data, y, m, on: wide });
-  const q: { data: CellsData | undefined; error: unknown; isPending: boolean } = wide ? { data: (co.data ?? undefined) as CellsData | undefined, error: co.isError ? q0.error : null, isPending: co.isPending } : q0;
+  const q: { data: CellsData | undefined; error: unknown; isPending: boolean } = wide ? { data: (co.data ?? undefined) as CellsData | undefined, error: co.isError ? (q0.error ?? new ApiError(400, "range_too_large", null)) : null, isPending: co.isPending } : q0;
   const [box, wid] = useWidth(640);
   /* 바탕 땅(나라 1급 · 세계 윤곽) — 고른 지역 1급(시군구면 부모 1급) 테두리 강조 */
   const { list: countries } = useCountry();

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ChevronLeft, Download, FileText } from "lucide-react";
-import { api } from "@/shared/api";
+import { api, hotspotsTooWide } from "@/shared/api";
 import { toast } from "@/shared/ui/toast";
 import { LIM_BASE, RESULT_COLS, calendarCSV, isoD, lastDay, monthRec, safeName, toCSV, trDefault } from "../model/analysis";
 import { ymIso } from "../model/core";
@@ -21,6 +21,8 @@ export function S3({ x }: { x: Ctx }) {
   const { T, W, c, M, cal, rec, y, m } = x;
   const [rawNote, setRawNote] = useState<string | null>(null);
   const rawOk = !(M?.files && M.files.hotspots === false);
+  /* 100 제곱도 넘는 지역은 서버가 /hotspots 를 400 range_too_large 로 거절한다 → 누르기 전에 막고 까닭을 적는다(요청·콘솔 오류 없음) */
+  const rawWide = rawOk && hotspotsTooWide(rec);
   const name = x.aoiName(rec);
   const sy = cal?.months.find((r) => r.status !== "out_of_range")?.year ?? 2000;
   const ey = [...(cal?.months ?? [])].reverse().find((r) => r.status !== "out_of_range")?.year ?? 2026;
@@ -113,10 +115,10 @@ export function S3({ x }: { x: Ctx }) {
               </span>
               <FileText className={cx("ic ic-btn")} aria-hidden="true" />
             </button>
-            <button type="button" className={cx("an-xb sub")} data-raw="" disabled={!rawOk} aria-disabled={!rawOk || undefined} onClick={() => void rawCSV()}>
+            <button type="button" className={cx("an-xb sub")} data-raw="" disabled={!rawOk || rawWide} aria-disabled={!rawOk || rawWide || undefined} onClick={() => void rawCSV()}>
               <span>
                 <b>{T("g3.raw_csv")}</b>
-                <small>{rawNote ?? (rawOk ? `${ymIso(y, m)} · ${T("g3.cols_n", { n: HOT_COLS })}` : T("g3.raw_none"))}</small>
+                <small>{rawNote ?? (rawWide ? W("err.range_too_large") : rawOk ? `${ymIso(y, m)} · ${T("g3.cols_n", { n: HOT_COLS })}` : T("g3.raw_none"))}</small>
               </span>
               <Download className={cx("ic ic-btn")} aria-hidden="true" />
             </button>
