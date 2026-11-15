@@ -14,7 +14,7 @@ import { Button, Icon } from "@/shared/ui";
 import { Dialog } from "@/shared/ui/dialog";
 
 /**
- * 계정 메뉴 — 목업 openWho 그대로: 역할 · 나라 · 위험지수(한국) · 기상(한국) · 시각(현지 · UTC) · 언어 · 시각 표시 · 역할 바꾸기 · 로그아웃.
+ * 계정 메뉴 — 목업 openWho 그대로: 역할 · 나라 · 산불 기상 위험도 FWI(한국·아르헨티나, 결정 F15 — 예전 목 위험지수 자리) · 기상(한국) · 시각(현지 · UTC) · 언어 · 시각 표시 · 역할 바꾸기 · 로그아웃.
  * 비로그인(웹 밖 기기)에서는 같은 창이 「설정」: 언어 · 시각 + [로그인].
  * 다음 위성 통과·다른 나라 「최근 달」 배수는 머리줄이 센 값을 그대로 받는다(머리줄 칸과 같은 값 — 목업 g5 수리).
  */
@@ -28,6 +28,7 @@ export function AccountDialog({
   onSwitchLang,
   pass,
   anom,
+  fwi,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -41,6 +42,8 @@ export function AccountDialog({
   pass?: { sat: string; ms: number } | null;
   /** 다른 나라: 최근 완결 달 배수·판정·달(머리줄 칸과 같은 release 값) */
   anom?: { ratio: number | null; verdict: string | null; ym: string } | null;
+  /** 한국·아르헨티나(기관 역할): 산불 기상 위험도 FWI — 머리줄 칸과 같은 release 값(fwi_aoi_day 마지막 날). 없으면 null */
+  fwi?: { value: number | null; rel: string | null; abs: string | null; asOf: string; none: boolean } | null;
 }) {
   const t = useT();
   const tl = useTl();
@@ -119,12 +122,18 @@ export function AccountDialog({
               {countryName(country, locale, "KOR")}
             </>,
           )}
-          {KOR && sit
+          {/* 예전 목 「위험 지수」 자리 = 실제 FWI(결정 F15) */}
+          {fwi
             ? fact(
-                t("shell.top.risk"),
-                <>
-                  <span className="mono">{sit.risk_index.value}</span> {t(`shell.risk.${sit.risk_index.level}`)}
-                </>,
+                t("shell.fwi.label"),
+                fwi.none ? (
+                  <span data-who-fwi="none">{t("shell.fwi.none")}</span>
+                ) : (
+                  <span data-who-fwi={fwi.rel ?? ""}>
+                    <span className="mono">{fwi.value != null ? fwi.value.toFixed(1) : "–"}</span> {fwi.rel ? t(`shell.fwi.rel.${fwi.rel}`) : "–"}
+                    {fwi.abs ? ` · ${t("shell.fwi.abs_k")} ${t(`shell.fwi.abs.${fwi.abs}`)}` : ""} · {fwi.asOf}
+                  </span>
+                ),
               )
             : null}
           {!KOR

@@ -237,6 +237,7 @@
 .cl-flag{color:var(--warn);font-size:var(--fs-2)}
 .cl-same{margin-top:var(--sp-4);border-top:var(--hair) solid var(--line-soft);padding-top:var(--sp-3)}
 .cl-same h3{font-size:var(--fs-3);font-weight:var(--fw-strong);margin:0 0 var(--sp-2)}
+.cl-v12{display:grid;gap:var(--sp-3);margin-top:var(--sp-4);border-top:var(--hair) solid var(--line-soft);padding-top:var(--sp-3);min-width:0}
 .cl-dist svg{display:block;width:100%;height:auto}
 .cl-dleg{display:flex;flex-wrap:wrap;gap:var(--sp-1) var(--sp-4);font-size:var(--fs-2);color:var(--text-2);margin-top:var(--sp-1)}
 .cl-dleg span{display:inline-flex;align-items:center;gap:var(--sp-2)}
@@ -348,6 +349,10 @@
 .cl-dmz .iconbtn svg{width:var(--ic-map);height:var(--ic-map)}
 /* 목업 index.html 의 옛 크기 별칭(셸 tokens.css 에 없음) — 이 화면 안에서만 */
 .cl,.cpick{--fs-5:var(--fs-page);--fs-num-l:var(--fs-count)}
+/* 고른 달 화재 사건(F15) */
+.cl-ev{margin-top:var(--sp-4);border-top:var(--hair) solid var(--line-soft);padding-top:var(--sp-3)}
+
+:global(html:is([data-device="tablet"],[data-device="foldable"])) .cl-det>.panel-b>.cl-v12{grid-column:1 / -1}
 
 /* 전 세계 재생 아래 조작(프런트 UI/UX 2026-11-15) — 재생 단추·고른 배속·지나온 구간 = 주황→산호 포인트 그라데이션(--grad-flame) */
 .wf-bar .wf-play{border:0;border-radius:var(--r-m);background:var(--grad-flame);color:#fff;box-shadow:var(--glow-flame);transition:transform var(--dur-fast) var(--ease-out),filter var(--dur-fast) var(--ease-out)}

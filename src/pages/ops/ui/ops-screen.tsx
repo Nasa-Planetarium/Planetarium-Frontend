@@ -77,7 +77,7 @@ interface Ui {
   pick: string[];
   evac: boolean;
   more: boolean;
-  layers: { heat: boolean; spread: boolean; units: boolean; routes: boolean };
+  layers: { heat: boolean; spread: boolean; units: boolean; routes: boolean; nowcast: boolean };
 }
 
 function useFmt() {
@@ -117,7 +117,7 @@ export function OpsScreen({ role }: { role: Role }) {
   );
   const M = useMemo(() => (base ? merge(base, w) : null), [base, w]);
   const ready = !!M && !!situation;
-  const [ui, setUi] = useState<Ui>({ sel: null, cnt: null, level: null, pick: [], evac: false, more: false, layers: { heat: true, spread: true, units: true, routes: true } });
+  const [ui, setUi] = useState<Ui>({ sel: null, cnt: null, level: null, pick: [], evac: false, more: false, layers: { heat: true, spread: true, units: true, routes: true, nowcast: true } });
   const [confirmOpen, setConfirmOpen] = useState(false);
   /* 1100–1360 접힌 레일에서 펼친 수신함 서랍(목업 .op-open) · 출동 직후 지도 맞춤(목업 showTrips) */
   const [drawer, setDrawer] = useState(false);

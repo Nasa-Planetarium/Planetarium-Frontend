@@ -11,6 +11,7 @@ import { ApiError } from "@/shared/api";
 import { hotspotsQuery } from "../api/queries";
 import { dayCount, last12, prevRange, rangeTxt, YDAY } from "../model/home";
 import { cx } from "./cx";
+import { HomeEvents } from "./home-events";
 import { RETRY_429, YoyKpis } from "./home-yoy";
 import { useClock, type Ctx } from "./home-page";
 import { Spark } from "./charts";
@@ -28,6 +29,7 @@ export function HomeSide(c: Ctx) {
   return (
     <aside className={cx("panel hm-side")} aria-label={c.t("home.short_label.situation_panel")}>
       <Kpi {...c} />
+      <HomeEvents {...c} />
       {phone ? null : <Feed {...c} />}
     </aside>
   );

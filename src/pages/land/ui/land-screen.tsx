@@ -6,11 +6,14 @@ import { useLocale } from "next-intl";
 import { ArrowDown, Check, ChevronLeft, Download, Layers, Send, Table } from "lucide-react";
 import { useSituation } from "@/entities/situation";
 import { lastPass } from "@/entities/satellite-pass";
+import { BURN_WINDOW, fireEventsQuery } from "@/entities/fire-event";
+import { methodQuery } from "@/entities/release";
 import { useAgency } from "@/shared/agency";
 import { useT, useTl, type TFn } from "@/shared/i18n";
 import { useDevice } from "@/shared/lib/use-device";
 import { toast } from "@/shared/ui/toast";
 import { downloadText } from "@/shared/ui/download";
+import { EventCard, EventRows, evState, stateText } from "@/widgets/fire-events";
 import {
   allOf,
   firstPick,
@@ -96,7 +99,18 @@ export function LandScreen() {
   const nowTs = situation ? ledgerTs(situation.now_ms, KST_MIN) : "2026-11-11 14:20";
   const today = nowTs.slice(0, 10);
   const L = lists(burned, metas, ui);
-  const sel = burned.find((f) => f.id === ui.sel) ?? null;
+  /*
+   * 실제 화재 사건(F15 fire_events): 「위성 확인 연소」 목록 — 2016~2025(연소 면적 자료가 있는 해 중 계약 기간 한도 안) 연소 면적 큰 순.
+   * 기관 목(불·필지·복구 단계·처리 이력)은 그대로 둔다(F13): 필지·단계는 기관 고유 칸이라 실제 값이 없다.
+   * 위성 확인 연소 면적(하한)은 기관 산정 피해 면적과 정의가 다르다(MCD64A1 하한, 공식 면적의 약 64%) → 목 값을 덮지 않고 따로 보인다.
+   */
+  const mv = useQuery(methodQuery()).data?.method_version ?? null;
+  const evQ = useQuery(fireEventsQuery({ aoi_id: "KR", ...BURN_WINDOW, sort: "burned_area_km2", limit: 20 }, mv));
+  const evSt = evState(evQ);
+  const events = useMemo(() => evQ.data?.events ?? [], [evQ.data]);
+  const [evSel, setEvSel] = useState<string | null>(null);
+  const evE = events.find((e) => e.event_id === evSel) ?? null;
+  const sel = evE ? null : (burned.find((f) => f.id === ui.sel) ?? null);
 
   /* 처음 선택(목업 start): 화면이 스스로 고른 것이라 읽음 처리·판 이동 없음 */
   useEffect(() => {
@@ -137,6 +151,7 @@ export function LandScreen() {
 
   /* 사람이 고름: 읽음(새로 들어옴 해제) + 한 자리 골격은 상세로 */
   const select = (id: string) => {
+    setEvSel(null);
     set((s) => ({ ...s, sel: id, settled: s.settled.includes(id) ? s.settled : [...s.settled, id], pane: "detail" }));
   };
 
@@ -176,11 +191,17 @@ export function LandScreen() {
     toast({ text: <b>{fname(f)}</b>, sub: t("land.log.moved", { stage: t(STAGE_LABEL[nx] ?? STAGE_LABEL[3]) }), kind: "ok", ms: 3500 });
   };
 
+  const pickEvent = (id: string) => {
+    setEvSel(id);
+    set((s) => ({ ...s, pane: "detail" }));
+  };
+
   /* 폰 판 이동 규칙(목업 renderPane) */
   const phone = device === "phone";
   let pane = ui.pane;
   if (pane === "parcels" && !phone) pane = "detail";
-  if (pane === "detail" && !sel) pane = "list";
+  if (pane === "parcels" && evE) pane = "detail";
+  if (pane === "detail" && !sel && !evE) pane = "list";
   const back: [LandUi["pane"], string] | null = pane === "detail" ? ["list", t("land.render_pane.list")] : pane === "parcels" ? ["detail", t("land.render_pane.details")] : null;
 
   if (!ready) return <div className={cx("ld")} data-pane="list" aria-busy="true" />;
@@ -235,16 +256,24 @@ export function LandScreen() {
           className="ld-map"
           fires={allOf(L)}
           metas={metas}
-          selId={ui.sel}
+          selId={evE ? null : ui.sel}
           layers={ui.layers}
           onSelect={(id) => select(id)}
           onLayer={(k, v) => set((s) => ({ ...s, layers: { ...s.layers, [k]: v } }))}
           areaLabel={areaTxt}
           placeLabel={placeTxt}
           pngName={`burn_${sel ? sel.id : "map"}.png`}
+          events={events}
+          evSel={evSel}
+          onEvent={pickEvent}
         />
         <div className={cx("panel ld-parcels")}>
-          {sel ? (
+          {evE ? (
+            <div className={cx("ld-empty")}>
+              <Table aria-hidden="true" />
+              <b>{t("events.land.no_parcels")}</b>
+            </div>
+          ) : sel ? (
             <Parcels
               f={sel}
               meta={metas[sel.id]}
@@ -309,10 +338,28 @@ export function LandScreen() {
                 </section>
               );
             })}
+            {/* 실제 위성 확인 연소(F15) — 단계 거르기(개수 띠)를 고르면 숨긴다 */}
+            {ui.cnt ? null : (
+              <section className={cx("ld-grp")} aria-label={t("events.land.head")} data-testid="land-events" data-state={evSt}>
+                <h2 className={cx("ld-gh")}>{t("events.land.head")}</h2>
+                {evSt === "ok" ? (
+                  <>
+                    <p className={cx("ld-none")}>{t("events.land.sub")}</p>
+                    <EventRows events={events} selId={evSel} onPick={(e) => pickEvent(e.event_id)} testId="land-ev-rows" />
+                  </>
+                ) : (
+                  <p className={cx("ld-none")}>{stateText(evSt, t)}</p>
+                )}
+              </section>
+            )}
           </div>
         </aside>
         <aside className={cx("panel ld-detail")} aria-label={t("land.pick_place.selected_fire_details")}>
-          {sel ? (
+          {evE ? (
+            <div className={cx("ld-evd")}>
+              <EventCard e={evE} />
+            </div>
+          ) : sel ? (
             <Detail
               f={sel}
               meta={metas[sel.id]}

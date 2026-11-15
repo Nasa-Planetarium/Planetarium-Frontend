@@ -438,7 +438,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 .an-vsent{margin:0 0 var(--sp-2);font-size:var(--fs-4);line-height:1.45;color:var(--text-1)}
 .an-vsent b{font-weight:600}
 .an-calp .panel-h{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3)}
-.an-trend,.an-stepp{border-top:var(--hair) solid var(--seam);min-width:0}
+.an-trend,.an-stepp,.an-regp{border-top:var(--hair) solid var(--seam);min-width:0}
 .an-trend .panel-h,.an-stepp .panel-h{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);flex-wrap:wrap}
 .an-trc{display:flex;align-items:flex-end;gap:var(--sp-3) var(--sp-4);flex-wrap:wrap;min-width:0}
 .an-trl{display:flex;flex-direction:column;gap:var(--sp-1);font-size:var(--fs-2);color:var(--text-2)}
@@ -459,7 +459,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 :global(html[data-device="phone"]) .an-trx{margin-left:0}
 :global(html[data-device="phone"]) .an-trl{flex:1 1 40%}
 :global(html[data-device="phone"]) .an-trl input{width:100%}
-@media print{.an-trend,.an-stepp{display:none}}
+@media print{.an-trend,.an-stepp,.an-regp{display:none}}
 .an-stepp .seg,.an-trend .panel-h .seg{flex-wrap:nowrap}
 
 
@@ -591,6 +591,8 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 .an-firmsd{color:var(--text-3)}
 :global(html[data-touch="1"]) .an-lyr{height:var(--hit)}
 .an-trr{color:var(--text-3)}
+/* 고른 달 화재 사건(F15) */
+.an-ev{margin-top:var(--sp-4);padding-top:var(--sp-3);border-top:var(--hair) solid var(--line-soft)}
 
 /* 전 세계 재생 아래 조작(프런트 UI/UX 2026-11-15) — 재생 단추·고른 배속·지나온 구간 = 주황→산호 포인트 그라데이션(--grad-flame) */
 .wf-bar .wf-play{border:0;border-radius:var(--r-m);background:var(--grad-flame);color:#fff;box-shadow:var(--glow-flame);transition:transform var(--dur-fast) var(--ease-out),filter var(--dur-fast) var(--ease-out)}
