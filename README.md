@@ -93,6 +93,7 @@ node scripts/check-pages-out.mjs --mode http   # 빌드 결과가 Pages 한도 �
   — `wrangler.toml` 을 두면 그 파일이 프로젝트 설정을 덮으므로 그때는 `[[services]] binding = "API"` · `service = "emberline-api"` 를 꼭 넣는다.
 - `GET`·`HEAD` 만 넘긴다. 그 밖 메서드 → 405 problem+json(`method_not_allowed`). `/api/v1/` 밖 → 404(`not_found`).
   계약의 `POST /summary-queries` 는 화면이 부르지 않아 막혀 있다 — 화면이 부르게 되면 이 파일을 같이 고친다.
+  예외 하나: `POST /api/v1/forecast`(FireOutlook Planner 30일 전망, F17)만 POST 를 넘긴다 — Content-Type `application/json` 아니면 415, 본문 > 64 KB 면 413(백엔드 안 부름), 그 경로의 GET 은 405 `Allow: POST`. 속도 제한은 프록시에 없다(백엔드·Cloudflare 규칙 몫).
 - 요청 헤더는 `Accept`·`Accept-Language`·`If-None-Match`·`If-Modified-Since` 만 넘긴다. **쿠키·Authorization 은 넘기지 않는다.**
 - 응답은 상태·본문·헤더(Cache-Control·ETag·X-Method-Version 등) 그대로, `Set-Cookie` 와 hop-by-hop 헤더만 뺀다.
 - 바인딩도 `API_ORIGIN` 도 없거나, 백엔드에 닿지 못하면(바인딩 호출이 던짐·연결 실패·20초 넘김) 502 problem+json(`upstream_error`, `Cache-Control: no-store`).

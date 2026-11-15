@@ -8,6 +8,9 @@
  * 규칙
  *  - `/api/v1/` 밖(`/api/x` 등) → 404 problem+json(not_found)
  *  - GET · HEAD 만. 그 밖 메서드 → 405 problem+json(method_not_allowed) + Allow 헤더
+ *    예외 하나: `POST /api/v1/forecast`(FireOutlook Planner 30일 전망, F17 — 읽기 전용 계산)만 POST 를 넘긴다(그 경로는 POST 만, Allow: POST).
+ *      Content-Type 이 application/json 이 아니면 415, 본문 > FORECAST_MAX_BODY(64 KB)면 413 — 백엔드를 부르지 않는다.
+ *      본문은 읽어서 바이트 그대로 넘기고 Content-Type: application/json 만 붙인다. 속도 제한은 여기 없다(백엔드·Cloudflare 규칙 몫).
  *    (계약의 POST /summary-queries 는 화면이 부르지 않는다 — 부르게 되면 여기와 README 를 같이 고친다)
  *  - 요청 헤더는 REQUEST_HEADERS 만 넘긴다. 쿠키·Authorization·CF-* 는 넘기지 않는다.
  *  - 접속자 IP 는 `X-Client-IP`(Cloudflare 가 붙인 CF-Connecting-IP 값)로 넘긴다. 백엔드가 이 값을 믿을지는 백엔드 몫이다
@@ -31,6 +34,10 @@ interface Ctx {
 
 const PREFIX = "/api/v1/";
 const ALLOWED_METHODS = ["GET", "HEAD"];
+/** POST 를 받는 경로(정확히 이 경로만, 끝 / 허용) → 그 경로가 받는 메서드 */
+const POST_ROUTES: Record<string, string[]> = { "/api/v1/forecast": ["POST"] };
+/** POST /forecast 본문 상한(계약 openapi POST /forecast 「본문 ≤ 64 KB」) */
+export const FORECAST_MAX_BODY = 64 * 1024;
 const TIMEOUT_MS = 20_000;
 /** 서비스 바인딩으로 보낼 때 쓰는 자리표시 출처 — 바인딩은 호스트를 보지 않고 경로·쿼리만 쓴다 */
 const BINDING_ORIGIN = "https://emberline-api.internal";
@@ -69,6 +76,31 @@ function problem(status: number, code: string, errorNo: number, title: string, i
   });
 }
 
+/** 본문을 상한까지만 읽는다 — 넘으면 null(Content-Length 를 믿지 않고 실제 바이트로 잰다) */
+async function readCapped(request: Request, max: number): Promise<ArrayBuffer | null> {
+  if (!request.body) return new ArrayBuffer(0);
+  const reader = request.body.getReader();
+  const parts: Uint8Array[] = [];
+  let n = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    n += value.byteLength;
+    if (n > max) {
+      await reader.cancel();
+      return null;
+    }
+    parts.push(value);
+  }
+  const out = new Uint8Array(n);
+  let o = 0;
+  for (const part of parts) {
+    out.set(part, o);
+    o += part.byteLength;
+  }
+  return out.buffer;
+}
+
 /** API_ORIGIN → 출처(https://host[:port])만. 경로가 붙어 있어도 버린다. 틀리면 null */
 export function parseOrigin(raw: string | undefined): string | null {
   const v = (raw ?? "").trim();
@@ -87,8 +119,19 @@ export const onRequest = async ({ request, env }: Ctx): Promise<Response> => {
   const instance = url.pathname;
 
   if (!url.pathname.startsWith(PREFIX)) return problem(404, "not_found", 10401, "Not found", instance);
-  if (!ALLOWED_METHODS.includes(request.method)) {
-    return problem(405, "method_not_allowed", 10002, "Method not allowed", instance, { Allow: ALLOWED_METHODS.join(", ") });
+  const allowed = POST_ROUTES[url.pathname.replace(/\/$/, "")] ?? ALLOWED_METHODS;
+  if (!allowed.includes(request.method)) {
+    return problem(405, "method_not_allowed", 10002, "Method not allowed", instance, { Allow: allowed.join(", ") });
+  }
+  let body: ArrayBuffer | undefined;
+  if (request.method === "POST") {
+    const ct = (request.headers.get("content-type") ?? "").split(";")[0]!.trim().toLowerCase();
+    if (ct !== "application/json") return problem(415, "invalid_param", 10004, "Unsupported media type", instance);
+    const declared = Number(request.headers.get("content-length") ?? NaN);
+    if (Number.isFinite(declared) && declared > FORECAST_MAX_BODY) return problem(413, "range_too_large", 10102, "Body too large", instance);
+    const read = await readCapped(request, FORECAST_MAX_BODY);
+    if (read === null) return problem(413, "range_too_large", 10102, "Body too large", instance);
+    body = read;
   }
 
   const origin = env.API ? BINDING_ORIGIN : parseOrigin(env.API_ORIGIN);
@@ -100,6 +143,7 @@ export const onRequest = async ({ request, env }: Ctx): Promise<Response> => {
     const v = request.headers.get(h);
     if (v) headers.set(h, v);
   }
+  if (body) headers.set("Content-Type", "application/json");
   const clientIp = request.headers.get("cf-connecting-ip");
   if (clientIp) headers.set("X-Client-IP", clientIp);
   headers.set("X-Forwarded-Proto", url.protocol.replace(":", ""));
@@ -112,6 +156,7 @@ export const onRequest = async ({ request, env }: Ctx): Promise<Response> => {
     upstream = await send(target.toString(), {
       method: request.method,
       headers,
+      body,
       redirect: "manual",
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });

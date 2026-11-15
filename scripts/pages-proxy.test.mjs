@@ -3,7 +3,7 @@
  * 실제 Pages 런타임 확인은 `npx wrangler pages dev out`(README 「배포」).
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { onRequest, parseOrigin } from "../functions/api/[[path]].ts";
+import { FORECAST_MAX_BODY, onRequest, parseOrigin } from "../functions/api/[[path]].ts";
 
 const ENV = { API_ORIGIN: "https://api.example/ignored-path" };
 const req = (path, init = {}) => new Request(`https://web.example${path}`, init);
@@ -188,5 +188,91 @@ describe("Pages API 프록시 — 서비스 바인딩 API", () => {
     const r = await onRequest({ request: req("/api/v1/aois"), env: { API: undefined } });
     expect(r.status).toBe(502);
     expect((await r.json()).title).toBe("Upstream not configured");
+  });
+});
+
+describe("Pages API 프록시 — POST 는 /api/v1/forecast 만 (F17)", () => {
+  const json = (body, extra = {}) => ({ method: "POST", body, headers: { "Content-Type": "application/json", ...extra } });
+
+  it("POST /forecast 는 본문 그대로 + Content-Type application/json 으로 넘긴다(API_ORIGIN·바인딩 둘 다)", async () => {
+    const seen = [];
+    vi.stubGlobal("fetch", async (url, init) => {
+      seen.push({ url, init });
+      return new Response('{"product":"FireOutlook Planner"}', { status: 200, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
+    });
+    const body = JSON.stringify({ region: "SIDO_51", horizon_days: 30 });
+    const r = await onRequest({ request: req("/api/v1/forecast", json(body, { Cookie: "s=1", "CF-Connecting-IP": "203.0.113.7" })), env: ENV });
+    expect(r.status).toBe(200);
+    expect((await r.json()).product).toBe("FireOutlook Planner");
+    expect(seen).toHaveLength(1);
+    expect(seen[0].url).toBe("https://api.example/api/v1/forecast");
+    expect(seen[0].init.method).toBe("POST");
+    expect(new TextDecoder().decode(seen[0].init.body)).toBe(body);
+    const h = seen[0].init.headers;
+    expect(h.get("content-type")).toBe("application/json");
+    expect(h.get("cookie")).toBeNull();
+    expect(h.get("x-client-ip")).toBe("203.0.113.7");
+
+    const calls = [];
+    const API = { fetch: async (url, init) => (calls.push({ url, init }), new Response("{}", { status: 200 })) };
+    const b = await onRequest({ request: req("/api/v1/forecast/", json(body)), env: { API } });
+    expect(b.status).toBe(200);
+    expect(new URL(calls[0].url).pathname).toBe("/api/v1/forecast/");
+    expect(new TextDecoder().decode(calls[0].init.body)).toBe(body);
+  });
+
+  it("charset 붙은 application/json 도 받는다", async () => {
+    vi.stubGlobal("fetch", async () => new Response("{}", { status: 200 }));
+    const r = await onRequest({ request: req("/api/v1/forecast", json("{}", { "Content-Type": "application/json; charset=utf-8" })), env: ENV });
+    expect(r.status).toBe(200);
+  });
+
+  it("Content-Type 이 json 이 아니면 415, 백엔드 안 부름", async () => {
+    const f = vi.fn();
+    vi.stubGlobal("fetch", f);
+    for (const ct of ["text/plain", "application/x-www-form-urlencoded", "application/jsonx"]) {
+      const r = await onRequest({ request: req("/api/v1/forecast", { method: "POST", body: "{}", headers: { "Content-Type": ct } }), env: ENV });
+      expect(r.status).toBe(415);
+      const p = await r.json();
+      expect(p.code).toBe("invalid_param");
+      expect(p.error_no).toBe(10004);
+    }
+    expect(f).not.toHaveBeenCalled();
+  });
+
+  it("본문 > 64 KB → 413(Content-Length 로도, 실제 바이트로도), 64 KB 딱은 통과", async () => {
+    const f = vi.fn(async () => new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", f);
+    const big = "x".repeat(FORECAST_MAX_BODY + 1);
+    const a = await onRequest({ request: req("/api/v1/forecast", json(big)), env: ENV });
+    expect(a.status).toBe(413);
+    expect((await a.json()).error_no).toBe(10102);
+    /* Content-Length 가 없는 흐름 본문도 실제로 읽은 바이트로 거른다 */
+    const stream = new ReadableStream({
+      start(c) {
+        c.enqueue(new TextEncoder().encode(big));
+        c.close();
+      },
+    });
+    const b = await onRequest({ request: new Request("https://web.example/api/v1/forecast", { method: "POST", body: stream, duplex: "half", headers: { "Content-Type": "application/json" } }), env: ENV });
+    expect(b.status).toBe(413);
+    expect(f).not.toHaveBeenCalled();
+    const c = await onRequest({ request: req("/api/v1/forecast", json("x".repeat(FORECAST_MAX_BODY))), env: ENV });
+    expect(c.status).toBe(200);
+    expect(f).toHaveBeenCalledTimes(1);
+  });
+
+  it("/forecast 의 GET 은 405 Allow: POST · 다른 경로 POST 는 계속 405 Allow: GET, HEAD", async () => {
+    const f = vi.fn();
+    vi.stubGlobal("fetch", f);
+    const g = await onRequest({ request: req("/api/v1/forecast"), env: ENV });
+    expect(g.status).toBe(405);
+    expect(g.headers.get("allow")).toBe("POST");
+    for (const p of ["/api/v1/aois", "/api/v1/summary-queries", "/api/v1/forecast/x", "/api/v1/forecasts", "/api/v1//forecast"]) {
+      const r = await onRequest({ request: req(p, json("{}")), env: ENV });
+      expect(r.status).toBe(405);
+      expect(r.headers.get("allow")).toBe("GET, HEAD");
+    }
+    expect(f).not.toHaveBeenCalled();
   });
 });
