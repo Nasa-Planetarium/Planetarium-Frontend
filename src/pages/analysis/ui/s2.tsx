@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { useCountry } from "@/entities/country";
 import { useCoarseCells } from "@/entities/world-grid";
 import { ApiError } from "@/shared/api";
 import { API_BASE, DATA_MODE } from "@/shared/config";
@@ -29,6 +30,7 @@ import { calInput, cellCase, fmtCompact, inRange, monthWord, VIEWS, ymIso, type 
 import { Status, useRamp } from "./bits";
 import { CalSvg } from "./cal-svg";
 import { Bars, CellDots, Lines, saveText, svgToPng, type CellDot, type CellPt } from "./charts";
+import { useCellLand } from "./cell-land";
 import { cx } from "./cx";
 import { DistChart } from "./dist-chart";
 import { VdMark } from "./vd-mark";
@@ -695,10 +697,14 @@ function CellPanel({ x }: { x: Ctx }) {
   const mv = x.M?.method_version ?? null;
   const q0 = useQuery(cellsQuery(x.aoi, ym, mv, true));
   const wide = q0.error instanceof ApiError && q0.error.code === "range_too_large";
-  const aq = useQuery({ ...aoisQuery(mv), enabled: !!mv && wide });
+  const aq = useQuery(aoisQuery(mv));
   const co = useCoarseCells({ aoiId: x.aoi, aois: aq.data, y, m, on: wide });
   const q: { data: CellsData | undefined; error: unknown; isPending: boolean } = wide ? { data: (co.data ?? undefined) as CellsData | undefined, error: co.isError ? q0.error : null, isPending: co.isPending } : q0;
   const [box, wid] = useWidth(640);
+  /* 바탕 땅(나라 1급 · 세계 윤곽) — 고른 지역 1급(시군구면 부모 1급) 테두리 강조 */
+  const { list: countries } = useCountry();
+  const parent = x.rec?.parent_id ? ((aq.data ?? []).find((a) => a.aoi_id === x.rec?.parent_id) ?? null) : null;
+  const base = useCellLand({ aoi: x.aoi, rec: x.rec, parent, countries });
   /* 점 층(목업 ptsMode): 실서버 = FIRMS 최근 24시간(WMS 그림) · 목 = 그 달 release 감지 점(/hotspots) — 둘 다 한국 지역만 */
   const pm = isKorAoi(x.aoi) ? (DATA_MODE === "http" ? "firms" : "month") : null;
   const [lyrOn, setLyrOn] = useState(false);
@@ -726,7 +732,7 @@ function CellPanel({ x }: { x: Ctx }) {
   if (q.data?.features.length && !cells.length && view !== "value") noField = q.data.features.every((f) => (view === "raw_modis" ? f.properties.raw_modis : f.properties.raw_viirs) == null);
   const st = q.data?.properties?.month_status ?? (q.data ? "ok" : "out_of_range");
   const vmax = Math.max(1, ...cells.map((c) => c.value));
-  const err = q.error ? W(q.error instanceof ApiError && q.error.code === "data_not_loaded" ? "err.data_not_loaded" : "err.network") : null;
+  const err = q.error ? W(q.error instanceof ApiError && (q.error.code === "data_not_loaded" || q.error.code === "rate_limited") ? `err.${q.error.code}` : "err.network") : null;
   return (
     <section className={cx("panel an-cellp")}>
       <div className={cx("panel-h")}>
@@ -748,7 +754,19 @@ function CellPanel({ x }: { x: Ctx }) {
       <div className={cx("panel-b an-cellb")}>
         <div className={cx("an-cellsvg")} ref={box}>
           {ramp && cells.length ? (
-            <CellDots cells={cells} ramp={ramp} scaleMax={vmax} width={Math.min(wid, 640)} label={`${T("g3.cell_map")} ${ym}`} points={points} image={image} />
+            <CellDots
+              cells={cells}
+              ramp={ramp}
+              scaleMax={vmax}
+              width={Math.min(wid, 640)}
+              maxH={x.device === "phone" ? 420 : 520}
+              cellDeg={q.data?.properties?.cell_size_deg ?? 0.1}
+              land={base.land}
+              c0={base.c0}
+              label={`${T("g3.cell_map")} ${ym}`}
+              points={points}
+              image={image}
+            />
           ) : (
             <div className={cx("an-empty sm")}>
               <i className={cx("miss-sw big")} />

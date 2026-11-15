@@ -127,7 +127,7 @@ export const initialUi = (): LandUi => ({
   sel: null,
   cnt: null,
   pane: "list",
-  layers: { burns: true, hot: false, bounds: true },
+  layers: { burns: true, hot: true, bounds: true }, // 핫스팟 기본 켬: 목업은 꺼 두었으나(land.js:48) 실제 감지가 지도에 보여야 한다는 사용자 지적(2026-11-15)
 });
 
 export const isQueued = (f: LandFire, meta: FireMeta | undefined, ui: LandUi) => !!meta?.queued && !ui.dequeued.includes(f.id);

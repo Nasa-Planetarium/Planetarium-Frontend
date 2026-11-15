@@ -19,14 +19,14 @@ import { cx } from "./cx";
  */
 
 type Ring = [number, number][];
-interface Region {
+export interface Region {
   id: string;
   name_en: string;
   name_ko?: string;
   c: [number, number];
   area_km2?: number;
 }
-interface Boundary {
+export interface Boundary {
   regions: Region[];
   geometry: { features: { id: string; geometry: { type: "Polygon" | "MultiPolygon"; coordinates: number[][][] | number[][][][] } }[] };
 }
@@ -41,14 +41,31 @@ const fold = (s: string | null | undefined) => (s ?? "").normalize("NFKD").repla
 /** 이름 비교용 꼬리 떼기(강원특별자치도 ↔ 강원도 · 전북특별자치도 ↔ 전라북도 같은 개칭은 앞 두 글자로) */
 const koKey = (s: string | null | undefined) => {
   const v = (s ?? "").replace(/(특별자치시|특별자치도|특별시|광역시|도)$/, "");
-  const fix: Record<string, string> = { 전북: "전라북", 강원: "강원", 제주: "제주" };
+  const fix: Record<string, string> = { 전북: "전라북", 전남: "전라남", 경북: "경상북", 경남: "경상남", 충북: "충청북", 충남: "충청남", 강원: "강원", 제주: "제주" };
   return fix[v] ?? v;
 };
 
-function thin(r: Ring): Ring {
+export function thin(r: Ring): Ring {
   if (r.length <= 160) return r;
   const k = Math.ceil(r.length / 160);
   return r.filter((_, i) => i % k === 0).concat([r[0] as [number, number]]);
+}
+
+/**
+ * 강조할 1급 고르기(미리보기 · 칸 지도 같은 규칙): 고른 지역이 1급이면 그것, 그 아래(시군구)면 부모. 이름으로 잇는다(release 이름 ↔ Natural Earth 이름).
+ * ADM1_<나라>-<번호> 지역은 경계 파일 id(<나라>-<번호>)로 바로 잇는다.
+ */
+export function regionMatcher(iso3: string, aoi: string, rec: AoiRec | null, parent: AoiRec | null): (r: Region) => boolean {
+  const byId = /^ADM1_([A-Z]{3}-.+)$/.exec(aoi)?.[1] ?? (parent ? /^ADM1_([A-Z]{3}-.+)$/.exec(parent.aoi_id)?.[1] : null);
+  const pick = rec && (rec.level === "kr_sido" || rec.level === "adm1") ? rec : parent && (parent.level === "kr_sido" || parent.level === "adm1") ? parent : null;
+  return (r: Region) => {
+    if (byId && r.id === byId) return true;
+    if (!pick) return false;
+    /* 앞 두 글자만 견주면 경상북·경상남(충청·전라도)이 같아져 둘 다 강조됐다 — 꼬리 뗀 이름 전체로 */
+    if (iso3 === "KOR") return !!pick.name_ko && koKey(r.name_ko) === koKey(pick.name_ko);
+    const a = fold(pick.name_en ?? pick.name_ko);
+    return !!a && (fold(r.name_en) === a || fold(r.name_ko) === a);
+  };
 }
 
 export function BoundaryPreview({
@@ -114,21 +131,15 @@ export function BoundaryPreview({
     const Y = (y: number) => (pad + (n - y) * sc).toFixed(1);
     const path = (rings: Ring[]) => rings.map((r) => `M${r.map(([x, y]) => `${X(x)} ${Y(y)}`).join("L")}Z`).join("");
 
-    /* 강조할 1급: 고른 지역이 1급이면 그것, 그 아래(시군구)면 부모. 이름으로 잇는다(release 이름 ↔ Natural Earth 이름) */
-    const pick = rec && (rec.level === "kr_sido" || rec.level === "adm1") ? rec : parent && (parent.level === "kr_sido" || parent.level === "adm1") ? parent : null;
-    const on = (r: Region) => {
-      if (!pick) return false;
-      if (iso3 === "KOR") return koKey(r.name_ko).slice(0, 2) === koKey(pick.name_ko).slice(0, 2) && !!pick.name_ko;
-      const a = fold(pick.name_en ?? pick.name_ko);
-      return !!a && (fold(r.name_en) === a || fold(r.name_ko) === a);
-    };
+    /* 강조할 1급(regionMatcher — 칸 지도와 같은 규칙) */
+    const on = regionMatcher(iso3, aoi, rec, parent);
     const many = regs.length > 24;
     /* 이름표 겹침 줄이기: 나라 면적의 1.5% 보다 작은 1급(서울·인천 같은 도시)은 강조할 때만 이름 */
     const small = regs.reduce((a, g) => a + (g.r.area_km2 ?? 0), 0) * 0.015;
     return (
       <svg viewBox={`0 0 ${VW} ${VH}`} role="img" aria-label={label}>
         {regs.map(({ r, rings }) => (
-          <path key={r.id} className={cx("an-rg", on(r) && "on")} d={path(rings)}>
+          <path key={r.id} className={cx("an-rg", on(r) && "on")} d={path(rings)} data-rg={r.id} data-on={on(r) ? "1" : undefined}>
             <title>{lang === "ko" ? (r.name_ko ?? r.name_en) : r.name_en}</title>
           </path>
         ))}
@@ -141,7 +152,7 @@ export function BoundaryPreview({
         )}
       </svg>
     );
-  }, [b, info, rec, parent, iso3, lang, label]);
+  }, [b, info, aoi, rec, parent, iso3, lang, label]);
 
   if (aoi === "WORLD") return null;
   return (

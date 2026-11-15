@@ -1,5 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
-import { api, listAllAois, qk, unwrap } from "@/shared/api";
+import { api, ApiError, listAllAois, qk, unwrap } from "@/shared/api";
 import type { CalendarData, CellProps } from "../model/core";
 import { Y0, Y1 } from "../model/core";
 
@@ -24,6 +24,13 @@ export interface AoiRec {
 }
 
 /** 지역 목록 전부(실서버는 쪽 나눔 — 커서를 끝까지 따른다, 최대 20쪽) */
+/**
+ * 무거운 질의(/cells · /comparison · /summary · /hotspots) 재시도: 범위 큼(400)·없음·자료 없음은 다시 하지 않는다(화면이 바로 다른 길로 — 1° 묶음 · 「자료 준비 중」).
+ * 서버 요청 한도(429, rate limit scope heavy)만 두 번까지 — 기다림은 앱 retryDelay 가 Retry-After 를 따른다(app-providers).
+ * 전에는 retry:false 라 429 가 곧바로 「연결 끊김」이 됐다(2026-11-15 칸 지도 빈 칸).
+ */
+export const retryRateLimited = (n: number, e: unknown) => n < 2 && e instanceof ApiError && e.status === 429;
+
 export const aoisQuery = (mv: string | null) =>
   queryOptions({
     queryKey: qk("aois", { all: 1 }, mv),
@@ -77,7 +84,7 @@ export const comparisonQuery = (aoiId: string, ym: string, mv: string | null, on
       (await api.GET("/aois/{aoiId}/months/{yearMonth}/comparison", { params: { path: { aoiId, yearMonth: ym } }, signal }).then(unwrap)) as unknown as Comparison,
     staleTime: 24 * 60 * 60 * 1000,
     enabled: !!mv && on,
-    retry: false,
+    retry: retryRateLimited,
   });
 
 export interface CellsData {
@@ -92,7 +99,7 @@ export const cellsQuery = (aoiId: string, ym: string, mv: string | null, on: boo
       (await api.GET("/cells", { params: { query: { aoi_id: aoiId, month: ym } as never }, signal }).then(unwrap)) as unknown as CellsData,
     staleTime: 24 * 60 * 60 * 1000,
     enabled: !!mv && on,
-    retry: false,
+    retry: retryRateLimited,
   });
 
 /** 칸 지도 점 층(목) — 그 달 release 기준 감지 점(GET /hotspots layer=reference, 합계에 드는 점). 목업 analysis.js drawCells pm==="month" */
@@ -124,7 +131,7 @@ export const monthPointsQuery = (aoiId: string, ym: string, mv: string | null, o
     },
     staleTime: 24 * 60 * 60 * 1000,
     enabled: !!mv && on,
-    retry: false,
+    retry: retryRateLimited,
   });
 
 /** 기간 합계(/aois/{id}/summary?start&end&freq=day) — 일별 칸 합. 목은 503(점·일 자료가 스냅숏에 없음) */
@@ -148,5 +155,5 @@ export const summaryQuery = (aoiId: string, start: string, end: string, mv: stri
         .then(unwrap)) as unknown as SummaryData,
     staleTime: 24 * 60 * 60 * 1000,
     enabled: !!mv && on,
-    retry: false,
+    retry: retryRateLimited,
   });

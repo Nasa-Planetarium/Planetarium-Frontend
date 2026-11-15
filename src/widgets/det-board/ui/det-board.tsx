@@ -6,9 +6,11 @@ import { useLocale } from "next-intl";
 import { clockTz, countryName, multiTz, type CountryInfo } from "@/entities/country";
 import { detections, llShort, recentDetectionsQuery } from "@/entities/detection";
 import { methodQuery } from "@/entities/release";
+import { useCoarseSum } from "@/entities/world-grid";
+import { ApiError } from "@/shared/api";
 import { useNowMs } from "@/entities/situation";
 import { useT } from "@/shared/i18n";
-import { localHM } from "@/shared/lib";
+import { aoiOfIso3, localHM } from "@/shared/lib";
 type Bbox = [number, number, number, number];
 /** 지도에 넘길 점(공통 지도 MapHotspot 과 같은 모양) */
 export interface DetHot {
@@ -19,16 +21,23 @@ export interface DetHot {
   conf: string;
   time: string;
 }
-/** 지도 칸 — 위젯끼리 import 하지 않게(FSD) 화면이 공통 지도를 그려 넘긴다 */
-export type DetMap = (m: { view: Bbox | null; hotspots: DetHot[]; status: string | null }) => ReactNode;
+/** 월 감지량 칸(공통 지도 MapCell 과 같은 모양) */
+export interface DetCell {
+  lat: number;
+  lon: number;
+  size: number;
+  value: number;
+}
+/** 지도 칸 — 위젯끼리 import 하지 않게(FSD) 화면이 공통 지도를 그려 넘긴다. cells = 이번 달(없으면 지난달) 1° 칸 감지량(바탕) */
+export type DetMap = (m: { view: Bbox | null; hotspots: DetHot[]; cells: DetCell[]; cellsLabel: string; status: string | null }) => ReactNode;
 
 type Cx = (...n: (string | false | null | undefined)[]) => string;
 
 /**
  * 한국 밖 경보·출동(ops)·피해 면적(land) 화면 — 목업 core.js EM.ui.detPage + EM.counts(한국 밖) + EM.ui.detTable.
  * 경보·출동·피해 산정 원장은 경북 시나리오(목 · 사용자 결정)뿐이라 자원 칸 없이:
- * 머리(이름 + 나라 + 개수 띠) · 공통 지도(지난 24시간 감지 점 · 1급 경계 · 출처 폭 맞춤) · 「미확인 감지」 묶음 표.
- * 점은 실제 GET /hotspots(entities/detection) — 값을 지어내지 않는다. 받기 실패면 「–」 + 자료 준비 중, 점이 없으면 「지난 24시간 감지 없음」.
+ * 머리(이름 + 나라 + 개수 띠) · 공통 지도(지난 24시간 감지 점 + 바탕 이번 달 1° 칸 감지량 · 1급 경계 · 출처 폭 맞춤) · 「미확인 감지」 묶음 표.
+ * 점은 실제 GET /hotspots(entities/detection) — 값을 지어내지 않는다. 받기 실패면 「–」 + 그 까닭(429 = 서버 요청 한도 · 503 = 자료 준비 중 · 그 밖 = 요청 실패), 점이 없으면 「지난 24시간 감지 없음」.
  * 화면 CSS 는 각 화면 모듈에 있어(.dp·.dt-tbl·.pghd) 클래스 이름 바꾸기(cx)를 화면이 넘긴다.
  */
 export function DetBoard({ page, iso3, info, cx, testId, regions, renderMap }: { page: "ops" | "land"; iso3: string; info: CountryInfo | undefined; cx: Cx; testId: string; regions: { id: string; name: string; lat: number; lon: number }[] | undefined; renderMap: DetMap }) {
@@ -38,10 +47,46 @@ export function DetBoard({ page, iso3, info, cx, testId, regions, renderMap }: {
   const mv = useQuery(methodQuery()).data?.method_version ?? null;
   const bb = ((info as (CountryInfo & { bbox_main?: Bbox }) | undefined)?.bbox_main ?? info?.bbox ?? null) as Bbox | null;
   const centers = useMemo(() => (regions ?? []).map((r) => [r.lat, r.lon] as const), [regions]);
-  const q = useQuery({ ...recentDetectionsQuery(iso3, bb, nowMs, mv, centers), enabled: !!mv && nowMs != null && !!bb && !!regions });
+  /* 바탕: 나라 전체 이번 달 1° 칸 감지량(정적 world-1deg — 실서버 heavy 한도와 무관). 그 달이 자료에 없으면 지난달 */
+  const ym = useMemo(() => {
+    if (nowMs == null) return null;
+    const d = new Date(nowMs);
+    const y = d.getUTCFullYear();
+    const m = d.getUTCMonth() + 1;
+    return { cur: [[y, m] as const], prev: [[m === 1 ? y - 1 : y, m === 1 ? 12 : m - 1] as const] };
+  }, [nowMs]);
+  const aoiId = aoiOfIso3(iso3);
+  const coCur = useCoarseSum({ aoiId, aois: null, months: ym?.cur ?? [], on: !!ym });
+  const coPrev = useCoarseSum({ aoiId, aois: null, months: ym?.prev ?? [], on: !!ym && coCur.data?.months === 0 });
+  const co = coCur.data?.months ? coCur.data : coPrev.data;
+  const coYm = ym ? (coCur.data?.months ? ym.cur[0] : ym.prev[0]) : null;
+  const cellsLabel = coYm ? t("shell.map.cells_month", { m: `${coYm[0]}.${String(coYm[1]).padStart(2, "0")}` }) : "";
+  const cells = useMemo(() => co?.cells ?? [], [co]);
+  /* 조각 무게 = 그 조각에 든 1° 칸 감지량 합 → 불이 잦은 땅부터 받는다(한도에 걸려 멈춰도) */
+  const weight = useMemo(() => {
+    if (!co?.cells.length) return null;
+    const cs = co.cells;
+    return {
+      key: `w${cs.length}`,
+      of: (b: readonly [number, number, number, number]) => cs.reduce((t, c) => (c.lat >= b[1] && c.lat < b[3] && c.lon >= b[0] && c.lon < b[2] ? t + c.value : t), 0),
+    };
+  }, [co]);
+  const coSettled = !ym || !!co || coCur.isError || coPrev.isError;
+  const q = useQuery({ ...recentDetectionsQuery(iso3, bb, nowMs, mv, centers, weight), enabled: !!mv && nowMs != null && !!bb && !!regions && coSettled });
   const regs = regions;
-  const D = useMemo(() => (q.data && nowMs != null ? detections(q.data.points, nowMs) : null), [q.data, nowMs]);
+  /* 조각은 나라 상자(bbox_main)를 덮어 이웃 나라 점도 온다(일본 상자에 든 중국 동북·러시아 연해주) → 그 나라 점만(adm1_code 「ISO3-…」 · adm0_a3). 나라 표시가 없는 점은 둔다 */
+  const D = useMemo(() => {
+    if (!q.data || nowMs == null) return null;
+    const own = q.data.points.filter((h) => {
+      const r = h as { adm1_code?: string | null; adm0_a3?: string | null };
+      const c = r.adm0_a3 ?? (r.adm1_code ? r.adm1_code.split("-")[0] : null);
+      return !c || c === iso3;
+    });
+    return detections(own, nowMs);
+  }, [q.data, nowMs, iso3]);
   const partial = q.data && q.data.done < q.data.total ? t("shell.det.partial", { n: q.data.done, m: q.data.total }) : null;
+  const rateErr = q.error instanceof ApiError && q.error.status === 429;
+  const failWord = rateErr ? t("shell.err.rate_limited") : q.error instanceof ApiError && q.error.code === "data_not_loaded" ? t("shell.err.data_not_loaded") : t("shell.err.request");
   const regName = useMemo(() => {
     const m = new Map((regs ?? []).map((r) => [r.id, r.name]));
     return (id: string) => m.get(id) ?? (id === iso3 ? countryName(info, lang, iso3) : id);
@@ -104,7 +149,7 @@ export function DetBoard({ page, iso3, info, cx, testId, regions, renderMap }: {
       </header>
       <div className={cx("dp-g")}>
         <section className={cx("dp-map")} aria-label={t("shell.det.title")}>
-          {renderMap({ view: bb, hotspots: hot, status: fail ? t("shell.err.data_not_loaded") : partial })}
+          {renderMap({ view: bb, hotspots: hot, cells, cellsLabel, status: fail ? failWord : partial })}
         </section>
         <section className={cx("panel dp-list")} aria-label={t("shell.det.title")}>
           <div className={cx("sechd")}>
@@ -113,7 +158,7 @@ export function DetBoard({ page, iso3, info, cx, testId, regions, renderMap }: {
           </div>
           {!D ? (
             <p className={cx("dt-none")} role="status">
-              {fail ? t("shell.err.data_not_loaded") : "…"}
+              {fail ? failWord : "…"}
             </p>
           ) : !rows.length ? (
             <p className={cx("dt-none")} role="status">

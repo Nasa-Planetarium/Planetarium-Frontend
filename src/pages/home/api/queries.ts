@@ -1,5 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
-import { api, qk, unwrap } from "@/shared/api";
+import { api, heavyRetry, heavyRetryDelay, qk, unwrap } from "@/shared/api";
 
 /**
  * 상황판 전용 실제 데이터 쿼리(계약 /aois/{id}/summary · /hotspots). 키 규칙 = qk(경로, 파라미터, method_version).
@@ -31,9 +31,29 @@ export const hotspotsQuery = (bbox: readonly [number, number, number, number], s
         })
         .then(unwrap),
     staleTime: 10 * 60 * 1000,
-    retry: false,
+    retry: heavyRetry,
+    retryDelay: heavyRetryDelay,
     enabled: !!methodVersion,
   });
+
+/** 기간이 걸친 달 [연, 월] 목록(오래된 것부터, 최근 24달까지) — 넓은 범위 지도의 1° 칸 합 */
+export function monthsOf(start: string, end: string): [number, number][] {
+  const out: [number, number][] = [];
+  let y = Number(start.slice(0, 4));
+  let m = Number(start.slice(5, 7));
+  const ey = Number(end.slice(0, 4));
+  const em = Number(end.slice(5, 7));
+  if (![y, m, ey, em].every(Number.isFinite)) return out;
+  while (y < ey || (y === ey && m <= em)) {
+    out.push([y, m]);
+    m++;
+    if (m > 12) {
+      m = 1;
+      y++;
+    }
+  }
+  return out.slice(-24);
+}
 
 /** 전망(결정 F8) — 정적 파일 public/data/snap/outlook.json(계약 API 아님, 예측 분석 화면과 같은 파일) */
 export const outlookQuery = () =>

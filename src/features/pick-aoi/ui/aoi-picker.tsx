@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { Dialog as D } from "radix-ui";
 import { useLocale } from "next-intl";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
@@ -75,6 +75,10 @@ function PickerOpen({ onOpenChange, anchor, phone, aois, countries, current, onP
     return out;
   });
   const listRef = useRef<HTMLDivElement>(null);
+  /* 단을 오르내리거나 검색어가 바뀌면 목록 맨 위부터 — 앞 목록의 스크롤이 남으면 짧아진 새 목록의 첫 행(「○○ 전체」)이 위로 가려진다(몽골 22개 1급에서 잼) */
+  useEffect(() => {
+    if (listRef.current) listRef.current.scrollTop = 0;
+  }, [path, q]);
   const [pos] = useState(() => (!phone && anchor ? { left: Math.max(8, Math.min(window.innerWidth - 368, anchor.left)), top: Math.round(anchor.bottom + 4) } : null));
 
   const iso3 = (a: AoiRec) => iso3OfAoi(a.aoi_id);
@@ -205,9 +209,9 @@ function PickerOpen({ onOpenChange, anchor, phone, aois, countries, current, onP
   return (
     <D.Root open onOpenChange={onOpenChange}>
       <D.Portal>
-        {/* 창을 가림막 안에 둔다(목업 .cpick-scrim.is-sheet .cpick — 가림막 z-index 위에 창이 오도록) */}
-        <D.Overlay className={cx("cpick-scrim", phone && "is-sheet")}>
-        <D.Content className={cx("cpick apick")} style={pos ?? undefined} aria-describedby={undefined} onKeyDown={onKey} onOpenAutoFocus={(e) => phone && e.preventDefault()}>
+        {/* 가림막과 창은 형제(Radix 기본) — 창 쪽에 z-index 와 시트 규칙(.cpick.is-sheet)을 직접 준다. 창이 가림막 아래로 가면 웹은 누르는 순간 닫히고 폰 시트는 화면 밖에 그려진다(2026-11-15 잼) */}
+        <D.Overlay className={cx("cpick-scrim", phone && "is-sheet")} />
+        <D.Content className={cx("cpick apick", phone && "is-sheet")} style={pos ?? undefined} aria-describedby={undefined} onKeyDown={onKey} onOpenAutoFocus={(e) => phone && e.preventDefault()}>
           <D.Title className={cx("sr-only")}>{t("shell.aoi.title")}</D.Title>
           <div className={cx("cp-h")}>
             {path.length && !q ? (
@@ -281,7 +285,6 @@ function PickerOpen({ onOpenChange, anchor, phone, aois, countries, current, onP
             })}
           </div>
         </D.Content>
-        </D.Overlay>
       </D.Portal>
     </D.Root>
   );

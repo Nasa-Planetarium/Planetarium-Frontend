@@ -3,7 +3,7 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { calendarQuery } from "@/entities/month-value";
 import { methodQuery } from "@/entities/release";
 import { bboxArea, bboxCenter, HOTSPOT_MAX_AREA, HOTSPOT_MAX_DAYS, type AoiRec } from "@/features/pick-aoi";
-import { api, qk, unwrap } from "@/shared/api";
+import { api, ApiError, heavyRetry, heavyRetryDelay, qk, unwrap } from "@/shared/api";
 import type { Board, Cells, Cm, Day } from "../model/cmd";
 import { SEASON_MONTHS, type Query } from "../model/cmd";
 
@@ -115,7 +115,9 @@ export const hotWindowQuery = (aoiId: string, start: string, end: string, mv: st
   queryFn: ({ signal }: { signal: AbortSignal }) => hotPage(aoiId, start, end, signal),
   enabled: !!mv && on,
   staleTime: 60 * 60 * 1000,
-  retry: false,
+  /* 실서버 heavy 한도(429): Retry-After 만큼 기다려 다시 — 예전엔 retry:false 라 강원 12창이 모두 429 로 끝났다(잰 것 2026-11-15) */
+  retry: heavyRetry,
+  retryDelay: heavyRetryDelay,
 });
 
 /** 시각(0–23): 한국 = KST, 밖 = 현지 태양시(경도/15 — 실서버 date_local 과 같은 기준) */
@@ -159,7 +161,8 @@ export function ptsOf(pts: Hot[], q: Query) {
     .map((h) => ({ lat: h.latitude, lon: h.longitude, frp: h.frp ?? 0 }));
 }
 
-export type PtsState = "ok" | "pending" | "wide" | "error";
+export type PtsState = "ok" | "pending" | "wide" | "rate" | "error";
+const isRate = (e: unknown) => e instanceof ApiError && e.status === 429;
 
 /**
  * 실제 묶음. rows = 고른 범위의 아래 단(행) · scope = 범위 AOI · sel = 고른 행(시간대·지도 점 범위).
@@ -196,27 +199,29 @@ export function useRealBoard(opts: { rows: AoiRec[]; scope: AoiRec | null; sel: 
   /* 시간대: 지난 730일(전년 비교 몫까지) */
   const end = base ? `${base.cm.last_year}-${pad2(base.cm.last_month)}-${pad2(base.cm.last_day)}` : null;
   const hStart = end ? addDays(end, -729) : null;
+  /* 지도 점(고른 해 · 1년 = 92일 창 4번)을 먼저 받는다 — heavy 한도(분당 약 30 토큰)를 시간대 창 8번과 한꺼번에 쓰면 지도가 429 로 비었다 */
+  const yWins = useMemo(() => (mapYear && end ? windows(`${mapYear}-01-01`, `${mapYear}-12-31` > end ? end : `${mapYear}-12-31`) : []), [mapYear, end]);
+  const yq = useQueries({ queries: ptAois.flatMap((a) => yWins.map(([s, e]) => hotWindowQuery(a.aoi_id, s, e, mv, !wide))) });
+  const yKey = yq.map((x) => (x.data ? 1 : x.error ? 2 : 0)).join("");
+  const yDone = !mapYear || wide || (yq.length > 0 && yq.every((x) => !!x.data || !!x.error));
   const hWins = useMemo(() => (end && hStart ? windows(hStart, end) : []), [end, hStart]);
-  const hq = useQueries({ queries: ptAois.flatMap((a) => hWins.map(([s, e]) => hotWindowQuery(a.aoi_id, s, e, mv, !wide))) });
+  const hq = useQueries({ queries: ptAois.flatMap((a) => hWins.map(([s, e]) => hotWindowQuery(a.aoi_id, s, e, mv, !wide && yDone))) });
   const hKey = hq.map((x) => (x.data ? 1 : x.error ? 2 : 0)).join("");
   const hourly = useMemo(() => {
     if (!end || !hStart) return null;
     if (wide) return { state: "wide" as PtsState, days: [] as Day[] };
-    if (hq.some((x) => x.error)) return { state: "error" as PtsState, days: [] as Day[] };
+    if (hq.some((x) => x.error)) return { state: (hq.some((x) => isRate(x.error)) ? "rate" : "error") as PtsState, days: [] as Day[] };
     if (!hq.length || hq.some((x) => !x.data)) return { state: "pending" as PtsState, days: [] as Day[] };
     const pts = hq.flatMap((x) => x.data?.pts ?? []);
     return { state: "ok" as PtsState, days: daysOf(pts, hStart, end, kor) };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hKey, wide, end, hStart, kor]);
 
-  /* 지도 점: 고른 해(1년 = 92일 창 4번) */
-  const yWins = useMemo(() => (mapYear && end ? windows(`${mapYear}-01-01`, `${mapYear}-12-31` > end ? end : `${mapYear}-12-31`) : []), [mapYear, end]);
-  const yq = useQueries({ queries: ptAois.flatMap((a) => yWins.map(([s, e]) => hotWindowQuery(a.aoi_id, s, e, mv, !wide))) });
-  const yKey = yq.map((x) => (x.data ? 1 : x.error ? 2 : 0)).join("");
+
   const yearPts = useMemo((): { state: PtsState; pts: Hot[]; total: number } => {
     if (!mapYear) return { state: "ok", pts: [], total: 0 };
     if (wide) return { state: "wide", pts: [], total: 0 };
-    if (yq.some((x) => x.error)) return { state: "error", pts: [], total: 0 };
+    if (yq.some((x) => x.error)) return { state: yq.some((x) => isRate(x.error)) ? "rate" : "error", pts: [], total: 0 };
     if (!yq.length || yq.some((x) => !x.data)) return { state: "pending", pts: [], total: 0 };
     const pts = yq.flatMap((x) => x.data?.pts ?? []);
     return { state: "ok", pts, total: yq.reduce((t, x) => t + (x.data?.total ?? 0), 0) };

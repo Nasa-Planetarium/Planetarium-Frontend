@@ -1,5 +1,5 @@
 export { api, unwrap, getLastMethodVersion } from "./client";
-export { ApiError, ERROR_HANDLING } from "./errors";
+export { ApiError, ERROR_HANDLING, heavyRetry, heavyRetryDelay, rateWaitMs } from "./errors";
 export type { Problem, ErrorCode } from "./errors";
 export { qk, normalizeParams } from "./query-keys";
 export { listAllAois } from "./aois";
