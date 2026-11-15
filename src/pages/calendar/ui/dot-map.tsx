@@ -122,6 +122,7 @@ export function DotMap(o: DotMapProps) {
           version: 8,
           sources: {
             land: { type: "geojson", data: "/geo/world.json" },
+            outf: { type: "geojson", data: { type: "FeatureCollection", features: [] } },
             outl: { type: "geojson", data: { type: "FeatureCollection", features: [] } },
             isl: { type: "geojson", data: { type: "FeatureCollection", features: [] } },
             cells: { type: "geojson", data: { type: "FeatureCollection", features: [] } },
@@ -130,6 +131,9 @@ export function DotMap(o: DotMapProps) {
           layers: [
             { id: "bg", type: "background", paint: { "background-color": tok("map-sea") } },
             { id: "land", type: "fill", source: "land", paint: { "fill-color": tok("map-land") } },
+            /* 고른 지역의 자세한 윤곽(outl 과 같은 고리)으로 육지를 한 번 더 채운다 — 단순한 world.json 면 밖으로 윤곽선이 삐져나가거나
+               world.json 에 없는 작은 섬이 선만 남는 것을 막는다(프런트 UI/UX, 2026-11-15) */
+            { id: "outf", type: "fill", source: "outf", paint: { "fill-color": tok("map-land") } },
             { id: "outl", type: "line", source: "outl", paint: { "line-color": tok("map-boundary"), "line-opacity": 0.5, "line-width": 0.8 } },
             { id: "isl", type: "circle", source: "isl", paint: { "circle-radius": 4, "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 1, "circle-stroke-color": tok("map-boundary"), "circle-stroke-opacity": 0.8 } },
             { id: "cells", type: "circle", source: "cells", paint: { "circle-radius": 2, "circle-color": "#000", "circle-stroke-width": 0 } },
@@ -157,6 +161,13 @@ export function DotMap(o: DotMapProps) {
   useEffect(() => {
     if (!map) return;
     (map.getSource("outl") as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: o.outlines.length ? [{ type: "Feature", properties: {}, geometry: { type: "MultiLineString", coordinates: o.outlines } }] : [] });
+    /* 같은 고리를 면으로(닫힌 고리 · 점 3개 미만은 뺀다) */
+    const polys = o.outlines.filter((r) => r.length >= 3).map((r) => {
+      const a = r[0] as number[];
+      const z = r[r.length - 1] as number[];
+      return [a[0] === z[0] && a[1] === z[1] ? r : [...r, a]];
+    });
+    (map.getSource("outf") as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: polys.length ? [{ type: "Feature", properties: {}, geometry: { type: "MultiPolygon", coordinates: polys } }] : [] });
     (map.getSource("isl") as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: islands.map((c) => ({ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: c } })) });
   }, [map, o.outlines, islands]);
 
