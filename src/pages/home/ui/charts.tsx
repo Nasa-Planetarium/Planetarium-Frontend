@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, type KeyboardEvent, type ReactNode } from "react";
+import { BarPaintDefs, topRoundPath } from "@/shared/ui";
 import { eraPlace, FIRST_YEAR, niceMax, SATS, type Cell, type Sensor } from "../model/home";
 import { cx } from "./cx";
 import type { Fmt, Tok } from "./use-ui";
@@ -244,6 +245,9 @@ export function DaysSvg(p: {
   const bw = (W - pl - pr) / n;
   const X = (i: number) => pl + i * bw;
   const Y = (v: number) => pt + (1 - v / mx) * (H - pt - pb);
+  const pid = `dy${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
+  const MH = Math.min(10, H - pt - pb);
+  const hiD = p.highlight != null ? p.days.find((d) => d.day === p.highlight && d.value != null) : undefined;
   /* 전년 선: 막대 가운데를 잇고 결측 날은 끊는다 */
   let dp = "";
   let pen = false;
@@ -257,6 +261,9 @@ export function DaysSvg(p: {
   });
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} role="img" aria-label={p.label} style={{ fontVariantNumeric: "tabular-nums" }}>
+      <defs>
+        <BarPaintDefs id={pid} />
+      </defs>
       {ticks.map((v) => (
         <g key={v}>
           <line x1={pl} x2={W - pr} y1={Y(v)} y2={Y(v)} stroke={v === 0 ? C["line-strong"] : C["line-soft"]} strokeDasharray={v === 0 ? undefined : "2 3"} />
@@ -272,11 +279,13 @@ export function DaysSvg(p: {
         return (
           <g key={d.day}>
             {d.value == null ? (
-              <rect x={x} y={pt} width={w} height={H - pt - pb} fill="none" stroke={C["line-soft"]} strokeDasharray="2 2" />
-            ) : (
-              <rect className={cx("day-c")} data-d={d.day} x={x} y={Y(d.value)} width={w} height={Math.max(0.5, Y(0) - Y(d.value))} rx={1.5} fill={p.ramp(Math.sqrt(Math.min(1, d.value / (mx * 0.8))))} stroke={p.highlight === d.day ? C.accent : undefined} strokeWidth={p.highlight === d.day ? 2 : undefined} style={{ cursor: "pointer" }} onClick={() => p.onDay(d.day)}>
+              <rect x={x} y={Y(0) - MH} width={w} height={MH} fill={`url(#${pid}h)`} fillOpacity={0.8}>
                 <title>{p.dayTitle(d)}</title>
               </rect>
+            ) : (
+              <path className={cx("day-c")} data-d={d.day} data-hi={p.highlight === d.day ? "1" : undefined} d={topRoundPath(x, Y(d.value), w, Math.max(0.5, Y(0) - Y(d.value)), Math.min(2.5, w / 3))} fill={`url(#${pid}${p.highlight === d.day ? "e" : "b"})`} filter={p.highlight === d.day ? `url(#${pid}g)` : undefined} style={{ cursor: "pointer" }} onClick={() => p.onDay(d.day)}>
+                <title>{p.dayTitle(d)}</title>
+              </path>
             )}
             {d.fires.length ? (
               <circle cx={x + w / 2} cy={pt - 7} r={3} fill={C["data-viirs"]}>
@@ -291,6 +300,11 @@ export function DaysSvg(p: {
           </g>
         );
       })}
+      {hiD && hiD.value ? (
+        <text x={(X(p.days.indexOf(hiD)) + bw / 2).toFixed(1)} y={Math.max(11, Y(hiD.value) - 5).toFixed(1)} textAnchor="middle" fontFamily={MONO} fontSize="12" fontWeight="700" style={{ fill: "var(--yb-eval-ink)" }} pointerEvents="none">
+          {p.fmt.axis(hiD.value, 1e9)}
+        </text>
+      ) : null}
       {dp ? (
         <path d={dp} fill="none" stroke={C["text-2"]} strokeWidth={1.5} strokeDasharray="4 3" strokeLinejoin="round" opacity={0.95} data-prev="">
           <title>{p.prevTitle}</title>

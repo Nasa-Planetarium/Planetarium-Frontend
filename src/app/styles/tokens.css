@@ -108,6 +108,9 @@
   --grad-flame:linear-gradient(135deg,var(--flame-a) 0%,var(--flame-b) 100%);
   --grad-flame-x:linear-gradient(90deg,var(--flame-a) 0%,var(--flame-b) 100%);
   --glow-flame:0 4px 14px rgb(255 107 94 / .35),0 1px 3px rgb(255 160 74 / .4);
+  /* 같은 달 연도별 막대(캘린더 상세, 2026-11-15): 기준 연도 = 주황 갈색 → 어두운 갈색으로 사라짐 · 분석 연도 = 노랑 → 주황 → 분홍빛 빨강 + 은은한 빛 · 값·연도 글자 = 굵은 주황 */
+  --yb-base-top:#a04f26; --yb-base-bot:#2e1814;
+  --yb-eval-a:#ffc23d; --yb-eval-b:#ff8a2e; --yb-eval-c:#e8475f; --yb-eval-glow:#ff7a3c; --yb-eval-ink:#ff9a3c;
   --gutter:16px; --gap-panel:12px; --pad-panel:16px; --hinge-gap:0px;
   --r-s:4px; --r-m:6px; --r-l:16px; --r-sheet:12px;
   --hit:24px; --ctl-h:40px; --ctl-h-sm:32px; --chip-h:26px; --row-h:40px; --ring-w:2px;
