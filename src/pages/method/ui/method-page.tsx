@@ -163,10 +163,10 @@ function MethodScreen() {
 /* 절 → 그리는 함수(처리기 맵 — switch 금지) */
 const SEC_VIEW: Record<Sec, (c: Ctx) => ReactNode> = { method: (c) => <SecMethod {...c} />, v11: (c) => <SecV11 {...c} />, validation: (c) => <SecValidation {...c} />, status: (c) => <SecStatus {...c} />, sources: (c) => <SecSources {...c} /> };
 
-/* 원문(한국어) 칸: ko 는 그대로, en 은 접은 행 */
+/* 원문(한국어) 칸: ko 는 그대로(웹은 줄 수를 묶고 눌러 펼침), en 은 접은 행 */
 function Src({ txt, c }: { txt: string | null | undefined; c: Ctx }) {
   if (txt == null || txt === "") return <>–</>;
-  if (c.lang === "ko") return <span className={cx("mt-tx")}>{txt}</span>;
+  if (c.lang === "ko") return c.web ? <Clip txt={txt} /> : <span className={cx("mt-tx")}>{txt}</span>;
   return (
     <details className={cx("mt-ko")}>
       <summary>{c.T("ui.source_ko")}</summary>
@@ -174,6 +174,15 @@ function Src({ txt, c }: { txt: string | null | undefined; c: Ctx }) {
         {txt}
       </span>
     </details>
+  );
+}
+/* 웹 한 화면: 긴 글은 줄 수(--lc, 칸이 정함)로 묶고 눌러 펼친다. 글은 빠짐없이 DOM · title 에 있다 */
+function Clip({ txt }: { txt: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <button type="button" className={cx("mt-clip")} data-open={open ? "1" : "0"} aria-expanded={open} title={open ? undefined : txt} onClick={() => setOpen((o) => !o)}>
+      {txt}
+    </button>
   );
 }
 function None({ c, k = "ui.not_in_release" }: { c: Ctx; k?: string }) {
@@ -205,7 +214,8 @@ function SecMethod(c: Ctx) {
     return (
       <tr key={g.value_source} data-vs={g.value_source}>
         <td className={cx("num mt-per")}>
-          {g.from ?? "–"} –<br />
+          {g.from ?? "–"} –{" "}
+          <br />
           {g.to ?? T("ui.now")}
         </td>
         <td>
@@ -245,8 +255,8 @@ function SecMethod(c: Ctx) {
   ];
   const hk = harmKeys(meta.harmonization);
   return (
-    <div className={cx("mt-grid")}>
-      <Panel title={T("p.periods")} wide n={rows.length}>
+    <div className={cx("mt-grid")} data-g="method">
+      <Panel title={T("p.periods")} wide w1 n={rows.length}>
         <Table heads={[[T("t.period")], [T("t.value")], [T("t.kind"), 0, "mt-hp"], [T("t.sat")], [T("t.sensor"), 0, "mt-hp"], [T("t.model"), 0, "mt-hp"]]} rows={rows} />
       </Panel>
       <Panel title={T("p.model")}>
@@ -266,7 +276,7 @@ function SecMethod(c: Ctx) {
       <Panel title={T("p.coef")}>
         <Table heads={[[T("t.item")], [T("t.val"), 1], [T("t.from")]]} rows={coef} cls="mt-coef" />
       </Panel>
-      <Panel title={T("p.harm")} wide>
+      <Panel title={T("p.harm")} wide w1 n={c.web ? hk.length : null}>
         <details className={cx("mt-fold")} open={c.web}>
           <summary>{T("ui.rules_n", { n: hk.length })}</summary>
           <Table
@@ -372,8 +382,8 @@ function SecValidation(c: Ctx) {
           </div>
         ))}
       </div>
-      <div className={cx("mt-grid")}>
-        <Panel title={T("p.kr_pooled")} wide n={order.length}>
+      <div className={cx("mt-grid mt-g4")}>
+        <Panel title={T("p.kr_pooled")} wide w1 n={order.length}>
           <Table heads={[[T("t.model")], [T("t.name"), 0, "mt-hp"], [T("v.mae"), 1], [T("v.bias"), 1]]} rows={rows} />
           <Kv
             pairs={[
@@ -457,8 +467,8 @@ function SecStatus(c: Ctx) {
   const iconOf: Record<string, string> = { interval_out: "low_sample", before_sensor: "out_of_range" };
   const wordOf = (id: string) => (id === "interval_out" || id === "low_sample" ? W("flag." + id) : W("st." + id));
   return (
-    <div className={cx("mt-grid")}>
-      <Panel title={T("p.status_aoi", { a: c.aoiName })} wide>
+    <div className={cx("mt-grid mt-g3")}>
+      <Panel title={T("p.status_aoi", { a: c.aoiName })} wide w1>
         <Table heads={[[T("t.status")], [T("t.months"), 1], [T("t.which")]]} rows={stRows} />
         <p className={cx("mt-foot num")}>
           {T("ui.range")} 2000-11 – 2026-11 · {nf(inR.length)} {T("ui.months")}
@@ -481,6 +491,27 @@ function SecStatus(c: Ctx) {
       </Panel>
       {ids.length ? (
         <Panel title={T("p.cases")} wide n={ids.length}>
+          {c.web ? (
+            <Table
+              heads={[[T("t.status")], ...(["why", "what", "how", "opinion"] as const).map((f) => [T("case." + f)] as [ReactNode])]}
+              rows={ids.map((id) => (
+                <tr key={id} data-case={id}>
+                  <td className={cx("nw")}>
+                    <span className={cx("mt-ch")}>
+                      <StIcon st={iconOf[id] ?? id} />
+                      <b>{wordOf(id)}</b>
+                    </span>
+                  </td>
+                  {(["why", "what", "how", "opinion"] as const).map((f) => (
+                    <td key={f}>
+                      <Clip txt={W("case." + id + "." + f)} />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+              cls="mt-ctab"
+            />
+          ) : (
           <ul className={cx("mt-cases")}>
             {ids.map((id) => (
               <li key={id} className={cx("mt-case")} data-case={id}>
@@ -492,6 +523,7 @@ function SecStatus(c: Ctx) {
               </li>
             ))}
           </ul>
+          )}
         </Panel>
       ) : null}
     </div>
@@ -541,8 +573,8 @@ function SecSources(c: Ctx) {
     </tr>
   ));
   return (
-    <div className={cx("mt-grid")}>
-      <Panel title={T("p.sources")} wide>
+    <div className={cx("mt-grid mt-g3")}>
+      <Panel title={T("p.sources")} wide w2>
         <Table heads={[[T("t.item")], [T("t.what")], [T("t.where")]]} rows={srcs} />
       </Panel>
       <Panel title={T("p.sats")}>
@@ -557,7 +589,7 @@ function SecSources(c: Ctx) {
           ]}
         />
       </Panel>
-      <Panel title={T("p.limits")} wide n={LIMS.length}>
+      <Panel title={T("p.limits")} wide w2 n={LIMS.length}>
         <ul className={cx("mt-lims")}>
           {LIMS.map((k) => (
             <li key={k}>{W("lim." + k)}</li>

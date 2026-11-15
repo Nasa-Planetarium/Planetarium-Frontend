@@ -27,3 +27,34 @@ test("방법·검증: 머리 개수·절 고르기·검증 수치·진행 중인
   await expect(root).toContainText("102.3");
   await expect(root).toContainText("2026-11-13");
 });
+
+/* 데스크톱 한 화면(사용자 요청: 방법·검증은 스크롤 없이 한눈에) — 절 다섯 개 모두 본문 스크롤 0 · 가로 넘침 0. 긴 원문은 눌러 펼친다 */
+for (const [w, h] of [
+  [1280, 800],
+  [1440, 900],
+  [1920, 1080],
+] as const) {
+  test(`방법·검증: ${w}×${h} 에서 절마다 세로 스크롤 없음`, async ({ page }, info) => {
+    test.skip(info.project.name !== "web", "데스크톱만 — 태블릿·폰은 쌓기(스크롤 허용)");
+    await page.setViewportSize({ width: w, height: h });
+    for (const s of ["method", "v11", "validation", "status", "sources"]) {
+      await page.goto(`/ko/method/?sec=${s}`);
+      await expect(page.locator('[data-testid="method"][data-ready="1"]')).toBeVisible({ timeout: 20000 });
+      await page.waitForTimeout(300);
+      const r = await page.evaluate(() => {
+        const se = document.scrollingElement as Element;
+        const over = [...document.querySelectorAll("*")].filter((el) => {
+          const cs = getComputedStyle(el);
+          return (/(auto|scroll)/.test(cs.overflowY) && el.scrollHeight > el.clientHeight + 1 && el.clientHeight > 200) || (/(auto|scroll)/.test(cs.overflowX) && el.closest('[data-testid="method"]') && el.scrollWidth > el.clientWidth + 1);
+        }).length;
+        return { doc: se.scrollHeight - innerHeight, over };
+      });
+      expect(r, `${s} ${w}×${h}`).toEqual({ doc: 0, over: 0 });
+    }
+    await page.goto("/ko/method/");
+    const clip = page.locator('[data-testid="method"] button[aria-expanded]').first();
+    await expect(clip).toHaveAttribute("aria-expanded", "false");
+    await clip.click();
+    await expect(clip).toHaveAttribute("aria-expanded", "true");
+  });
+}

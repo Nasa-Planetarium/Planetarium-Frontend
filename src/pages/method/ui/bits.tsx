@@ -42,9 +42,10 @@ export function useNf() {
   }, [lang]);
 }
 
-export function Panel({ title, n, wide, children, attrs }: { title: ReactNode; n?: number | string | null; wide?: boolean; children: ReactNode; attrs?: Record<string, string> }) {
+/** wide = 태블릿·폰에서 한 줄 다. 웹(한 화면 배치)에서는 w1 = 한 칸, w2 = 두 칸으로 줄인다 */
+export function Panel({ title, n, wide, w1, w2, children, attrs }: { title: ReactNode; n?: number | string | null; wide?: boolean; w1?: boolean; w2?: boolean; children: ReactNode; attrs?: Record<string, string> }) {
   return (
-    <section className={cx("panel mt-p", wide && "mt-wide")} {...attrs}>
+    <section className={cx("panel mt-p", wide && "mt-wide", w1 && "mt-w1", w2 && "mt-w2")} {...attrs}>
       <div className={cx("panel-h")}>
         <h3>
           {title}

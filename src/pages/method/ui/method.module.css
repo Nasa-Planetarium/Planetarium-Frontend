@@ -159,3 +159,43 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 :global(html[data-device="phone"]) .mt .tbl :is(td,th){white-space:normal;overflow-wrap:anywhere}
 :global(html[data-device="phone"]) .mt-sec{display:flex;width:100%}
 :global(html[data-device="phone"]) .mt-sec button{flex:1 1 0;padding:0 var(--sp-2);white-space:normal;line-height:1.2}
+
+/* ── 웹(데스크톱): 절마다 한 화면 — 세로 스크롤 없이(1280×800 · 1440×900 · 1920×1080 에서 잰다). 태블릿·폰은 위 쌓기 그대로.
+   머리·절 고르기 한 줄씩 · 표 줄 높이 줄임 · 격자 2–3열(w1 = 한 칸, w2 = 두 칸) · 긴 원문은 .mt-clip(줄 수 --lc, 눌러 펼침) ── */
+.mt-clip{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:var(--lc,2);line-clamp:var(--lc,2);overflow:hidden;max-width:100%;margin:0;padding:0;border:0;background:none;color:var(--text-1);font:inherit;line-height:inherit;text-align:left;cursor:pointer;word-break:keep-all;overflow-wrap:anywhere}
+.mt-clip[data-open="1"]{display:block;-webkit-line-clamp:none;line-clamp:none}
+.mt-clip:hover{text-decoration:underline;text-decoration-color:var(--line-strong);text-underline-offset:.22em}
+.mt-clip:focus-visible{outline-offset:2px}
+:global(html[data-device="web"]) .mt{padding-bottom:var(--sp-3)}
+:global(html[data-device="web"]) .mt-head{flex-direction:row;align-items:center;flex-wrap:wrap;column-gap:var(--sp-5);padding-top:0}
+:global(html[data-device="web"]) .mt-head [data-cnt]{margin-left:auto}
+:global(html[data-device="web"]) .mt-head .cntbar{padding:0}
+:global(html[data-device="web"]) .mt-head .cntbar>.cb{min-height:var(--ctl-h)}
+:global(html[data-device="web"]) .mt-bar{padding:var(--sp-2) var(--gutter)}
+:global(html[data-device="web"]) .mt-kpis{padding:var(--sp-2) var(--gutter)}
+:global(html[data-device="web"]) .mt-kpis .kp{padding:var(--sp-2) var(--sp-4)}
+:global(html[data-device="web"]) .mt-g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+:global(html[data-device="web"]) .mt-wide.mt-w1{grid-column:auto}
+:global(html[data-device="web"]) .mt-wide.mt-w2{grid-column:span 2}
+:global(html[data-device="web"]) .mt .panel-h{padding:var(--sp-2) var(--sp-4) var(--sp-1)}
+:global(html[data-device="web"]) .mt .panel-b{padding:0 var(--sp-4) var(--sp-3)}
+:global(html[data-device="web"]) .mt .tbl th{padding:var(--sp-1) var(--sp-3)}
+:global(html[data-device="web"]) .mt .tbl td{height:auto;padding:var(--sp-1) var(--sp-3);line-height:1.45}
+:global(html[data-device="web"]) .mt .tbl .mt-src{height:auto;padding-block:1px}
+:global(html[data-device="web"]) .mt-per br{display:none}
+:global(html[data-device="web"]) .mt-kv{gap:var(--sp-1) var(--sp-4);line-height:1.45}
+:global(html[data-device="web"]) .mt-fold>summary{display:none}
+:global(html[data-device="web"]) .mt-harm{--lc:1}
+:global(html[data-device="web"]) .mt-ctab .mt-ch{margin:0}
+:global(html[data-device="web"]) .mt-lims{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:var(--sp-6);row-gap:var(--sp-1)}
+:global(html[data-device="web"]) .mt-p .tbl-wrap+.mt-kv{margin-top:var(--sp-2)}
+/* 웹 · 통합 방식: 3:2 두 열 — 기간표 | 모델, 계수 | 통합 규칙(한 줄씩, 눌러 펼침). 낮은 화면(≤860px)은 모델 원문도 한 줄 */
+:global(html[data-device="web"]) .mt-grid[data-g="method"]{grid-template-columns:minmax(0,3fr) minmax(0,2fr)}
+@media (max-height:860px){:global(html[data-device="web"]) .mt-grid[data-g="method"] .mt-kv{--lc:1}}
+/* 웹 · 검증: 두 열 — 왼쪽 한국 풀링 위 · 구간 아래, 오른쪽 지역(두 줄 차지) */
+:global(html[data-device="web"]) .mt-g4{grid-template-columns:repeat(2,minmax(0,1fr))}
+:global(html[data-device="web"]) .mt-g4>.mt-p:nth-child(2){grid-row:span 2}
+:global(html[data-device="web"]) .mt-g4 .tbl td small{white-space:nowrap}
+:global(html[data-device="web"]) .mt-g4 .mt-coef td:first-child,:global(html[lang="ko"][data-device="web"]) .mt-grid[data-g="method"] .mt-coef td:first-child{white-space:nowrap}
+:global(html[data-device="web"]:not([data-touch="1"])) .mt-ko summary{min-height:0}
+@media (max-height:860px){:global(html[data-device="web"]) .mt-ctab{--lc:1}:global(html[data-device="web"]) .mt .tbl td{padding-block:3px}}
