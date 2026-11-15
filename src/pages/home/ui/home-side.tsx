@@ -303,7 +303,7 @@ function useDetections(c: Ctx): { list: Det[] | null; err: string | null; zoom: 
 }
 
 function DetRows({ c, det }: { c: Ctx; det: ReturnType<typeof useDetections> }) {
-  if (det.err || det.zoom || !det.list) return <div className={cx("hm-empty")}>{det.err ? <b>{det.err}</b> : det.zoom ? <b>{c.t("maplab.zoom_for_points")}</b> : <b>–</b>}</div>;
+  if (det.err || det.zoom || !det.list) return <div className={cx("hm-empty")}>{det.err ? <b>{det.err}</b> : det.zoom ? <b>{c.t("map.level.fixed", { window: c.t("map.status.recent") })}</b> : <b>–</b>}</div>;
   if (!det.list.length)
     return (
       <div className={cx("hm-empty")}>

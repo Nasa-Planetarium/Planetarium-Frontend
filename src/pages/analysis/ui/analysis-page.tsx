@@ -17,7 +17,7 @@ import { aoisQuery, calendarAllQuery, comparisonQuery, type AoiRec } from "../ap
 import { AOI_OK, KOR_AOIS, coverage, defaultAoi, isStep, monthRec, regimes, selectable, ymK, type Step } from "../model/analysis";
 import { aoiOfIso3, iso3OfAoi, LAST, lastMonth, monthIndex, monthWord, nameEn, VIEWS, ymIso, ymOfIndex, type CalView } from "../model/core";
 import { AoiPicker } from "./aoi-picker";
-import { Status, StIcon, useRamp } from "./bits";
+import { Status, StIcon } from "./bits";
 import { Track, useNf } from "./charts";
 import { cx } from "./cx";
 import { S2 } from "./s2";
@@ -302,7 +302,6 @@ function S1({ x, KOR, yr, setYr, inScope, iso3 }: { x: Ctx; KOR: boolean; yr: nu
   const curVs = monthRec(cal, x.y, x.m)?.value_source ?? null;
   const rows = Array.from({ length: 12 }, (_, i) => monthRec(cal, y, i + 1) ?? { year: y, month: i + 1, status: "out_of_range", data_source: null, value_source: null });
   const allMiss = (cal?.months ?? []).filter((r) => r.status === "missing");
-  const ramp = useRamp();
   /* 재생 지도에서 나라를 누르면 그 나라 단위 분석(같은 나라면 그 달만) — 목업 mountWorld onCountry */
   const onCountry = (i3: string, i: number) => {
     const [yy, mm] = ymOfIndex(i);
@@ -575,7 +574,7 @@ function S1({ x, KOR, yr, setYr, inScope, iso3 }: { x: Ctx; KOR: boolean; yr: nu
             {T("w1.title")} <span className={cx("num")}>1°</span>
           </h3>
         </div>
-        {ramp ? <WorldReplay mv={x.M?.method_version ?? null} month={selectable(cal, x.y, x.m) ? monthIndex(x.y, x.m) : null} ramp={ramp} partialLine={(o) => T("g6.partial", o)} onCountry={onCountry} /> : null}
+        <WorldReplay mv={x.M?.method_version ?? null} month={selectable(cal, x.y, x.m) ? monthIndex(x.y, x.m) : null} partialLine={(o) => T("g6.partial", o)} onCountry={onCountry} />
       </section>
       <AoiPicker open={pickOpen} onOpenChange={setPickOpen} anchor={anchor} phone={x.device === "phone"} aois={pickableAois(aq.data ?? [], pickableIso3(countries, aq.data))} countries={countries} current={aoi} onPick={(id) => AOI_OK(id) && id !== "WORLD" && setAoi(id)} />
     </div>

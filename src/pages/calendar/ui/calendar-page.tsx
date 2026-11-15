@@ -69,6 +69,7 @@ function CalendarScreen() {
   const pathname = usePath();
   const sp = useQueryParams();
   const { iso3, list: countries } = useCountry();
+  /* 연×월 칸(CalGrid)은 어두운 셸 위 램프. 밝은 지도(점 지도·전 세계 재생)는 지도마다 공통 단계 색(shared/lib/display, 표시 규칙서 R4)을 스스로 읽는다 */
   const ramp = useRamp();
   const mq = useQuery(methodQuery());
   const mv = mq.data?.method_version ?? null;
@@ -278,16 +279,15 @@ function CalendarScreen() {
                 <span className={cx("cl-unit")}>{t("shell.unit.snpp_equiv")}</span>
               </div>
               <div className={cx("cl-wbox")}>
-                <WorldReplay
+                {ramp != null ? <WorldReplay
                   mv={mv}
                   month={inRange(y, m) ? monthIndex(y, m) : null}
-                  ramp={ramp}
                   partialLine={(o) => t("calendar.ui.partial_line", o)}
                   onCountry={(i3, i) => {
                     const [yy, mm] = ymOfIndex(i);
                     setAoi(aoiOfIso3(i3), { mode: "cal", ym: ymIso(yy, mm) });
                   }}
-                />
+                /> : null}
               </div>
             </section>
           ) : (
@@ -317,13 +317,13 @@ function CalendarScreen() {
                   ) : null}
                 </div>
                 <div className={cx("panel-b")}>
-                  <CalMap key={`${aoi}|${ymIso(y, m)}|${view}`} aoi={aoi} aois={aois} y={y} m={m} view={view} mv={mv} inGb={inGb(aoi, byId)} ramp={ramp} onCountry={(i3, i) => {
+                  {ramp != null ? <CalMap key={`${aoi}|${ymIso(y, m)}|${view}`} aoi={aoi} aois={aois} y={y} m={m} view={view} mv={mv} inGb={inGb(aoi, byId)} onCountry={(i3, i) => {
                     const [yy, mm] = ymOfIndex(i);
                     setAoi(aoiOfIso3(i3), { ym: ymIso(yy, mm) });
                   }} onWorldMonth={(i) => {
                     const [yy, mm] = ymOfIndex(i);
                     if (yy !== y || mm !== m) selectMonth(yy, mm);
-                  }} />
+                  }} /> : null}
                 </div>
               </section>
               <CalGrid

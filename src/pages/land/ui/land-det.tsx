@@ -23,7 +23,7 @@ export function LandDet({ iso3, info }: { iso3: string; info: CountryInfo | unde
       testId="land-det"
       regions={regs}
       renderMap={(m) => (
-        <MapCanvas className={cx("map")} testId="land-det-map" iso3={iso3} view={m.view} regions={regs ?? []} hotspots={m.hotspots} cells={m.cells} cellsKey={m.cellsLabel} layers={{ units: false, routes: false, fires: false }} status={m.status} />
+        <MapCanvas className={cx("map")} testId="land-det-map" iso3={iso3} view={m.view} regions={regs ?? []} hotspots={m.hotspots} cells={m.cells} keyWin={m.cellsLabel} layers={{ units: false, routes: false, fires: false }} status={m.status} />
       )}
     />
   );
