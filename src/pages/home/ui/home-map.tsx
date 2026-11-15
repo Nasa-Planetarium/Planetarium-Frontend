@@ -71,10 +71,13 @@ export function HomeMap(c: Ctx) {
   const nM = hot.length - nV;
   const hotErr = hotQ.error instanceof ApiError ? hotQ.error : null;
 
-  /* 원시 점 수를 화면(확인 줄)에 넘긴다 */
+  /* 원시 점 수를 화면(확인 줄)에 넘긴다.
+     의존성에 hb(그릴 때마다 새 배열)를 넣으면 효과 → setHot(새 객체) → 다시 그림 → 새 hb → 효과 … 로 끝없이 돈다(실서버에서만 — MSW 는 /hotspots 503).
+     그 연쇄가 Next 탭 이동(전환 렌더)을 계속 밀어내 상황판에서 다른 탭으로 못 갔다(2026-11-15 사용자 보고). 의존성은 수(원시 값)만 — 수가 바뀔 때만 새 객체 */
   const { setHot, setDetBox } = c;
-  useEffect(() => setHot(hb && hotQ.data ? { v: nV, m: nM } : null), [setHot, hb, hotQ.data, nV, nM]);
   const hbKey = hb ? hb.join(",") : "";
+  const hotV = hbKey && hotQ.data ? nV : null;
+  useEffect(() => setHot(hotV == null ? null : { v: hotV, m: nM }), [setHot, hotV, nM]);
   useEffect(() => setDetBox(hbKey ? (hbKey.split(",").map(Number) as unknown as Bbox) : null), [setDetBox, hbKey]);
 
   /* 불·자원·경로(시나리오 목 — 한국만) */
