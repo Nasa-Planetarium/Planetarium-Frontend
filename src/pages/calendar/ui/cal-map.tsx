@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useLocale } from "next-intl";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { boundaryQuery } from "@/entities/country";
 import { useCoarseCells, type CoarseAoi } from "@/entities/world-grid";
 import { ApiError, cellsTooMany, hotspotsTooWide } from "@/shared/api";
@@ -34,7 +34,8 @@ export function CalMap(o: { aoi: string; aois?: CoarseAoi[] | null; y: number; m
   const known = !aq.isPending;
   const rec = (aq.data ?? []).find((a) => a.aoi_id === o.aoi) ?? null;
   const cellsWide = cellsTooMany(rec);
-  const cq0 = useQuery(cellsQuery(o.aoi, ym, o.mv, !world && known && !cellsWide));
+  /* 달이 바뀌어도 지도(DotMap)를 유지한다(F14 LF-1): 새 달 자료가 오기 전까지 앞 달 자료를 둔다 */
+  const cq0 = useQuery({ ...cellsQuery(o.aoi, ym, o.mv, !world && known && !cellsWide), placeholderData: keepPreviousData });
   /* 칸 1만 개를 넘는 범위(대륙·큰 나라)는 정적 world-1deg 1° 묶음으로 — 미리 판정 · 판정 못 한 지역은 서버 400 을 받고(안전망) */
   const wide = cellsWide || (cq0.error instanceof ApiError && cq0.error.code === "range_too_large");
   const co = useCoarseCells({ aoiId: o.aoi, aois: o.aois, y: o.y, m: o.m, on: wide });
@@ -45,7 +46,9 @@ export function CalMap(o: { aoi: string; aois?: CoarseAoi[] | null; y: number; m
   const geoQ = useQuery({ ...boundaryQuery(iso3 ?? "KOR"), enabled: !world && bq.isError && !!iso3 && iso3 !== "KOR" });
   const sel = world ? null : caseFor(ym, o.aoi, o.inGb);
   const ptsWide = hotspotsTooWide(rec);
-  const hq = useQuery(hotspotsMonthQuery(o.aoi, ym, sel?.caseId ?? null, o.mv, !!sel && known && !ptsWide));
+  const hq = useQuery({ ...hotspotsMonthQuery(o.aoi, ym, sel?.caseId ?? null, o.mv, !!sel && known && !ptsWide), placeholderData: keepPreviousData });
+  /* 자리표시는 처음 한 번만 — 한 번 지도를 그린 뒤에는 달을 바꿔도 지도를 빼지 않는다(F14 LF-1) */
+  const [drawn, setDrawn] = useState(false);
   const ramp = o.ramp;
   const rampAt = useMemo(() => (k: number) => ramp(K_T[k] ?? 1), [ramp]);
 
@@ -101,7 +104,9 @@ export function CalMap(o: { aoi: string; aois?: CoarseAoi[] | null; y: number; m
     );
 
   const tooLarge = ptsWide || (hq.error instanceof ApiError && hq.error.code === "range_too_large");
-  const waiting = cq.isPending || bq.isPending || (!!sel && !ptsWide && hq.isPending);
+  const waiting0 = cq.isPending || bq.isPending || (!!sel && !ptsWide && hq.isPending);
+  if (!waiting0 && !drawn) setDrawn(true);
+  const waiting = waiting0 && !drawn;
   const cellErr = cq.error instanceof ApiError ? cq.error : null;
   const size = cq.data?.properties?.cell_size_deg ?? 0.1;
   const st = cq.data?.properties?.month_status ?? "ok";

@@ -37,6 +37,8 @@ export interface DotMapProps {
 }
 
 const K_R = [0.2, 0.28, 0.36, 0.44, 0.52];
+/** 감지 점 나이 색(밝은 지도, F14): 12시간 안 = 가장 진한 빨강 · 2일 안 = 호박 · 그 전 = 회청(모두 땅 대비 3:1 이상) */
+const PT_AGE = ["mh3", "mh1", "map-boundary"] as const;
 const RECENT = 12 * 60;
 const PX_DEG = 512 / 360;
 type Pop = { lng: number; lat: number; kind: "pt" | "cell"; i: number } | null;
@@ -166,8 +168,9 @@ export function DotMap(o: DotMapProps) {
             { id: "outf", type: "fill", source: "outf", paint: { "fill-color": tok("map-land") } },
             { id: "outl", type: "line", source: "outl", paint: { "line-color": tok("map-boundary"), "line-opacity": 0.5, "line-width": 0.8 } },
             { id: "isl", type: "circle", source: "isl", paint: { "circle-radius": 4, "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 1, "circle-stroke-color": tok("map-boundary"), "circle-stroke-opacity": 0.8 } },
-            { id: "cells", type: "circle", source: "cells", paint: { "circle-radius": 2, "circle-color": "#000", "circle-stroke-width": 0 } },
-            { id: "pts", type: "circle", source: "pts", paint: { "circle-stroke-width": 0, "circle-opacity": 0.85, "circle-radius": 2 } },
+            /* 밝은 바탕(F14): 칸 원·감지 점에 땅색 얇은 테두리(겹친 원이 갈린다) · 점은 어두운 테두리 */
+            { id: "cells", type: "circle", source: "cells", paint: { "circle-radius": 2, "circle-color": "#000", "circle-stroke-width": 0.6, "circle-stroke-color": tok("map-land"), "circle-stroke-opacity": 0.7 } },
+            { id: "pts", type: "circle", source: "pts", paint: { "circle-stroke-width": 0.6, "circle-stroke-color": tok("map-dot-edge"), "circle-opacity": 0.9, "circle-radius": 2 } },
           ],
         },
       });
@@ -187,9 +190,27 @@ export function DotMap(o: DotMapProps) {
       ro?.disconnect();
       made?.remove();
     };
-    // fit 은 처음 한 번만(달이 바뀌면 부모가 key 로 다시 만든다)
+    // 지도는 한 번만 만든다(달이 바뀌면 아래 fitKey 효과가 범위만 다시 맞춘다)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /* 달이 바뀌어 맞춤 범위(사례 초점)가 달라지면 다시 맞춘다 — 지도는 유지(F14 LF-1, 예전에는 key 로 지도를 새로 만들었다) */
+  const fitKey = fit.flat().map((v) => v.toFixed(3)).join(",");
+  const fitSeen = useRef<string | null>(null);
+  useEffect(() => {
+    if (!map) return;
+    if (fitSeen.current != null && fitSeen.current !== fitKey) map.fitBounds(fit, { padding: 16, duration: 0 });
+    fitSeen.current = fitKey;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, fitKey]);
+  /* 달(점 자료)이 바뀌면 재생 위치·팝업을 처음으로 */
+  const [seenK, setSeenK] = useState(k);
+  if (seenK !== k) {
+    setSeenK(k);
+    setCur(null);
+    setPlaying(false);
+    setPop(null);
+  }
 
   /* 윤곽 */
   useEffect(() => {
@@ -216,7 +237,7 @@ export function DotMap(o: DotMapProps) {
     const kx = ["match", ["get", "k"], 0, K_R[0], 1, K_R[1], 2, K_R[2], 3, K_R[3], K_R[4]];
     map.setPaintProperty("cells", "circle-radius", ["interpolate", ["exponential", 2], ["zoom"], 0, ["*", kx, size * PX_DEG], 16, ["*", kx, size * PX_DEG * 65536]]);
     map.setPaintProperty("cells", "circle-color", ["match", ["get", "k"], 0, rampAt(0), 1, rampAt(1), 2, rampAt(2), 3, rampAt(3), rampAt(4)]);
-    map.setPaintProperty("cells", "circle-opacity", ptsWanted ? 0.32 : 0.78);
+    map.setPaintProperty("cells", "circle-opacity", ptsWanted ? 0.45 : 0.92);
   }, [map, cells, size, rampAt, ptsWanted]);
 
   /* 감지 점 */
@@ -230,7 +251,7 @@ export function DotMap(o: DotMapProps) {
   useEffect(() => {
     if (!map || !k) return;
     map.setFilter("pts", ["<=", ["get", "t"], tNow]);
-    map.setPaintProperty("pts", "circle-color", ["case", ["<", ["-", tNow, ["get", "t"]], RECENT], tok("h6"), ["<", ["-", tNow, ["get", "t"]], RECENT * 4], tok("h4"), tok("h2")]);
+    map.setPaintProperty("pts", "circle-color", ["case", ["<", ["-", tNow, ["get", "t"]], RECENT], tok(PT_AGE[0]), ["<", ["-", tNow, ["get", "t"]], RECENT * 4], tok(PT_AGE[1]), tok(PT_AGE[2])]);
   }, [map, k, tNow]);
 
   /* 재생: 3시간씩 90ms 마다 */
@@ -408,15 +429,15 @@ export function DotMap(o: DotMapProps) {
           <span className={cx("cl-dmlg")}>
             <em>{T("pts")}</em>
             <span>
-              <i className={cx("cl-dot")} style={{ ["--d" as string]: "9px", ["--c" as string]: "var(--h6)" }} />
+              <i className={cx("cl-dot")} style={{ ["--d" as string]: "9px", ["--c" as string]: `var(--${PT_AGE[0]})` }} />
               {T("age0")}
             </span>
             <span>
-              <i className={cx("cl-dot")} style={{ ["--d" as string]: "9px", ["--c" as string]: "var(--h4)" }} />
+              <i className={cx("cl-dot")} style={{ ["--d" as string]: "9px", ["--c" as string]: `var(--${PT_AGE[1]})` }} />
               {T("age1")}
             </span>
             <span>
-              <i className={cx("cl-dot")} style={{ ["--d" as string]: "9px", ["--c" as string]: "var(--h2)" }} />
+              <i className={cx("cl-dot")} style={{ ["--d" as string]: "9px", ["--c" as string]: `var(--${PT_AGE[2]})` }} />
               {T("age2")}
             </span>
           </span>
