@@ -191,6 +191,45 @@ export function WorldReplay(o: WorldReplayProps) {
   const [map, setMap] = useState<MlMap | null>(null);
   const [cont, setCont] = useState<ContinentId | null>(null);
   /* 이름표 = MapLibre Marker(지도와 같은 프레임에 움직임). 화면 언어가 바뀌면 다시 붙인다 */
+  /* 육지 가림판(프런트 UI/UX, 2026-11-15): 1° 칸 점이 해안을 넘어 바다에 그려지지 않게, 지도 육지 면과 같은 world.json 을
+     재생 캔버스와 같은 좌표(경도 → x, 메르카토르 위도 → y)로 그려 둔다. 해안선은 1.5px 넓혀(선 굵기 3) 해안 칸 점이 통째로 지워지지 않게 */
+  const [landMask, setLandMask] = useState<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    let dead = false;
+    void fetch("/geo/world.json")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((g: { features?: { geometry?: { type: string; coordinates: unknown } | null }[] } | null) => {
+        if (dead || !g?.features) return;
+        const c = document.createElement("canvas");
+        c.width = CW;
+        c.height = CH;
+        const x = c.getContext("2d");
+        if (!x) return;
+        const px = (lon: number) => (lon + 180) * PXD;
+        const py = (lat: number) => (MY0 - merc(Math.max(-85, Math.min(85, lat)))) * PXR;
+        x.fillStyle = "#fff";
+        x.strokeStyle = "#fff";
+        x.lineWidth = 3;
+        x.lineJoin = "round";
+        /* 다각형 하나씩 채운다(구멍은 그 다각형 안에서만 evenodd) — 나라끼리 경계가 살짝 겹쳐도 틈이 생기지 않게 */
+        g.features.forEach((f) => {
+          const gg = f.geometry;
+          if (!gg) return;
+          const polys = (gg.type === "Polygon" ? [gg.coordinates] : gg.type === "MultiPolygon" ? gg.coordinates : []) as number[][][][];
+          polys.forEach((p) => {
+            x.beginPath();
+            p.forEach((ring) => ring.forEach((q, i) => (i ? x.lineTo(px(q[0] as number), py(q[1] as number)) : x.moveTo(px(q[0] as number), py(q[1] as number)))));
+            x.fill("evenodd");
+            x.stroke();
+          });
+        });
+        setLandMask(c);
+      })
+      .catch(() => {});
+    return () => {
+      dead = true;
+    };
+  }, []);
   const mlLib = useRef<typeof import("maplibre-gl") | null>(null);
   useEffect(() => {
     const lib = mlLib.current;
@@ -310,6 +349,12 @@ export function WorldReplay(o: WorldReplayProps) {
       ctx.arc(D.bx[k] as number, y, R_ST[st] as number, 0, 6.2832);
       ctx.fill();
     }
+    /* 바다로 넘친 부분 지우기: 육지 가림판과 겹친 곳만 남긴다 */
+    if (landMask) {
+      ctx.globalCompositeOperation = "destination-in";
+      ctx.drawImage(landMask, 0, 0);
+      ctx.globalCompositeOperation = "source-over";
+    }
     if (map) {
       const src = map.getSource("wf") as CanvasSource | undefined;
       if (src) {
@@ -319,7 +364,7 @@ export function WorldReplay(o: WorldReplayProps) {
       }
     }
     onMonth.current?.(i);
-  }, [D, cv, i, lut, map]);
+  }, [D, cv, i, lut, map, landMask]);
 
   /* 고른 나라 테두리 + 확대 (나라를 안 골랐으면 고른 대륙, 그것도 없으면 전 세계) */
   useEffect(() => {
