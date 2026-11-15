@@ -18,7 +18,7 @@ import { LoginDialog } from "@/features/auth-login";
 import { aoiIndexQuery } from "@/features/pick-aoi";
 import { CountryPicker } from "@/features/select-country";
 import { LangButton, useSwitchLocale } from "@/features/switch-locale";
-import { PAGES, PAGE_IDS, ROLE_DEF, pageHref, tabsFor, type Locale, type PageId } from "@/shared/config";
+import { PAGE_IDS, ROLE_DEF, pageHref, tabsFor, type Locale, type PageId } from "@/shared/config";
 import { useT, useTl } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { aoiOfIso3 } from "@/shared/lib/adm0";
@@ -177,13 +177,12 @@ export function TopBar() {
           freshTab === id && "animate-[navIn_1.1s_var(--ease-out)_2]",
           "relative inline-flex min-w-(--hit) items-center justify-center gap-2 whitespace-nowrap px-3 text-body font-medium text-t2 no-underline transition-[color,background-color] duration-(--dur-fast) ease-em hover:bg-s3 hover:text-t1 focus-visible:-outline-offset-2 [&_svg]:ic-nav",
           "aria-[current=page]:font-strong aria-[current=page]:text-t1 aria-[current=page]:sel-b",
-          "phone:w-(--hit) phone:px-0 phone:aria-[current=page]:w-auto phone:aria-[current=page]:gap-1 phone:aria-[current=page]:px-2",
-          "phone:tf8:aria-[current=page]:w-(--hit) phone:tf8:aria-[current=page]:px-0",
+          /* 메뉴 아이콘 없음(프런트 UI/UX 2026-11-15) — 폰에서도 짧은 이름 글자로 */
+          "phone:px-2",
         )}
       >
-        <Icon name={PAGES[id].icon} size="nav" />
         <span className="midsize:hidden phone:hidden">{label}</span>
-        <span className={cn("hidden midsize:inline", on && "phone:inline phone:text-fs3 phone:tf8:hidden")}>{t(`shell.nav.${id}.short`)}</span>
+        <span className="hidden midsize:inline phone:inline phone:text-fs3">{t(`shell.nav.${id}.short`)}</span>
       </Link>
     );
   };

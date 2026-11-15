@@ -45,7 +45,7 @@ export function LandDet({ iso3, info }: { iso3: string; info: CountryInfo | unde
         testId="land-det"
         regions={regs}
         renderMap={(m) => (
-          <MapCanvas ref={ref} className={cx("map")} testId="land-det-map" iso3={iso3} view={m.view} regions={regs ?? []} hotspots={m.hotspots} cells={m.cells} cellsKey={m.cellsLabel} layers={{ units: false, routes: false, fires: false }} status={m.status} />
+          <MapCanvas ref={ref} className={cx("map")} testId="land-det-map" iso3={iso3} view={m.view} regions={regs ?? []} hotspots={m.hotspots} cells={m.cells} keyWin={m.cellsLabel} layers={{ units: false, routes: false, fires: false }} status={m.status} />
         )}
       />
       <section className={cx("panel ld-dev")} aria-label={t("events.land.head")} data-testid="land-events" data-state={st}>

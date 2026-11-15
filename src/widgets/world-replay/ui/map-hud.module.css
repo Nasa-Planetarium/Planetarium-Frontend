@@ -1,0 +1,8 @@
+/* 지도 위 안내(프런트 UI/UX, 2026-11-15): 재생 중 지도에서 눈을 떼지 않아도 「지금 몇 년 몇 월 · 그 달 합계」가 왼쪽 위에 보이게.
+   색 범례는 공통 MapKey(표시 규칙서 R7)가 맡는다. 아래 칸(wf-side)은 자세히 볼 사람용으로 그대로 둔다.
+   색은 대륙 단추와 같은 지도 토큰(밝은 지도 위 카드), 누름은 지도로 통과 */
+.now{position:absolute;top:var(--sp-3);left:var(--sp-3);z-index:4;pointer-events:none;display:flex;flex-direction:column;gap:2px;background:color-mix(in srgb,var(--map-land) 92%,transparent);color:var(--map-label-hi);border-radius:var(--r-s);box-shadow:0 0 0 1px color-mix(in srgb,var(--map-label-hi) 16%,transparent),var(--elev-1);padding:var(--sp-2) var(--sp-3)}
+.ym{font:var(--fw-strong) 26px/1.05 var(--font-data);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.tot{font-size:var(--fs-1);color:color-mix(in srgb,var(--map-label-hi) 72%,transparent);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tot b{color:var(--map-label-hi);font-weight:var(--fw-strong);margin-left:var(--sp-1)}
+:global(html[data-device="phone"]) .ym{font-size:20px}

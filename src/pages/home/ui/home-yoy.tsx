@@ -45,7 +45,7 @@ export function YoyKpis(c: Ctx & { curr: { start: string; end: string }; prev: {
   const hp = useQuery({ ...hotspotsQuery(hb, c.prev.start, c.prev.end, c.mv), ...RETRY_429, enabled: rawOk && prevOk && !!c.mv });
   /* 점을 못 받으면(503 자료 준비 중·429·그 밖) 결측이 아니라 그 까닭을 쓴다 · 범위가 31일·100 제곱도를 넘으면 「확대」 안내 */
   const hErr = [hc.error, hp.error].find((e) => e instanceof ApiError) as ApiError | undefined;
-  const rawWhy = !rawOk ? c.t("maplab.zoom_for_points") : hErr ? c.t(hErr.code === "data_not_loaded" ? "shell.err.data_not_loaded" : "shell.err.request") : null;
+  const rawWhy = !rawOk ? c.t("map.level.fixed", { window: c.t("map.status.recent") }) : hErr ? c.t(hErr.code === "data_not_loaded" ? "shell.err.data_not_loaded" : "shell.err.request") : null;
   const C = side(cq.data as Sum | undefined);
   const P = prevOk ? side(pq.data as Sum | undefined) : null;
   const cnt = (d: unknown) => {

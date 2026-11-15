@@ -773,7 +773,19 @@ export interface components {
             value_lo?: number | null;
             value_hi?: number | null;
             low_sample: boolean | null;
-            /** @description 확장. 2001–2025 중 해당 연도 뺀 24개 */
+            /**
+             * @description 선택(v1.2 2026-11-15~, 옛 응답엔 없음). 이 지역의 같은 달 비교 기준 기간 — `aoi_month_compare.baseline_period` 그대로.
+             *     연속성 점검(`continuity_ratio` 0.85–1.15)을 통과하면 2001-2025, 아니면 2012-2025(VIIRS 시기만).
+             *     2012-2025 지역의 2012년 이전 달과 기준 연수 8년 미만은 `verdict = uncertain`(화면 「판정 보류」).
+             *     예: KR 2012-2025, ADM0_ARG·WORLD 2001-2025. 화면은 이 값을 평년 기간으로 그대로 보여 주고, 없으면 2001–2025 로 둔다.
+             * @enum {string}
+             */
+            baseline_period?: "2001-2025" | "2012-2025";
+            /** @description 선택. (통합값 2013–2021 ÷ 2003–2011) ÷ (MODIS 원자료 2013–2021 ÷ 2003–2011). 0.85–1.15 → 2001-2025. 파일 값 그대로. */
+            continuity_ratio?: number | null;
+            /** @description 선택. `own` = 자기 지역 비율, `parent:<aoi_id>` = 두 기간 MODIS 원자료가 각각 50건 미만이라 상위 지역(시군구 → 시도 → 나라) 비율을 물려받음. */
+            continuity_source?: string;
+            /** @description 확장. 기준 기간(`baseline_period`, 없으면 2001–2025) 중 해당 연도 뺀 해들 */
             baseline?: components["schemas"]["BaselineYear"][];
             /** @description 확장. 판정 규칙 설명(파일 판정을 설명할 뿐 다시 계산하지 않는다) */
             rule?: Record<string, never>;

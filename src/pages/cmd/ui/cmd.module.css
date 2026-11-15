@@ -60,7 +60,6 @@ table.tbl{width: 100%; border-collapse: collapse; font-size: var(--fs-3); font-v
 .map .map-key > span{display: inline-flex; align-items: center; gap: var(--sp-1); flex: 0 0 auto;}
 .map .map-key > b{flex: 0 0 auto; font-weight: var(--fw-medium); color: var(--text-1);}
 .map .map-key i{flex: 0 0 auto; display: block; width: 10px; height: 10px; border-radius: var(--r-2xs); background: var(--c,var(--text-2));}
-.map .map-key i.ramp{width: 56px; height: 8px; background: linear-gradient(90deg,var(--h1),var(--h3),var(--h4),var(--h5),var(--h6));}
 .chart svg{display: block; width: 100%; height: auto; overflow: visible;}
 .chart text{fill: var(--text-2); font-family: var(--font-data); font-size: var(--fs-1); font-variant-numeric: tabular-nums;}
 .chart text.t-ko{font-family: var(--font-body);}

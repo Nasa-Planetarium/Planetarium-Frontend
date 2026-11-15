@@ -660,26 +660,6 @@ export function ticks(max: number, n = 4) {
   for (let v = 0; v <= m + 1e-9; v += step) out.push(+v.toFixed(6));
   return { max: m, ticks: out };
 }
-const RAMP_AT = [0, 0.12, 0.3, 0.5, 0.7, 0.86, 1];
-const hexRGB = (h: string): [number, number, number] => {
-  let x = String(h || "").replace("#", "");
-  if (x.length === 3) x = x.split("").map((c) => c + c).join("");
-  const n = parseInt(x, 16) || 0;
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-};
-/** 열 램프(--h0..--h6 을 정해진 위치에) → hex */
-export function makeRamp(stops: string[]) {
-  const RAMP = RAMP_AT.map((t, i) => [t, hexRGB(stops[i] ?? "#000")] as const);
-  return (t0: number) => {
-    const t = Math.max(0, Math.min(1, t0));
-    let j = 0;
-    while (j < RAMP.length - 2 && t > (RAMP[j + 1]?.[0] ?? 1)) j++;
-    const [ta, ca] = RAMP[j] ?? [0, [0, 0, 0] as const];
-    const [tb, cb] = RAMP[j + 1] ?? [1, [0, 0, 0] as const];
-    const u = (t - ta) / (tb - ta || 1);
-    return "#" + ca.map((v, i) => Math.round(v + ((cb[i] ?? 0) - v) * u).toString(16).padStart(2, "0")).join("");
-  };
-}
 
 /* ── 날짜 ── */
 export const pad2 = (n: number) => String(n).padStart(2, "0");

@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { ChevronLeft, Download, FileText } from "lucide-react";
 import { api, hotspotsTooWide } from "@/shared/api";
-import { displayInterval, hasSpread } from "@/shared/lib/interval";
+import { displayInterval, hasSpread } from "@/shared/lib/display";
+import { continuityParent } from "@/shared/lib/baseline-period";
 import { toast } from "@/shared/ui/toast";
 import { LIM_BASE, RESULT_COLS, calendarCSV, isoD, lastDay, monthRec, safeName, toCSV, trDefault } from "../model/analysis";
 import { ymIso } from "../model/core";
@@ -177,6 +178,7 @@ export function PrintDoc({ x }: { x: Ctx }) {
           {li(T("ui.region"), `${name} (${x.aoi})`)}
           {li(T("ui.analysis_month"), ym)}
           {li(T("ui.baseline"), T("g3.baseline_fixed", { a: base.from, b: base.to }))}
+          {contLine(x) ? li(T("g3.m_cont"), contLine(x)) : null}
           {li(T("g3.m_month"), T("g3.month_local"))}
         </ul>
       </section>
@@ -323,6 +325,14 @@ function ValTable({ x }: { x: Ctx }) {
   );
 }
 
+/** 기준 기간 근거(v1.2 continuity_ratio·continuity_source) 한 줄 — 응답에 비율이 없으면(옛 응답) 줄을 내지 않는다 */
+function contLine(x: Ctx): string {
+  const { T, c, base } = x;
+  if (c?.continuity_ratio == null) return "";
+  const p = continuityParent(c.continuity_source);
+  return `${T("g3.cont", { r: c.continuity_ratio.toFixed(2) })}${p ? T("g3.cont_parent", { id: p }) : ""}${base.from > 2001 ? T("g3.cont_pre", { a: base.from }) : ""}`;
+}
+
 function MethodBody({ x }: { x: Ctx }) {
   const { T, W, M, c, base } = x;
   const r = c?.rule ?? M?.verdict_rule ?? null;
@@ -336,6 +346,12 @@ function MethodBody({ x }: { x: Ctx }) {
         <dd className={cx("num")}>{M?.data_version ?? "–"}</dd>
         <dt>{T("ui.baseline")}</dt>
         <dd>{T("g3.baseline_fixed", { a: base.from, b: base.to })}</dd>
+        {contLine(x) ? (
+          <>
+            <dt>{T("g3.m_cont")}</dt>
+            <dd data-cont="">{contLine(x)}</dd>
+          </>
+        ) : null}
         <dt>{T("g3.m_rule")}</dt>
         <dd>{r ? `${T("g3.rule", { a: r.above_if_percentile_ge ?? 80, b: r.below_if_percentile_le ?? 20, n: r.uncertain_if_years_lt ?? 10 })}${r.id ? ` (${r.id})` : ""}` : "–"}</dd>
         <dt>{T("g3.m_unit")}</dt>

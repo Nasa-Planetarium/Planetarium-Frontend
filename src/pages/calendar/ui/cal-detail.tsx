@@ -15,7 +15,8 @@ import { caseOf, fmtVal, inRange, monthWord, partialOf, Y0, Y1, ymIso } from "..
 import { Status, Verdict } from "./bits";
 import { partialLine, unitWord } from "./cal-grid";
 import { cx } from "./cx";
-import { displayInterval, hasSpread } from "@/shared/lib/interval";
+import { displayInterval, hasSpread } from "@/shared/lib/display";
+import { baselineOf, continuityParent } from "@/shared/lib/baseline-period";
 import { DistChart, type DistItem } from "./dist-chart";
 
 /**
@@ -74,7 +75,12 @@ export function CalDetail({ cal, aoi, view, y, m, mv, onPick, touch }: { cal: Ca
     return hasSpread(iv) ? { value_lo: iv.lo, value_hi: iv.hi } : {};
   };
   const dist: DistItem[] = [];
-  /* 통합 보기 + 비교 응답: 기준 분포(p25–p75·중앙값). 막대는 baseline[] 이 있으면 그것(실서버), 없으면(목) 같은 기준 기간(2001–2025)의 /calendar 행 */
+  /* 비교 기준 기간: 응답 baseline_period 그대로(한국 2012–2025 등) · 옛 응답(필드 없음)은 2001–2025 */
+  const B = baselineOf(cmp?.baseline_period);
+  const contP = continuityParent(cmp?.continuity_source);
+  const contTip =
+    cmp?.continuity_ratio != null ? `${T("k.cont_t", { r: cmp.continuity_ratio.toFixed(2) })}${contP ? T("k.cont_parent", { id: contP }) : ""}` : undefined;
+  /* 통합 보기 + 비교 응답: 기준 분포(p25–p75·중앙값). 막대는 baseline[] 이 있으면 그것(실서버), 없으면(목) 같은 기준 기간(B)의 /calendar 행 */
   const band = view === "value" && !!cmp && cmp.baseline_median != null;
   if (band && cmp?.baseline) {
     cmp.baseline.forEach((b) => {
@@ -84,7 +90,7 @@ export function CalDetail({ cal, aoi, view, y, m, mv, onPick, touch }: { cal: Ca
     dist.push({ year: y, value: cv.value, state: "evaluated", partial: cv.st === "partial", ...lh(y) });
   } else {
     for (let yy = Y0; yy <= Y1; yy++) {
-      if (!inRange(yy, m) || (band && yy !== y && (yy < 2001 || yy > 2025))) continue;
+      if (!inRange(yy, m) || (band && yy !== y && (yy < B.from || yy > B.to))) continue;
       const rr = rec(yy, m);
       if (!rr) continue;
       const k = caseOf(rr, view);
@@ -179,7 +185,7 @@ export function CalDetail({ cal, aoi, view, y, m, mv, onPick, touch }: { cal: Ca
             )}
             {kv(T("k.pct"), pct != null ? <b className={cx("num")}>{nf(pct)}</b> : "–")}
             {kv(T("k.ratio"), rat != null ? <b className={cx("num")}>{T("k.ratio_v", { r: nf(rat) })}</b> : "–")}
-            {kv(T("k.n"), cmp?.n_baseline_years != null ? <span className={cx("num")}>{T("k.n_v", { n: cmp.n_baseline_years, a: 2001, b: 2025 })}</span> : "–")}
+            {kv(T("k.n"), cmp?.n_baseline_years != null ? <span className={cx("num")} title={contTip} data-baseline={`${B.from}-${B.to}`}>{T("k.n_v", { n: cmp.n_baseline_years, a: B.from, b: B.to })}</span> : "–")}
           </dl>
         </div>
         <div className={cx("cl-same")}>

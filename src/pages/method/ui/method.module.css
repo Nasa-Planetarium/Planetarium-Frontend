@@ -100,9 +100,9 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 .mt-head .cntbar{padding:var(--sp-1) 0 var(--sp-2)}
 .mt-bar{display:flex;align-items:center;gap:var(--sp-3);padding:var(--sp-3) var(--gutter);background:var(--surface-0);border-bottom:var(--hair) solid var(--line-soft);min-width:0}
 .mt-sec{max-width:100%;overflow-x:auto}
-.mt-body{min-width:0}
+.mt-body{min-width:0;padding:var(--gap-panel) var(--gutter) var(--gutter)}
 .mt-kpis{padding:var(--sp-3) var(--gutter);background:var(--surface-0)}
-.mt-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;min-width:0}
+.mt-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gap-panel);min-width:0}
 .mt-p{min-width:0}
 .mt-wide{grid-column:1 / -1}
 .mt-n{color:var(--text-3);font-weight:var(--fw-regular)}

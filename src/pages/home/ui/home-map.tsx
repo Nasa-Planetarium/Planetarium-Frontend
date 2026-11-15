@@ -7,6 +7,7 @@ import { Check, Info, Search, Truck, X } from "lucide-react";
 import { focusBoundaryQuery, geomMainBounds, linesQuery, MapCanvas, type Bbox, type LayerKey, type MapCanvasHandle, type MapHotspot } from "@/widgets/map-canvas";
 import { useCoarseSum } from "@/entities/world-grid";
 import { useEventLayer } from "@/widgets/fire-events";
+import { MapKey } from "@/shared/ui";
 import { iso3OfAoi } from "@/features/pick-aoi";
 import { SpreadLegend, SpreadTip, useSpreadLayer } from "@/features/spread-nowcast-layer";
 import { spreadNowcastQuery } from "@/entities/spread-nowcast";
@@ -271,6 +272,7 @@ export function HomeMap(c: Ctx) {
       focus={focus}
       hotspots={hb ? hot : []}
       cells={cells}
+      mapKey={false}
       fires={fires}
       units={units}
       routes={routes}
@@ -291,7 +293,7 @@ export function HomeMap(c: Ctx) {
       onReady={setGlMap}
       ticks
       offView={!c.drawn && !isCountry && view ? { pts: [[(view[1] + view[3]) / 2, (view[0] + view[2]) / 2]], label: c.aoiLabel } : c.drawn ? { pts: [[(c.drawn.type === "bbox" ? (c.drawn.south + c.drawn.north) / 2 : c.drawn.type === "point" ? c.drawn.lat : c.drawn.pts[0]![0]), (c.drawn.type === "bbox" ? (c.drawn.west + c.drawn.east) / 2 : c.drawn.type === "point" ? c.drawn.lon : c.drawn.pts[0]![1])]], label: c.drawnKind } : null}
-      status={wide ? c.t("shell.map.cells_wide", { p: mTxt, n: c.fmt.num(cells.length) }) : hotErr?.status === 429 ? c.t("shell.err.rate_limited") : null}
+      status={wide ? c.t("map.level.L1") : hotErr?.status === 429 ? c.t("shell.err.rate_limited") : null}
     >
       <div ref={tlRef} className={cx("hm-ov hm-ov-tl")} style={{ pointerEvents: "none" }}>
         <div className={cx("hm-search")} role="search">
@@ -411,20 +413,14 @@ export function HomeMap(c: Ctx) {
           <div className={cx("hm-legend")}>
             <span>{c.t("home.over.hotspots")}</span>
             <span className={cx("hm-lgs")}>
-              <i className={cx("hm-lgd v")} aria-hidden="true" />
-              VIIRS
-            </span>
-            <span className={cx("hm-lgs")}>
-              <i className={cx("hm-lgd m")} aria-hidden="true" />
-              MODIS
+              <i className={cx("hm-lgd")} aria-hidden="true" />
             </span>
             <span className={cx("hm-lg-n tn")} data-hcount="" data-n={hot.length}>
-              {hotErr ? c.t(hotErr.code === "data_not_loaded" ? "shell.err.data_not_loaded" : hotErr.status === 429 ? "shell.err.rate_limited" : "shell.err.request") : !hb ? "–" : hotQ.isPending ? "–" : `VIIRS ${c.fmt.num(nV)}, MODIS ${c.fmt.num(nM)}`}
+              {hotErr ? c.t(hotErr.code === "data_not_loaded" ? "shell.err.data_not_loaded" : hotErr.status === 429 ? "shell.err.rate_limited" : "shell.err.request") : !hb ? "–" : hotQ.isPending ? "–" : c.t("map.key.pts_n", { n: c.fmt.num(nV + nM) })}
             </span>
             {wide ? (
               <span className={cx("hm-lgs")} data-lg-cells="">
-                <i className={cx("hm-lgd")} style={{ borderRadius: 1, background: "var(--h3)" }} aria-hidden="true" />
-                {c.t("shell.map.cells_key")}
+                <MapKey level="L1" win={mTxt} inline />
               </span>
             ) : null}
             {c.kor ? (

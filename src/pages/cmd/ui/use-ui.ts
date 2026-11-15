@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocale } from "next-intl";
 import { useT, type TParams } from "@/shared/i18n";
-import { makeRamp } from "../model/cmd";
+import { shellRamp } from "@/shared/lib/display";
 
 /** 숫자·날짜 표기(목업 EM.fmt) */
 export function useFmt() {
@@ -52,7 +52,7 @@ export function useTok() {
     TOKS.forEach((k) => (o[k] = cs.getPropertyValue(`--${k}`).trim()));
     return o;
   });
-  const ramp = useMemo(() => (tok ? makeRamp([tok.h0, tok.h1, tok.h2, tok.h3, tok.h4, tok.h5, tok.h6]) : () => "#000"), [tok]);
+  const ramp = useMemo(() => (tok ? shellRamp([tok.h0, tok.h1, tok.h2, tok.h3, tok.h4, tok.h5, tok.h6]) : () => "#000"), [tok]);
   return { tok, ramp };
 }
 

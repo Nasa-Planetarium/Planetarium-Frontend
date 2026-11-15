@@ -23,8 +23,8 @@ export const C = {
   base: "var(--data-base)",
   viirs: "var(--data-viirs)",
 };
-const MONO = "IBM Plex Mono, IBM Plex Sans KR, monospace";
-const SANS = "IBM Plex Sans KR, Malgun Gothic, sans-serif";
+const MONO = "Pretendard Variable, Pretendard, Malgun Gothic, sans-serif";
+const SANS = "Pretendard Variable, Pretendard, Malgun Gothic, sans-serif";
 const KO = /[가-힣]/;
 const SATS = [
   { sat: "Terra", short: "T", sensor: "MODIS", start: "2000-02-24" },

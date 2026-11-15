@@ -5,13 +5,13 @@
 @import "./tokens.css";
 @import "./base.css";
 
-/* next/font 가 자체 호스팅한 글꼴은 이름이 바뀐다(--font-plex-*). 목업 토큰의 글꼴 순서는 그대로 두고 첫 이름만 바꾼다 */
-:root {
-  --font-body: var(--font-plex-kr), var(--font-plex), "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
-  --font-data: var(--font-plex-mono), var(--font-plex-kr), ui-monospace, monospace;
-}
+/* 글꼴(프런트 UI/UX 2026-11-15): 제목·본문·숫자 모두 Pretendard 한 벌(한·영 같음, npm pretendard 자체 호스팅).
+   숫자 칸(--font-data)은 고정폭 글꼴 대신 Pretendard 의 같은 너비 숫자(tabular-nums)로 너비가 흔들리지 않게 */
+:root,
 :root:lang(en) {
-  --font-body: var(--font-plex), var(--font-plex-kr), system-ui, sans-serif;
+  --font-display: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-body: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-data: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
 }
 
 /* 기기군: html[data-device] (app/layout.tsx 첫 그림 전 스크립트가 단다) */

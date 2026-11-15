@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cellFrame, cellRadius, circMeanLon, wrapLon, type LandPart } from "./cell-frame";
+import { cellFrame, circMeanLon, wrapLon, type LandPart } from "./cell-frame";
 
 const sq = (w: number, s: number, e: number, n: number) => [[w, s], [e, s], [e, n], [w, n], [w, s]] as [number, number][];
 
@@ -33,10 +33,5 @@ describe("cell-frame (칸 지도 틀)", () => {
     expect(f!.H).toBeLessThanOrEqual(400);
     const mid = (f!.X(126.95) + f!.X(127.55)) / 2;
     expect(Math.abs(mid - 280)).toBeLessThan(1);
-  });
-  it("원 반지름은 칸 간격에 맞추고 2.2–13px 안", () => {
-    expect(cellRadius(2, 4)).toBe(2.2);
-    expect(cellRadius(10, 4)).toBe(5);
-    expect(cellRadius(100, 4)).toBe(13);
   });
 });

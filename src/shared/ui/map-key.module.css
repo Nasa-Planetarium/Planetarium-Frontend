@@ -1,0 +1,23 @@
+/* 지도 범례 하나(표시 규칙서 R7). 지도 왼쪽 아래 · 폰에서는 한 줄(제목 + 5칸)로 접고 숨기지 않는다. 색은 토큰만.
+   견본은 땅색 칩 위에(지도에서 보이는 그대로) */
+.key{position:absolute;left:var(--sp-3);bottom:var(--sp-3);z-index:3;display:flex;flex-direction:column;gap:2px;max-width:calc(100% - 2 * var(--sp-3));padding:var(--sp-1) var(--sp-3) var(--sp-2);border-radius:var(--r-xs);background:color-mix(in srgb,var(--surface-2) 92%,transparent);border:1px solid var(--line-soft);font-size:var(--fs-1);color:var(--text-2);pointer-events:none}
+.inline{position:static;flex-direction:row;flex-wrap:wrap;align-items:center;gap:var(--sp-1) var(--sp-2);padding:0;border:0;background:transparent;max-width:none}
+.inline .lv{display:none}
+.head{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 var(--sp-2)}
+.head b{color:var(--text-1);font-weight:var(--fw-medium)}
+.win{color:var(--text-2)}
+.tail{color:var(--text-3)}
+.row{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap}
+.end{color:var(--text-3)}
+.ramp{position:relative;display:inline-flex;align-items:center;padding:3px 4px 13px;border-radius:2px;background:var(--map-land)}
+.cell{display:inline-flex;align-items:center;justify-content:center;width:20px;height:16px}
+.cell i{display:block;width:var(--d);height:var(--d);border-radius:50%;background:var(--c);opacity:.85}
+.nums{position:absolute;left:4px;right:4px;bottom:0;height:12px}
+.num{position:absolute;transform:translateX(-50%);font-size:10px;line-height:12px;color:var(--map-label);font-variant-numeric:tabular-nums}
+.sw{display:inline-flex;align-items:center;gap:var(--sp-1)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);box-shadow:var(--mk-halo)}
+.ring{display:inline-block;width:8px;height:8px;border-radius:50%;border:1.5px solid var(--c);box-shadow:0 0 0 3px var(--map-land)}
+.lv{color:var(--text-3)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:global(html[data-device="phone"]) .key{flex-direction:row;flex-wrap:wrap;align-items:center;gap:var(--sp-1) var(--sp-2);padding:2px var(--sp-2)}
+:global(html[data-device="phone"]) .lv,:global(html[data-device="phone"]) .end,:global(html[data-device="phone"]) .win,:global(html[data-device="phone"]) .tail{display:none}

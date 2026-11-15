@@ -131,10 +131,10 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 .an-head h1:focus{outline:0}
 .an-steps{max-width:560px}
 .an-steps .stages > li{font-size:var(--fs-3)}
-.an-body{min-width:0}
-.an-body .panel{box-shadow:none;border-radius:0}
-.an-s1,.an-grid,.an-s3{gap:var(--hair);background:var(--seam);align-items:stretch}
-.an-s1l,.an-side,.an-gl{gap:var(--hair);background:var(--seam)}
+.an-body{min-width:0;padding:var(--gap-panel) var(--gutter) var(--gutter)}
+/* 카드(벤토) 배치 — 이음선(1px) 대신 둥근 카드 사이 틈(프런트 UI/UX 2026-11-15) */
+.an-s1,.an-grid,.an-s3{gap:var(--gap-panel);align-items:stretch}
+.an-s1l,.an-side,.an-gl{gap:var(--gap-panel)}
 .an-s1l > :last-child,.an-side > :last-child,.an-gl > :last-child{flex:1 1 auto}
 .an-s3main{display:flex;flex-direction:column;background:var(--surface-1);min-width:0}
 .an-s3side{background:var(--surface-1)}
@@ -186,7 +186,8 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 .an-dleg{display:flex;flex-wrap:wrap;gap:var(--sp-1) var(--sp-4);font-size:var(--fs-2);color:var(--text-2);margin-top:var(--sp-1)}
 .an-dleg span{display:inline-flex;align-items:center;gap:var(--sp-2)}
 .an-dleg i{display:inline-block;width:12px;height:10px;border-radius:var(--r-2xs)}
-.an-dleg i.b{background:var(--data-base)} .an-dleg i.e{background:var(--h4)}
+/* 같은 달 연도별 막대와 같은 포인트색 그라데이션(dist-chart) */
+.an-dleg i.b{background:linear-gradient(180deg,color-mix(in srgb,var(--h4) 62%,transparent),color-mix(in srgb,var(--h3) 14%,transparent))} .an-dleg i.e{background:linear-gradient(180deg,var(--h5),var(--h4) 55%,var(--h3))}
 .an-dleg i.o{border:1px dashed var(--line-strong)}
 .an-dleg i.band{background:color-mix(in srgb,var(--text-1) 18%,transparent)}
 .an-dleg i.med{height:0;border-top:var(--sp-half) dashed var(--text-1);border-radius:0}
@@ -304,7 +305,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 :global(html:is([data-device="tablet"],[data-device="phone"])) .an-gl{display:contents}
 :global(html:is([data-device="tablet"],[data-device="phone"])) .an-gl .an-calp{order:0}
 :global(html:is([data-device="tablet"],[data-device="phone"])) .an-grid .an-det{order:1}
-:global(html[data-device="tablet"]) .an-side{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--hair);align-items:stretch}
+:global(html[data-device="tablet"]) .an-side{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--gap-panel);align-items:stretch}
 :global(html[data-device="tablet"]) .an-s3side{grid-template-columns:minmax(0,1fr)}
 :global(html[data-device="tablet"]) .an-exp .panel-b{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch}
 :global(html[data-device="tablet"]) .an-xb small{word-break:keep-all}
@@ -589,3 +590,14 @@ table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3);font-variant
 .an-trr{color:var(--text-3)}
 /* 고른 달 화재 사건(F15) */
 .an-ev{margin-top:var(--sp-4);padding-top:var(--sp-3);border-top:var(--hair) solid var(--line-soft)}
+
+/* 전 세계 재생 아래 조작(프런트 UI/UX 2026-11-15) — 재생 단추·고른 배속·지나온 구간 = 주황→산호 포인트 그라데이션(--grad-flame) */
+.wf-bar .wf-play{border:0;border-radius:var(--r-m);background:var(--grad-flame);color:#fff;box-shadow:var(--glow-flame);transition:transform var(--dur-fast) var(--ease-out),filter var(--dur-fast) var(--ease-out)}
+.wf-bar .wf-play:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.wf-bar .wf-play.on{box-shadow:var(--glow-flame),inset 0 0 0 2px rgb(255 255 255 / .55)}
+.wf-bar .wf-spd{border-radius:var(--r-m)}
+.wf-bar .wf-spd button[aria-pressed="true"]{background:var(--grad-flame);color:#fff;box-shadow:none;font-weight:var(--fw-strong)}
+.wf-bar .wf-range.cm-range::-webkit-slider-runnable-track{height:var(--sp-3);background:var(--grad-flame-x) left center/var(--p,0%) 4px no-repeat,linear-gradient(var(--line-strong),var(--line-strong)) center/100% var(--sp-half) no-repeat}
+.wf-bar .wf-range.cm-range::-moz-range-progress{height:4px;border-radius:999px;background:var(--grad-flame-x)}
+.wf-bar .wf-range.cm-range::-webkit-slider-thumb{width:6px;height:var(--sp-3);border-radius:999px;background:#fff;box-shadow:0 0 0 2px var(--flame-b),var(--glow-flame)}
+.wf-bar .wf-range.cm-range::-moz-range-thumb{width:6px;height:var(--sp-3);border-radius:999px;background:#fff;box-shadow:0 0 0 2px var(--flame-b),var(--glow-flame)}

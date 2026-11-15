@@ -513,3 +513,12 @@ table.oc-ft th:nth-child(4){width:96px}
 :global(html[data-device="phone"]) .fo-screen{height:auto;min-height:0;grid-template-columns:minmax(0,1fr);grid-template-rows:auto max(320px,48dvh) auto auto;grid-template-areas:"head" "stage" "side" "band"}
 :global(html[data-device="phone"]) .lb-views{width:100%}
 :global(html[data-device="phone"]) .lb-view{flex:1}
+
+/* 카드(벤토) 배치(main #40, 모든 화면 공통) — 예측 분석 두 보기(다음 달 발생 확률 · 30일 전망)도 패널 = 둥근 카드(--r-l) · 카드 사이 틈(--gap-panel) */
+.lb-screen,.fo-screen{gap:var(--gap-panel);padding:0 var(--gutter) var(--gutter)}
+.lb-screen>.pghd,.fo-screen>.pghd{margin-inline:calc(-1 * var(--gutter))}
+.lb-side{border-radius:var(--r-l)}
+.lb-band{gap:var(--gap-panel);padding:0 var(--gutter) var(--gutter);margin-top:0}
+.lb-col{gap:var(--gap-panel)}
+.fo-band{border-radius:var(--r-l);box-shadow:var(--seam-ring);border-top:0}
+:global(html[data-device="phone"]) .lb-screen,:global(html[data-device="phone"]) .fo-screen{padding:0 var(--gutter) var(--gutter)}

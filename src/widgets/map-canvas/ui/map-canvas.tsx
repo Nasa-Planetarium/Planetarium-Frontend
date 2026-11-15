@@ -6,9 +6,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Crosshair, Layers as LayersIc, LocateFixed, Minus, Pentagon, Plus, Square } from "lucide-react";
 import { useT } from "@/shared/i18n";
 import { useDevice } from "@/shared/lib/use-device";
-import { MapLoading } from "@/shared/ui";
+import { radiusExpr, stepOfCell } from "@/shared/lib/display";
+import { MapKey, MapLoading } from "@/shared/ui";
 import { adm1RegionsQuery, demManifestQuery, linesQuery } from "../api/basemap";
-import { aoiBounds, aoiGeometry, checkPoint, clusterUnits, curve, fireMarkOf, heatGain, hotWeight, isClosedFire, maskPolygon, niceScale, pixelSquare, placeLabels, tickLabel, tickStep, type Box, type LabelItem } from "../lib/geo";
+import { aoiBounds, aoiGeometry, checkPoint, clusterUnits, curve, fireMarkOf, hotWeight, isClosedFire, maskPolygon, niceScale, pixelSquare, placeLabels, tickLabel, tickStep, type Box, type LabelItem } from "../lib/geo";
 import { buildStyle, demLayer, LAYER_IDS, type Tok } from "../lib/style";
 import { DEFAULT_LAYERS, type Bbox, type DrawMode, type DrawnAoi, type GeoCollection, type Geom, type LatLon, type LayerKey, type Layers, type MapBurn, type MapCell, type MapFire, type MapHotspot, type MapRegion, type MapRoute, type MapUnit, type TickOpts, type ToolKey } from "../model/types";
 import s from "./map-canvas.module.css";
@@ -42,13 +43,17 @@ export interface MapCanvasProps {
   /** 초점 지역 윤곽: 그 밖을 어둡게 가린다(없으면 나라 밖만 가림) */
   focus?: Geom | null;
   hotspots?: MapHotspot[];
-  /** 월 감지량 칸(실제 /cells · 넓으면 1° 묶음) — 감지 점 아래 열 색 사각형 */
+  /** 월 감지량 칸(실제 /cells · 넓으면 1° 묶음) — 감지 점 아래 칸 원(표시 규칙서 R3–R5) */
   cells?: MapCell[];
+  /** 범례(MapKey) 시간 창 글(「2025.03」 · 「최근 24시간」). 없으면 cellsKey */
+  keyWin?: string | null;
+  /** 범례를 끈다(화면이 다른 범례를 둘 때만 — 기본은 켬) */
+  mapKey?: boolean;
+  /** 범례를 지도 아래쪽 막대 위로 띄울 높이(px) */
+  keyLift?: number;
   /** 칸 범례 이름(주면 왼쪽 위에 「이름 · 적음 ▮▮▮ 많음」) — 화면이 따로 범례를 그리면 비운다 */
   cellsKey?: string | null;
   /** 밀도 보기(열 지도) — 기본은 또렷한 점 */
-  density?: boolean;
-  heatGain?: number;
   fires?: MapFire[];
   units?: MapUnit[];
   routes?: MapRoute[];
@@ -365,29 +370,20 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
   useEffect(() => {
     if (!map) return;
     const H = hot ?? [];
-    src("hot", fc(H.map((h, i) => ({ type: "Feature", properties: { w: hotWeight(h), sensor: h.sensor, i }, geometry: { type: "Point", coordinates: [h.lon, h.lat] } }))));
+    src("hot", fc(H.map((h, i) => ({ type: "Feature", properties: { w: hotWeight(h), frp: h.frp ?? 0, sensor: h.sensor, i }, geometry: { type: "Point", coordinates: [h.lon, h.lat] } }))));
     src("hotpx", fc(H.map((h, i) => ({ type: "Feature", id: i, properties: { sensor: h.sensor, i }, geometry: { type: "Polygon", coordinates: pixelSquare(h) } }))));
-    const f = heatGain(H) * (p.heatGain ?? 1);
-    map.setPaintProperty("heat", "heatmap-intensity", ["interpolate", ["linear"], ["zoom"], 7, 0.55 * f, 10, 0.9 * f, 13, 1.4 * f]);
-  }, [map, hot, p.heatGain, src]);
+  }, [map, hot, src]);
 
-  /* ── 월 감지량 칸(사각형 · 값 단계 t = 로그 비율) ── */
+  /* ── 월 감지량 칸 원(표시 규칙서 R3–R5): 단계 = 0.1° 칸당 월 감지량(1° 는 ÷100, 여러 달 합은 ÷ 달 수) · 크기 = 화면 px 규칙 ── */
   const cells = p.cells;
   useEffect(() => {
     if (!map) return;
-    const C = (cells ?? []).filter((c) => c.value > 0);
-    const mx = Math.log1p(Math.max(1e-9, ...C.map((c) => c.value)));
-    src(
-      "cells",
-      fc(
-        C.map((c) => {
-          const h = c.size / 2;
-          const w = c.lon - h;
-          const e = c.lon + h;
-          return { type: "Feature", properties: { t: mx > 0 ? Math.log1p(c.value) / mx : 0, v: c.value }, geometry: { type: "Polygon", coordinates: [[[w, c.lat - h], [e, c.lat - h], [e, c.lat + h], [w, c.lat + h], [w, c.lat - h]]] } };
-        }),
-      ),
-    );
+    const C = (cells ?? []).flatMap((c) => {
+      const k = stepOfCell(c.value, c.size, c.months ?? 1);
+      return k == null ? [] : [{ c, k }];
+    });
+    src("cells", fc(C.map(({ c, k }) => ({ type: "Feature", properties: { k, v: c.value }, geometry: { type: "Point", coordinates: [c.lon, c.lat] } }))));
+    if (map.getLayer("cells")) map.setPaintProperty("cells", "circle-radius", radiusExpr(C[0]?.c.size ?? 0.1) as never);
   }, [map, cells, src]);
 
   /* ── 소실 범위 · 그린 영역 · 경로 ── */
@@ -417,11 +413,10 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
   }, [map, routeLines.length, layers.routes]);
 
   /* ── 레이어 켜고 끄기 ── */
-  const dens = !!p.density;
   useEffect(() => {
     if (!map) return;
-    Object.entries(LAYER_IDS).forEach(([k, f]) => f(dens).forEach(([id, on]) => vis(id, layers[k as LayerKey] && on)));
-  }, [map, layers, dens, vis, dem]);
+    Object.entries(LAYER_IDS).forEach(([k, f]) => f().forEach(([id, on]) => vis(id, layers[k as LayerKey] && on)));
+  }, [map, layers, vis, dem]);
 
   /* ── 시야 ── */
   const fit = useCallback(() => {
@@ -1168,10 +1163,10 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
             }
           });
         x.fillStyle = T("text-1");
-        x.font = "600 13px 'IBM Plex Sans KR', sans-serif";
+        x.font = "600 13px 'Pretendard Variable', Pretendard, sans-serif";
         x.fillText(title || "Emberline", 14, h + 27);
         x.fillStyle = T("text-2");
-        x.font = "12px 'IBM Plex Sans KR', sans-serif";
+        x.font = "12px 'Pretendard Variable', Pretendard, sans-serif";
         const at = attrEl.current?.textContent ?? "";
         const stamp = new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC · " + at;
         x.fillText(stamp, Math.max(14, w - 14 - x.measureText(stamp).width), h + 27);
@@ -1218,6 +1213,9 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
   }, [attrVariants, scW, frame]);
 
   const tickKey = JSON.stringify(p.ticks ?? false);
+  /* 범례에 무엇을 보일지 — 지금 지도에 실제로 그린 층 */
+  const shownCells = !!layers.cells && (cells ?? []).some((c) => c.value > 0);
+  const shownPts = !!layers.heat && (hot ?? []).length > 0;
   const tickOpt: TickOpts | null = useMemo(() => {
     const v = JSON.parse(tickKey) as boolean | TickOpts;
     return v ? (typeof v === "object" ? v : {}) : null;
@@ -1441,12 +1439,10 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
             </button>
           </div>
         ) : null}
-        {p.cellsKey && layers.cells && (cells ?? []).some((c) => c.value > 0) ? (
-          <div className={s.ckey} data-ckey="" data-noobs="">
-            <b>{p.cellsKey}</b>
-            <span>{t("cmd.ui.low_high")}</span>
-            <i aria-hidden="true" />
-          </div>
+        {/* 범례 하나(표시 규칙서 R7): 칸이 있으면 칸 단계(1° = L1 · 0.1° = L2), 점만 있으면 점(L3).
+            감지 지도(cells 를 받는 지도)는 그린 것이 없어도 범례를 둔다 — 몰디브처럼 감지 0 인 나라만 범례가 사라지지 않게(R7 · R11) */}
+        {map && (shownCells || shownPts || p.cells !== undefined) && p.mapKey !== false ? (
+          <MapKey level={shownCells ? ((cells ?? []).find((c) => c.value > 0)?.size ?? 0.1) >= 1 ? "L1" : "L2" : shownPts ? "L3" : ((cells ?? [])[0]?.size ?? 1) >= 1 ? "L1" : "L2"} win={p.keyWin ?? p.cellsKey ?? null} nPts={shownPts ? (hot ?? []).length : null} lift={p.keyLift ?? (p.status ? 72 : 24)} />
         ) : null}
         {p.status ? (
           <div className={s.state} role="status">

@@ -3,7 +3,7 @@
 import { useId, type KeyboardEvent } from "react";
 import { useLocale } from "next-intl";
 import { useT } from "@/shared/i18n";
-import { displayInterval, hasSpread } from "@/shared/lib/interval";
+import { displayInterval, hasSpread } from "@/shared/lib/display";
 import { fmtAxis, fmtNum, ticks } from "../model/core";
 import { C, Tx } from "./cal-svg";
 import { cx } from "./cx";
@@ -35,6 +35,11 @@ export function DistChart(o: {
   const t = useT();
   const lang = useLocale();
   const hid = `ds${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
+  /* 포인트색 그라데이션(프런트 UI/UX 2026-11-15): 막대 = 위 호박색(--h5) → 아래 붉은 주황(--h3).
+     분석 연도 = 진하게 + 은은한 빛, 기준 연도 = 같은 그라데이션을 옅게 */
+  const gEv = `${hid}e`;
+  const gBase = `${hid}b`;
+  const gGlow = `${hid}g`;
   const d = o.dist;
   const W = o.width;
   const H = o.height;
@@ -70,7 +75,7 @@ export function DistChart(o: {
     const h = Math.max(x.value === 0 ? 0 : 1.5, Y(0) - Y(x.value));
     return (
       <g key={x.year}>
-        <rect className={cx("ds-b")} data-y={x.year} x={bx} y={Y(0) - h} width={w} height={h} rx={2} fill={ev ? C.viirs : C.base} stroke={ev && x.partial ? C.ink : undefined} strokeWidth={ev && x.partial ? 1.4 : undefined} strokeDasharray={ev && x.partial ? "3 2" : undefined} {...btn}>
+        <rect className={cx("ds-b")} data-y={x.year} x={bx} y={Y(0) - h} width={w} height={h} rx={2} fill={`url(#${ev ? gEv : gBase})`} filter={ev ? `url(#${gGlow})` : undefined} stroke={ev && x.partial ? C.ink : undefined} strokeWidth={ev && x.partial ? 1.4 : undefined} strokeDasharray={ev && x.partial ? "3 2" : undefined} {...btn}>
           <title>{`${tt}${f(x.value)} ${o.unit}`}</title>
         </rect>
         {x.value === 0 ? <Tx x={bx + w / 2} y={Y(0) - 3} s="0" anchor="middle" fill={ev ? C.viirs : C.muted} /> : null}
@@ -128,6 +133,23 @@ export function DistChart(o: {
           <rect width="5" height="5" fill={C.hatchBg} />
           <line x1="0" y1="0" x2="0" y2="5" stroke={C.dim} strokeWidth="1.6" />
         </pattern>
+        <linearGradient id={gEv} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" style={{ stopColor: "var(--h5)" }} />
+          <stop offset="0.55" style={{ stopColor: "var(--h4)" }} />
+          <stop offset="1" style={{ stopColor: "var(--h3)" }} />
+        </linearGradient>
+        <linearGradient id={gBase} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" style={{ stopColor: "var(--h4)", stopOpacity: 0.62 }} />
+          <stop offset="1" style={{ stopColor: "var(--h3)", stopOpacity: 0.14 }} />
+        </linearGradient>
+        <filter id={gGlow} x="-60%" y="-20%" width="220%" height="140%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="b" />
+          <feColorMatrix in="b" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.55 0" result="g" />
+          <feMerge>
+            <feMergeNode in="g" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
       </defs>
       {tk.ticks.map((v) => (
         <g key={v}>

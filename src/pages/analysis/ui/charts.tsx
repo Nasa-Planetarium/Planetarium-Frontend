@@ -1,9 +1,11 @@
 "use client";
 
+import { useId } from "react";
 import { useLocale } from "next-intl";
 import { downloadBlob } from "@/shared/ui/download";
-import { cellFrame, cellRadius, ringsPath, type LandPart } from "../model/cell-frame";
-import { fmtAxis, fmtVal, niceMax, stepOf } from "../model/core";
+import { CELL_OPACITY, DOT_EDGE_TOKEN, DOT_TOKEN, F, RMAX, RMIN, stepOfCell, stepVar } from "@/shared/lib/display";
+import { cellFrame, ringsPath, type LandPart } from "../model/cell-frame";
+import { fmtAxis, fmtVal, niceMax } from "../model/core";
 import { VS_TRACK, ymK, type Pt, type Regime } from "../model/analysis";
 import { C, Tx } from "./cal-svg";
 import { cx } from "./cx";
@@ -111,23 +113,89 @@ export function Lines(o: { series: { name: string; color: string; values: Pt[]; 
   const mx = niceMax(Math.max(1, ...o.series.flatMap((s) => s.values.map((p) => p.y ?? 0))));
   const X = (x: number) => pl + ((x - x0) / (x1 - x0 || 1)) * (W - pl - pr);
   const Y = (v: number) => pt + (1 - v / mx) * (H - pt - pb);
-  const path = (vs: Pt[]) => {
-    let d = "";
-    let pen = false;
+  /* 값이 이어진 구간들(빈 값에서 끊음) → 화면 좌표 */
+  const runs = (vs: Pt[]) => {
+    const out: [number, number][][] = [];
+    let cur: [number, number][] = [];
     vs.forEach((p) => {
       if (p.y == null) {
-        pen = false;
+        if (cur.length) out.push(cur);
+        cur = [];
         return;
       }
-      d += `${pen ? "L" : "M"}${X(p.x).toFixed(1)} ${Y(p.y).toFixed(1)}`;
-      pen = true;
+      cur.push([X(p.x), Y(p.y)]);
     });
+    if (cur.length) out.push(cur);
+    return out;
+  };
+  /* 부드러운 곡선(단조 3차 — 점 사이에서 값보다 튀어 오르거나 0 밑으로 내려가지 않는다) */
+  const smooth = (q: [number, number][]) => {
+    const n = q.length;
+    if (n < 3) return q.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`).join("");
+    const dx = q.slice(1).map((p, i) => p[0] - (q[i] as [number, number])[0]);
+    const sl = q.slice(1).map((p, i) => (p[1] - (q[i] as [number, number])[1]) / ((dx[i] as number) || 1));
+    const m = q.map((_, i) => (i === 0 ? (sl[0] as number) : i === n - 1 ? (sl[n - 2] as number) : (sl[i - 1] as number) * (sl[i] as number) <= 0 ? 0 : ((sl[i - 1] as number) + (sl[i] as number)) / 2));
+    for (let i = 0; i < n - 1; i++) {
+      const s = sl[i] as number;
+      if (s === 0) {
+        m[i] = 0;
+        m[i + 1] = 0;
+        continue;
+      }
+      const a = (m[i] as number) / s;
+      const b = (m[i + 1] as number) / s;
+      const h = a * a + b * b;
+      if (h > 9) {
+        const t = 3 / Math.sqrt(h);
+        m[i] = t * a * s;
+        m[i + 1] = t * b * s;
+      }
+    }
+    let d = `M${q[0]![0].toFixed(1)} ${q[0]![1].toFixed(1)}`;
+    for (let i = 0; i < n - 1; i++) {
+      const [xa, ya] = q[i] as [number, number];
+      const [xb, yb] = q[i + 1] as [number, number];
+      const h = (dx[i] as number) / 3;
+      d += `C${(xa + h).toFixed(1)} ${(ya + (m[i] as number) * h).toFixed(1)} ${(xb - h).toFixed(1)} ${(yb - (m[i + 1] as number) * h).toFixed(1)} ${xb.toFixed(1)} ${yb.toFixed(1)}`;
+    }
     return d;
   };
+  const path = (vs: Pt[]) => runs(vs).map(smooth).join("");
+  const y0 = Y(0);
+  const area = (vs: Pt[]) =>
+    runs(vs)
+      .filter((q) => q.length > 1)
+      .map((q) => `${smooth(q)}L${q[q.length - 1]![0].toFixed(1)} ${y0.toFixed(1)}L${q[0]![0].toFixed(1)} ${y0.toFixed(1)}Z`)
+      .join("");
+  /* 불꽃 강조(프런트 UI/UX 2026-11-15): 가장 굵은 선(고른 보기) = 시간 따라 붉은색 → 주황 → 호박색 그라데이션 면 + 빛나는 선 */
+  const main = o.series.reduce<(typeof o.series)[number] | null>((a, s) => (!a || s.width > a.width ? s : a), null);
+  const gid = `ln${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
   const years: number[] = [];
   for (let y = Math.ceil(x0); y <= x1; y++) if (y % 5 === 0) years.push(y);
   return (
     <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={o.label} className={cx("an-lines")}>
+      <defs>
+        <linearGradient id={`${gid}h`} gradientUnits="userSpaceOnUse" x1={pl} y1={0} x2={W - pr} y2={0}>
+          <stop offset="0" style={{ stopColor: "var(--h3)" }} />
+          <stop offset="0.5" style={{ stopColor: "var(--h4)" }} />
+          <stop offset="1" style={{ stopColor: "var(--h5)" }} />
+        </linearGradient>
+        <linearGradient id={`${gid}v`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#fff" stopOpacity="0.85" />
+          <stop offset="0.7" stopColor="#fff" stopOpacity="0.25" />
+          <stop offset="1" stopColor="#fff" stopOpacity="0.04" />
+        </linearGradient>
+        <mask id={`${gid}m`} maskContentUnits="userSpaceOnUse">
+          <rect x={0} y={pt} width={W} height={y0 - pt} fill={`url(#${gid}v)`} />
+        </mask>
+        <filter id={`${gid}g`} x="-5%" y="-30%" width="110%" height="160%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="b" />
+          <feMerge>
+            <feMergeNode in="b" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
       {[0, 0.25, 0.5, 0.75, 1].map((f) => (
         <g key={f}>
           <line x1={pl} x2={W - pr} y1={Y(mx * f)} y2={Y(mx * f)} stroke={f ? C.line : C.line2} />
@@ -139,9 +207,13 @@ export function Lines(o: { series: { name: string; color: string; values: Pt[]; 
       ))}
       <line x1={X(o.marker.x)} x2={X(o.marker.x)} y1={pt} y2={H - pb} stroke={C.muted} strokeDasharray="3 3" />
       <Tx x={X(o.marker.x) + 4} y={pt + 8} s={o.marker.label} fill={C.muted} />
-      {o.series.map((s) => (
-        <path key={s.name} d={path(s.values)} fill="none" stroke={s.color} strokeWidth={s.width} strokeOpacity={s.opacity} strokeDasharray={s.dash} strokeLinejoin="round" />
-      ))}
+      {main ? <path d={area(main.values)} fill={`url(#${gid}h)`} mask={`url(#${gid}m)`} /> : null}
+      {o.series
+        .filter((s) => s !== main)
+        .map((s) => (
+          <path key={s.name} d={path(s.values)} fill="none" stroke={s.color} strokeWidth={s.width} strokeOpacity={s.opacity} strokeDasharray={s.dash} strokeLinejoin="round" />
+        ))}
+      {main ? <path d={path(main.values)} fill="none" stroke={`url(#${gid}h)`} strokeWidth={main.width + 0.4} strokeLinejoin="round" strokeLinecap="round" filter={`url(#${gid}g)`} /> : null}
     </svg>
   );
 }
@@ -161,8 +233,6 @@ export interface CellPt {
 }
 export function CellDots(o: {
   cells: CellDot[];
-  ramp: (t: number) => string;
-  scaleMax: number;
   width: number;
   label: string;
   points?: CellPt[];
@@ -186,11 +256,15 @@ export function CellDots(o: {
     <svg viewBox={`0 0 ${f.W} ${f.H}`} role="img" aria-label={o.label} data-an-cellmap="" data-land={land.length}>
       <rect x={0} y={0} width={f.W} height={f.H} fill="var(--map-sea)" data-an-sea="" />
       {land.length ? <path d={land.map((p) => ringsPath(f, p.rings)).join("")} fill="var(--map-land)" stroke="var(--map-boundary)" strokeOpacity={0.55} strokeWidth={0.6} strokeLinejoin="round" pointerEvents="none" data-an-land="" /> : null}
+      {/* 표시 규칙서 R3–R5: 색 = 0.1° 칸당 월 감지량 5단계(지역 최댓값 대비 상대 색 없음) · 반지름 = 칸 간격 px × 0.5 × F[k] 를 단계별 최소·최대로 */}
       {o.cells
-        .slice()
-        .sort((a, b) => a.value - b.value)
-        .map((c) => (
-          <circle key={`${c.lat},${c.lon}`} cx={X(c.lon)} cy={Y(c.lat)} r={cellRadius(f.cs, stepOf(c.value))} fill={o.ramp(Math.sqrt(Math.min(1, c.value / (o.scaleMax || 1))))} fillOpacity={0.88} stroke={C.bg} strokeWidth={0.6}>
+        .flatMap((c) => {
+          const k = stepOfCell(c.value, o.cellDeg ?? 0.1);
+          return k == null ? [] : [{ c, k }];
+        })
+        .sort((a, b) => a.k - b.k)
+        .map(({ c, k }) => (
+          <circle key={`${c.lat},${c.lon}`} data-k={k} cx={X(c.lon)} cy={Y(c.lat)} r={Math.max(RMIN[k] as number, Math.min(RMAX[k] as number, f.cs * 0.5 * (F[k] as number)))} fill={stepVar(k)} fillOpacity={CELL_OPACITY} stroke="var(--map-land)" strokeOpacity={0.7} strokeWidth={0.5}>
             <title>{c.title}</title>
           </circle>
         ))}
@@ -210,7 +284,7 @@ export function CellDots(o: {
       {(o.points ?? [])
         .filter((p) => p.lat >= s && p.lat <= n && f.wrap(p.lon) >= w && f.wrap(p.lon) <= e)
         .map((p, i) => (
-          <circle key={i} data-an-pt="" cx={X(p.lon)} cy={Y(p.lat)} r={1.8} fill="var(--surface-0)" stroke="var(--text-1)" strokeWidth={0.8}>
+          <circle key={i} data-an-pt="" cx={X(p.lon)} cy={Y(p.lat)} r={2.2} fill={`var(--${DOT_TOKEN})`} stroke={`var(--${DOT_EDGE_TOKEN})`} strokeWidth={0.75}>
             <title>{p.title}</title>
           </circle>
         ))}

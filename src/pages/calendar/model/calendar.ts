@@ -195,30 +195,7 @@ export function partialOf(r: MonthRow | null | undefined) {
   return { date: r.as_of_date ?? "", v: r.value, p: r.value_projected ?? null };
 }
 
-/** 열 램프: --h0..--h6 을 정해진 위치에(목업 charts.ramp). stops = 토큰에서 읽은 #rrggbb 7개 */
-const RAMP_AT = [0, 0.12, 0.3, 0.5, 0.7, 0.86, 1];
-const hexRGB = (h: string) => {
-  let s = String(h || "").trim().replace("#", "");
-  if (s.length === 3) s = s.split("").map((c) => c + c).join("");
-  const n = parseInt(s, 16) || 0;
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-};
-export function makeRamp(stops: string[]) {
-  const S = RAMP_AT.map((t, i) => [t, hexRGB(stops[i] ?? "#000")] as const);
-  return (t0: number) => {
-    const t = Math.max(0, Math.min(1, t0));
-    let j = 0;
-    while (j < S.length - 2 && t > (S[j + 1] as (typeof S)[number])[0]) j++;
-    const [a, ca] = S[j] as (typeof S)[number];
-    const [b, cb] = S[j + 1] as (typeof S)[number];
-    const u = (t - a) / (b - a);
-    return "#" + ca.map((v, i) => Math.round(v + ((cb[i] as number) - v) * u).toString(16).padStart(2, "0")).join("");
-  };
-}
 
-/** 칸 원 단계(로그 눈금 경계 1 · 10 · 100 · 1000) */
-export const DOT_STEPS = [1, 10, 100, 1000];
-export const stepOf = (v: number) => DOT_STEPS.filter((s) => v >= s).length;
 
 /** 위경도 글자 → { lat, lon } | null. 「36.35, 128.7」 「36.35 128.7」 「36.35N 128.7E」 「33.9S, 151.2E」 */
 export function parseLatLon(s: string | null | undefined) {

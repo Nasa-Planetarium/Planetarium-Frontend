@@ -33,7 +33,6 @@ export function MapLabPage() {
   const [pi, setPi] = useState(0);
   const P = PRESETS[pi]!;
   const [range, setRange] = useState({ start: P.start, end: P.end });
-  const [density, setDensity] = useState(false);
   const [aoi, setAoi] = useState<DrawnAoi | null>(null);
   const [hi, setHi] = useState<string[]>([]);
   const mv = useQuery(methodQuery()).data?.method_version ?? null;
@@ -116,10 +115,6 @@ export function MapLabPage() {
           {t("maplab.end")}
           <input type="date" value={range.end} onChange={(e) => setRange({ ...range, end: e.target.value })} />
         </label>
-        <label className={s.f}>
-          <input type="checkbox" checked={density} onChange={(e) => setDensity(e.target.checked)} data-density="" />
-          {t("maplab.density")}
-        </label>
         <button type="button" className={s.chip} data-png="" onClick={() => downloadMapPng(ref.current, `${name(P)} · ${range.start}–${range.end}`, `emberline-map-${P.id}`)}>
           {t("maplab.png")}
         </button>
@@ -134,7 +129,6 @@ export function MapLabPage() {
         hiRegions={hi}
         focus={focus}
         hotspots={hot}
-        density={density}
         fires={liveFires}
         units={mapUnits}
         routes={routes}
@@ -148,7 +142,7 @@ export function MapLabPage() {
         layerMenu={menu}
         ticks
         offView={aoi ? { pts: [[aoiGeometry(aoi).coordinates[0]![0]![1]!, aoiGeometry(aoi).coordinates[0]![0]![0]!]], label: t(`home.aoi.${aoi.type === "point" ? "drawn" : aoi.type}`) } : null}
-        status={vb && area > 100 ? t("maplab.zoom_for_points") : hotQ.isError ? t("shell.pts.pending") : null}
+        status={vb && area > 100 ? t("map.level.fixed", { window: `${range.start}–${range.end}` }) : hotQ.isError ? t("shell.pts.pending") : null}
       />
       <div className={s.foot} data-readout="">
         <span>
