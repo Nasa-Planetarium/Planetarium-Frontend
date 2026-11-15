@@ -165,30 +165,6 @@ export function ytdRatio(g: Cell[][], uptoMonth: number): { ratio: number; n: nu
   return med > 0 ? { ratio: now / med, n: base.length } : null;
 }
 
-/** 열 램프(목업 charts.js ramp): --h0..--h6 을 정해진 자리에 놓고 사이를 잇는다 */
-const RAMP_AT = [0, 0.12, 0.3, 0.5, 0.7, 0.86, 1];
-const hexRGB = (h: string): [number, number, number] => {
-  let s = String(h || "").replace("#", "");
-  if (s.length === 3)
-    s = s
-      .split("")
-      .map((c) => c + c)
-      .join("");
-  const n = parseInt(s, 16) || 0;
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-};
-export function makeRamp(hex: readonly string[]): (t: number) => string {
-  const stops = RAMP_AT.map((t, i) => [t, hexRGB(hex[i] ?? "#000")] as const);
-  return (t0: number) => {
-    const t = Math.max(0, Math.min(1, t0));
-    let j = 0;
-    while (j < stops.length - 2 && t > stops[j + 1]![0]) j++;
-    const [a, c0] = stops[j]!;
-    const [b, c1] = stops[j + 1]!;
-    const u = (t - a) / (b - a);
-    return "#" + c0.map((v, i) => Math.round(v + (c1[i]! - v) * u).toString(16).padStart(2, "0")).join("");
-  };
-}
 
 /** 캘린더 색 눈금 상한(목업: 값 있는 칸의 97 백분위) */
 export function scaleMaxOf(g: Cell[][]): number {
