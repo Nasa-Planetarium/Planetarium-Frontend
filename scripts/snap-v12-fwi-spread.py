@@ -11,7 +11,7 @@ release v1.2(data-v1.2-2026-11-15) → MSW 시험용 정적 스냅숏: FWI(산�
   spread.json  spread_nowcast_latest.parquet 의 모든 칸(10,189). 값은 파일 그대로(위경도 4자리 · p_spread 5자리 반올림만).
                칸마다 「칸 중심이 들어 있는 범위 안 AOI」(KR · SIDO_* · SGG_* · ADM0_ARG · ADM1_ARG-*) 를 aoi_boundaries.geojson 으로 미리 판정해 둔다
                — 계약 /spread-nowcast 의 aoi_id 규칙(「칸 중심이 AOI 경계 안」)을 MSW 가 흉내 낼 수 있게.
-  manifest.json  원본 파일·결과 파일의 바이트 수와 sha256.
+  manifest-fwi-spread.json  원본 파일·결과 파일의 바이트 수와 sha256.
 
 이 스크립트는 값을 다시 계산하지 않는다(결정 A1). level(low/moderate/high)은 계약이 「서버가 붙인다」고 정한 규칙
 (low < 0.05 ≤ moderate ≤ 0.20 < high)이라 MSW 처리기가 붙이고, 여기서는 넣지 않는다.
@@ -138,7 +138,7 @@ man = {
         "spread_member_aois": len(n_member),
     },
 }
-with open(f"{OUT}/manifest.json", "w", encoding="utf-8", newline="\n") as f:
+with open(f"{OUT}/manifest-fwi-spread.json", "w", encoding="utf-8", newline="\n") as f:
     json.dump(man, f, ensure_ascii=False, indent=1)
     f.write("\n")
 print(json.dumps(man["counts"], ensure_ascii=False))

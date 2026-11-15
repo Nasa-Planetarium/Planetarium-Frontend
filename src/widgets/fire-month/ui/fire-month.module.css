@@ -1,0 +1,39 @@
+/* 불 유형 배지 · 불 세기(FRP) · 위성 일별 상태 — 토큰만 쓴다(src/app/styles/tokens.css) */
+.fm{min-width:0;font-variant-numeric:tabular-nums}
+.fm h3{display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-2);font-size:var(--fs-3);font-weight:var(--fw-strong);margin:0 0 var(--sp-2);color:var(--text-1)}
+.fm-sub{font-size:var(--fs-1);font-weight:var(--fw-regular);color:var(--text-3)}
+.fm-row{display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-2) var(--sp-3);min-width:0}
+.fm-kv{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-2) var(--sp-3);margin:var(--sp-2) 0 0}
+.fm-kv>div{min-width:0}
+.fm-kv dt{font-size:var(--fs-1);color:var(--text-3)}
+.fm-kv dd{margin:0;font-size:var(--fs-3);color:var(--text-1);overflow-wrap:anywhere}
+.fm-kv dd b{font-weight:var(--fw-strong)}
+.fm-kv dd small{font-size:var(--fs-1);color:var(--text-3);margin-left:var(--sp-half)}
+.fm-na{font-size:var(--fs-2);color:var(--text-3);margin:0}
+.fm-note{font-size:var(--fs-1);color:var(--text-3);margin:var(--sp-2) 0 0;line-height:var(--lh-body)}
+.fm-part{display:grid;gap:var(--sp-1);min-width:0}
+.fm-part+.fm-part{margin-top:var(--sp-3);padding-top:var(--sp-3);border-top:var(--hair) solid var(--line-soft)}
+.fm-pk{font-size:var(--fs-1);color:var(--text-2);font-weight:var(--fw-medium)}
+
+/* 배지: 모양(테두리 굵기·채움) + 낱말이 1차 신호, 색은 보조 */
+.fm-badge{display:inline-flex;align-items:center;gap:var(--sp-1);height:var(--badge-h);padding:0 var(--sp-2);border-radius:var(--r-pill);font-size:var(--fs-2);font-weight:var(--fw-strong);border:var(--hair) solid var(--line-strong);color:var(--text-1);background:var(--surface-1);white-space:nowrap}
+.fm-badge svg{width:var(--ic-inline);height:var(--ic-inline);flex:none}
+.fm-badge[data-regime="large_fire"]{background:color-mix(in srgb,var(--crit) 14%,var(--surface-1));border-color:var(--crit)}
+.fm-badge[data-regime="many_small"]{background:color-mix(in srgb,var(--warn) 14%,var(--surface-1));border-color:var(--warn)}
+.fm-badge[data-regime="mixed"]{background:color-mix(in srgb,var(--accent) 12%,var(--surface-1));border-color:var(--accent)}
+.fm-badge[data-regime="none"]{color:var(--text-3);border-style:dashed}
+.fm-why{font-size:var(--fs-1);color:var(--text-3)}
+
+/* 위성 일별 상태 */
+.fm-sat{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--sp-1) var(--sp-3);margin:0;font-size:var(--fs-2)}
+.fm-sat>div{display:contents}
+.fm-sat dt{color:var(--text-2);white-space:nowrap}
+.fm-sat dd{margin:0;min-width:0;color:var(--text-1);overflow-wrap:anywhere}
+.fm-st{display:inline-flex;align-items:center;gap:var(--sp-half);margin-right:var(--sp-2);white-space:nowrap}
+.fm-st i{display:inline-block;width:var(--sp-2);height:var(--sp-2);border-radius:var(--r-2xs);background:var(--st-ok)}
+.fm-st[data-st="low"] i{background:var(--st-low)}
+.fm-st[data-st="missing"] i{background:var(--st-missing)}
+.fm-st[data-st="partial"] i{background:transparent;outline:1px dashed var(--st-partial);outline-offset:-1px}
+.fm-off{color:var(--text-3);font-size:var(--fs-1)}
+
+:global(html[data-device="phone"]) .fm-kv{grid-template-columns:repeat(2,minmax(0,1fr))}

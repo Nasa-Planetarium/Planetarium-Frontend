@@ -4,7 +4,7 @@
  * 여기서 하는 일은 줄 세우기·연속 달 묶기·세기뿐이다.
  */
 
-export const SECS = ["method", "v11", "validation", "status", "sources"] as const;
+export const SECS = ["method", "v11", "v12", "validation", "status", "sources"] as const;
 export type Sec = (typeof SECS)[number];
 export const isSec = (s: string | null | undefined): s is Sec => !!s && (SECS as readonly string[]).includes(s);
 
@@ -62,6 +62,8 @@ export interface Meta {
   validation_summary?: Record<string, { metric?: string; mean?: number }>;
   harmonization?: Record<string, string>;
   model_names?: Record<string, string>;
+  /** v1.2 산업 열원(고정 열원) 제거 — release m2v_meta.static_exclusion 그대로 */
+  static_exclusion?: { version?: string; rule?: string; removed_share?: Record<string, Record<string, number>>; limitation?: string };
   m2v_evaluation?: {
     objective?: string;
     features?: string[];
@@ -81,7 +83,28 @@ export interface MethodDoc {
   value_sources?: ValueSource[];
   sources?: { name: string; credit?: string; url?: string; license?: string; note?: string }[];
   files?: Record<string, unknown>;
+  /** v1.2 화면 표시 이름(내부 id → 이름, 계약 Method.display_names). 값은 내부 id 그대로 */
+  display_names?: Record<string, string>;
+  /** v1.2 성능 문구(계약 Method.performance_copy) */
+  performance_copy?: string;
 }
+
+/** 표시 이름(화면에만): 서버 display_names → 사전 v12frs.dn.<id> → 내부 id. 코드·값은 내부 id 그대로 */
+export const DN_IDS = ["m2v_xgb", "m2v_xgb_terra", "m2v_q10_q90", "n20_bridge"] as const;
+export function displayName(M: MethodDoc | undefined, id: string | null | undefined, dict: (id: string) => string | null): string | null {
+  if (!id) return null;
+  return M?.display_names?.[id] ?? dict(id) ?? null;
+}
+
+/** 산업 열원 제거 비율 행 순서(release removed_share 키): 한국 · 아르헨티나 · 전 세계, 나머지는 원래 순서 */
+export function removedRows(rs: Record<string, Record<string, number>> | undefined) {
+  const o = ["KR", "ADM0_ARG", "WORLD"];
+  const keys = Object.keys(rs ?? {});
+  return o.filter((k) => keys.includes(k)).concat(keys.filter((k) => !o.includes(k))).map((k) => ({ aoi: k, periods: rs?.[k] ?? {} }));
+}
+
+/** 한계 목록: 이 판에 위성 일별 상태가 있으면 「일별 상태 없음」 한계는 뺀다(v1.2 부터 release 에 있음) */
+export const limsOf = (files: Record<string, unknown> | undefined) => LIMS.filter((k) => !(k === "no_day_status" && !!files?.satellite_day_status));
 
 export const ymS = (y: number, m: number) => `${y}-${String(m).padStart(2, "0")}`;
 

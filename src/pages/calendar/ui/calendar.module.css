@@ -227,6 +227,7 @@
 .cl-flag{color:var(--warn);font-size:var(--fs-2)}
 .cl-same{margin-top:var(--sp-4);border-top:var(--hair) solid var(--line-soft);padding-top:var(--sp-3)}
 .cl-same h3{font-size:var(--fs-3);font-weight:var(--fw-strong);margin:0 0 var(--sp-2)}
+.cl-v12{display:grid;gap:var(--sp-3);margin-top:var(--sp-4);border-top:var(--hair) solid var(--line-soft);padding-top:var(--sp-3);min-width:0}
 .cl-dist svg{display:block;width:100%;height:auto}
 .cl-dleg{display:flex;flex-wrap:wrap;gap:var(--sp-1) var(--sp-4);font-size:var(--fs-2);color:var(--text-2);margin-top:var(--sp-1)}
 .cl-dleg span{display:inline-flex;align-items:center;gap:var(--sp-2)}
@@ -340,3 +341,5 @@
 .cl,.cpick{--fs-5:var(--fs-page);--fs-num-l:var(--fs-count)}
 /* 고른 달 화재 사건(F15) */
 .cl-ev{margin-top:var(--sp-4);border-top:var(--hair) solid var(--line-soft);padding-top:var(--sp-3)}
+
+:global(html:is([data-device="tablet"],[data-device="foldable"])) .cl-det>.panel-b>.cl-v12{grid-column:1 / -1}

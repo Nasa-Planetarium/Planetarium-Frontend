@@ -1,0 +1,76 @@
+{
+ "release": "data-v1.2-2026-11-15",
+ "source_dir": "/home/trevi/planetarium/release/v1.2-2026-11-15",
+ "sources": {
+  "aoi_month_fire_regime": {
+   "rows": 92335,
+   "file": "aoi_month_fire_regime.parquet",
+   "sha256_manifest": "b3b21a178879f2fdd222c983f632e464243bc9fd2890bc2fc90e15f9e37d5ead"
+  },
+  "satellite_day_status": {
+   "rows": 28316,
+   "file": "satellite_day_status.parquet",
+   "sha256_manifest": "e86ca4c3cffc93e3fa0904b95b758b35c0ef4020a955e0461eadd647010b6d5e"
+  },
+  "satellite_month_status": {
+   "rows": 934,
+   "file": "satellite_month_status.parquet",
+   "sha256_manifest": "9ce8d68bcbb0127a8a3fd76c2cc6738f590e39ca2b841e338fb126eb34809e36"
+  },
+  "harmonized_cell_day_frp": {
+   "window": [
+    "2024-01-01",
+    "2026-11-30"
+   ],
+   "cell_months_in_bbox": 3010981,
+   "cell_months_kept": 64918,
+   "cells_kept": 12012,
+   "file": "harmonized_cell_day_frp.parquet",
+   "sha256_manifest": "4726e000f2425b4e64ef6024e620b092ab24df30643036d9c3c595f226dc28e1"
+  },
+  "frp_snpp_ratios.csv": {
+   "rows": 84,
+   "sha256": "c5a21d19a189789e1bb15d51d14a9e09b34020d927448fac0691cb5776d6f517"
+  },
+  "aoi_boundaries": {
+   "file": "aoi_boundaries.geojson",
+   "sha256_manifest": "97f3adc0ef8f3711cbb94f270c50cf51346f87879ce739867d2bfe3e23719dac"
+  }
+ },
+ "outputs": {
+  "fire-regime.json": {
+   "bytes": 2999719,
+   "sha256": "7c8b3d005dd7dc84bf1e8554145d7890b5cd20b464a3902d0222daae36187628"
+  },
+  "satellite-status.json": {
+   "bytes": 663539,
+   "sha256": "f8cd4468c6b08d6b5ba64c0891b2f779078d5df91ceed01a8a6fb503bbaff7c9"
+  },
+  "frp-month.json": {
+   "bytes": 2280617,
+   "sha256": "03ade5a180a01d30ba1234b967ab56843adcd99803707aefc5abadbb915f72fb"
+  },
+  "frp-ratios.gen.ts": {
+   "rows": 8
+  },
+  "../m2v_meta.json": {
+   "bytes": 17934,
+   "sha256": "7e7b6089048dc2fc11ed6af3d55661f73a171a376debd7d1710936c9720d73ba"
+  }
+ },
+ "checks": {
+  "regime_aois": 295,
+  "regime_rows_per_aoi": [
+   313
+  ],
+  "sat_day_gaps": {
+   "Aqua": 0,
+   "NOAA-20": 0,
+   "NOAA-21": 0,
+   "S-NPP": 0,
+   "Terra": 0
+  },
+  "boundaries_found": "295/295",
+  "kr_cells_with_frp_in_window": 479
+ }
+}

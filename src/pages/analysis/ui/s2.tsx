@@ -8,6 +8,7 @@ import { useCoarseCells } from "@/entities/world-grid";
 import { ApiError, cellsTooMany } from "@/shared/api";
 import { API_BASE, DATA_MODE } from "@/shared/config";
 import { MonthEvents } from "@/widgets/fire-events";
+import { RegimeFrp } from "@/widgets/fire-month";
 import { aoisQuery, cellsQuery, monthPointsQuery, summaryQuery, type CellsData } from "../api/queries";
 import {
   TRMAX,
@@ -130,6 +131,7 @@ export function S2({ x }: { x: Ctx }) {
             </div>
             <Trend x={x} />
             <StepChart x={x} />
+            <RegimePanel x={x} />
             <CellPanel x={x} />
             <div className={cx("an-srcfoot")}>
               <p className={cx("an-src1")}>
@@ -145,6 +147,22 @@ export function S2({ x }: { x: Ctx }) {
         )}
       </div>
     </div>
+  );
+}
+
+/* v1.2 불 유형 배지 · 불 세기 FRP(S-NPP 기준) — 고른 달, /api/v1 값 그대로(widgets/fire-month). 자료 없는 지역은 한 줄 */
+function RegimePanel({ x }: { x: Ctx }) {
+  return (
+    <section className={cx("panel an-regp")} aria-labelledby="an-h-reg">
+      <div className={cx("panel-h")}>
+        <h3 id="an-h-reg">
+          {x.t("v12frs.panel_title")} <span className={cx("num")}>{ymIso(x.y, x.m)}</span>
+        </h3>
+      </div>
+      <div className={cx("panel-b")}>
+        <RegimeFrp aoi={x.aoi} ym={ymIso(x.y, x.m)} mv={x.M?.method_version ?? null} testId="an-regime-frp" />
+      </div>
+    </section>
   );
 }
 
