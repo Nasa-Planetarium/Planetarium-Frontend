@@ -256,9 +256,19 @@ export const CASE_BOX: Record<string, [number, number, number, number]> = {
   "uiseong-2025-03": [128.3, 36.0, 129.6, 36.9],
   "uljin-2022-03": [129.0, 36.85, 129.5, 37.45],
 };
-/** 점 고르기: 한국 안 지역이고 달이 점 범위(2000-11 – 2026-11) 안이면 */
+/** 바로가기: 고른 지역 캘린더(/api/v1)에서 감지량 상위 달 n개 — 값이 없으면 빈 배열 */
+export function topMonths(cal: CalendarData | null, n = 2): [number, number][] {
+  const vs = (cal?.months ?? [])
+    .filter((r) => inRange(r.year, r.month))
+    .map((r) => ({ r, v: caseOf(r, "value").value }))
+    .filter((x): x is { r: MonthRow; v: number } => x.v != null && x.v > 0)
+    .sort((a, b) => b.v - a.v);
+  return vs.slice(0, n).map((x) => [x.r.year, x.r.month]);
+}
+
+/** 점 고르기: 나라 이하 지역(한국 단위 · ADM0_ · ADM1_…)이고 달이 점 범위(2000-11 – 2026-11) 안이면 — 넓은 범위는 실서버가 range_too_large 로 거절 */
 export function caseFor(ym: string, aoiId: string, inGb: boolean) {
-  if (!isKorId(aoiId) || ym < "2000-11" || ym > "2026-11") return null;
+  if (!aoiId || aoiId === "WORLD" || /^CONT_/.test(aoiId) || ym < "2000-11" || ym > "2026-11") return null;
   const hit = inGb ? CASES_UI.find((c) => ymIso(c[1], c[2]) === ym) : undefined;
   return { aoi_id: aoiId, ym, caseId: hit ? hit[0] : null, focus: hit ? (CASE_BOX[hit[0]] ?? null) : null };
 }

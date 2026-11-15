@@ -14,6 +14,7 @@ import { prefs } from "@/shared/lib/prefs";
 import { useDevice } from "@/shared/lib/use-device";
 import { aoisQuery, calendarAllQuery, type AoiRec } from "../api/queries";
 import {
+  topMonths,
   aoiOfIso3,
   bandsOf,
   calInput,
@@ -94,6 +95,7 @@ function CalendarScreen() {
 
   const cq = useQuery({ ...calendarAllQuery(aoi ?? "WORLD", mv), enabled: !!mv && !!aoi });
   const cal = cq.data && cq.data.aoi_id === aoi ? cq.data : null;
+  const tops = useMemo(() => topMonths(cal), [cal]);
   const [y, m] = useMemo<[number, number]>(() => {
     if (ymQ) {
       const yy = +ymQ.slice(0, 4);
@@ -293,24 +295,24 @@ function CalendarScreen() {
                   <h2 id="cl-h-map">
                     {t("calendar.ui.map")} <span className={cx("num")}>{ymIso(y, m)}</span>
                   </h2>
-                  <div className={cx("cl-cases")} role="group" aria-label={t("calendar.dm.cases")}>
-                    {[
-                      ["uiseong-2025-03", 2025, 3],
-                      ["uljin-2022-03", 2022, 3],
-                    ].map(([id, cy, cm]) => (
-                      <button
-                        key={id as string}
-                        type="button"
-                        className={cx("chip cl-case")}
-                        data-case={id}
-                        aria-pressed={inGb(aoi, byId) && y === cy && m === cm}
-                        onClick={() => (inGb(aoi, byId) ? selectMonth(cy as number, cm as number) : setAoi("SIDO_47", { ym: ymIso(cy as number, cm as number), mode: null }))}
-                      >
-                        <Flame aria-hidden="true" />
-                        <span>{t(`calendar.dm.case.${id}`)}</span>
-                      </button>
-                    ))}
-                  </div>
+                  {tops.length ? (
+                    <div className={cx("cl-cases")} role="group" aria-label={t("calendar.dm.cases")}>
+                      {tops.map(([cy, cm], i) => (
+                        <button
+                          key={ymIso(cy, cm)}
+                          type="button"
+                          className={cx("chip cl-case")}
+                          data-case={ymIso(cy, cm)}
+                          aria-pressed={y === cy && m === cm}
+                          onClick={() => selectMonth(cy, cm)}
+                        >
+                          <Flame aria-hidden="true" />
+                          <span className={cx("num")}>{ymIso(cy, cm)}</span>
+                          <span>{t(i === 0 ? "calendar.dm.peak1" : "calendar.dm.peak2")}</span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
                 <div className={cx("panel-b")}>
                   <CalMap key={`${aoi}|${ymIso(y, m)}|${view}`} aoi={aoi} aois={aois} y={y} m={m} view={view} mv={mv} inGb={inGb(aoi, byId)} ramp={ramp} onCountry={(i3, i) => {

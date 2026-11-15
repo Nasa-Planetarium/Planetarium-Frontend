@@ -88,6 +88,7 @@ export function CalMap(o: { aoi: string; aois?: CoarseAoi[] | null; y: number; m
       </div>
     );
 
+  const tooLarge = hq.error instanceof ApiError && hq.error.code === "range_too_large";
   const waiting = cq.isPending || bq.isPending || (!!sel && hq.isPending);
   const cellErr = cq.error instanceof ApiError ? cq.error : null;
   const size = cq.data?.properties?.cell_size_deg ?? 0.1;
@@ -105,11 +106,11 @@ export function CalMap(o: { aoi: string; aois?: CoarseAoi[] | null; y: number; m
             size={size}
             outlines={outlines}
             pts={hq.data ?? null}
-            ptsWanted={!!sel}
+            ptsWanted={!!sel && !tooLarge}
             focus={sel?.focus ?? null}
             label={`${t("calendar.ui.map")} ${ym}`}
             rampAt={rampAt}
-            extra={hq.error ? <span className={cx("cl-dmnote")}>{`${t("calendar.dm.pts")} · ${errWord(hq.error)}`}</span> : null}
+            extra={hq.error && !tooLarge ? <span className={cx("cl-dmnote")}>{`${t("calendar.dm.pts")} · ${errWord(hq.error)}`}</span> : null}
           />
         )}
       </div>
