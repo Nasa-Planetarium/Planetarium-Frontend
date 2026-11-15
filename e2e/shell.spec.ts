@@ -154,3 +154,13 @@ test("MSW: 계약 경로가 release 스냅숏 값을 그대로 응답한다(결�
   expect(r.jun.status).toBe("missing");
   expect(r.jun.value).toBeNull();
 });
+
+test("나라 고르기: release 에 나라 행이 없는 나라(투발루 TUV)는 목록에 없다 · 숨김 섬나라(몰디브)는 있다", async ({ page }) => {
+  await page.goto("/ko/calendar/");
+  await expect(page.locator("html")).toHaveAttribute("data-data", "ready", { timeout: 15000 });
+  await page.locator("#ctryBtn").click();
+  await page.getByRole("searchbox").fill("TUV");
+  await expect(page.getByRole("option")).toHaveCount(0);
+  await page.getByRole("searchbox").fill("MDV");
+  await expect(page.getByRole("option", { name: /MDV/ })).toHaveCount(1);
+});

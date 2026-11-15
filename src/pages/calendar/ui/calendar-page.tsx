@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarDays, ChevronDown, Flame, MapPin, Play } from "lucide-react";
-import { countryName, useCountry } from "@/entities/country";
+import { countryName, pickableAois, pickableIso3, useCountry } from "@/entities/country";
 import { methodQuery } from "@/entities/release";
 import { ApiError } from "@/shared/api";
 import { useT } from "@/shared/i18n";
@@ -344,7 +344,7 @@ function CalendarScreen() {
           )}
         </div>
       </div>
-      <AoiPicker open={pickOpen} onOpenChange={setPickOpen} anchor={anchor} phone={phone} aois={aois} countries={countries} current={aoi ?? "WORLD"} onPick={(id) => setAoi(id)} />
+      <AoiPicker open={pickOpen} onOpenChange={setPickOpen} anchor={anchor} phone={phone} aois={pickableAois(aois, pickableIso3(countries, aq.data))} countries={countries} current={aoi ?? "WORLD"} onPick={(id) => setAoi(id)} />
     </div>
   );
 }

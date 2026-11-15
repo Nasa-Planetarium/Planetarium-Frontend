@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { pickableAois, pickableIso3 } from "@/entities/country";
 import { useT } from "@/shared/i18n";
 import { useDevice } from "@/shared/lib/use-device";
 import type { AoiScope } from "../model/use-aoi-scope";
@@ -51,7 +52,7 @@ export function ScopeButton({ s, size, label }: { s: AoiScope; size?: "sm"; labe
         </span>
         <ChevronDown className={cx("ap-ic")} aria-hidden="true" strokeWidth={1.9} />
       </button>
-      <AoiPicker open={open} onOpenChange={setOpen} anchor={anchor} phone={phone} aois={s.aois} countries={s.countries} current={s.chosen} onPick={(id) => s.setAoi(id)} />
+      <AoiPicker open={open} onOpenChange={setOpen} anchor={anchor} phone={phone} aois={pickableAois(s.aois, pickableIso3(s.countries, s.aois))} countries={s.countries} current={s.chosen} onPick={(id) => s.setAoi(id)} />
     </>
   );
 }

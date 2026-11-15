@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { usePath, useQueryParams } from "@/shared/lib/nav";
 import { useLocale } from "next-intl";
-import { useCountry, countryName, clockTz } from "@/entities/country";
+import { useCountry, countryName, clockTz, pickableIso3 } from "@/entities/country";
 import { useSession } from "@/entities/session";
 import { useNowMs, useSituation } from "@/entities/situation";
 import { methodQuery } from "@/entities/release";
@@ -14,6 +14,7 @@ import { nextPass } from "@/entities/satellite-pass";
 import { AccountDialog } from "@/features/account-menu";
 import { AlertBell, AlertToaster } from "@/features/alert-drawer";
 import { LoginDialog } from "@/features/auth-login";
+import { aoiIndexQuery } from "@/features/pick-aoi";
 import { CountryPicker } from "@/features/select-country";
 import { LangButton, useSwitchLocale } from "@/features/switch-locale";
 import { PAGES, PAGE_IDS, ROLE_DEF, pageHref, tabsFor, type Locale, type PageId } from "@/shared/config";
@@ -95,6 +96,10 @@ export function TopBar() {
   const dv = meth?.data_version ? (meth.data_version.split("#")[0] ?? null) : null;
   const verShort = dv && dv.indexOf("-") > 0 ? (dv.split("-")[0] ?? "–") : "–";
   const relAoi = aoiOfIso3(iso3);
+  /* 나라 칩 목록: release 에 자료 있는 나라 행이 없는 나라(투발루 등)는 뺀다 */
+  const { data: aoiIdx } = useQuery(aoiIndexQuery(mv));
+  const pick = useMemo(() => pickableIso3(list, aoiIdx), [list, aoiIdx]);
+  const pickList = useMemo(() => (pick ? list.filter((c) => pick.has(c.iso3)) : list), [list, pick]);
   const yr = nowMs != null ? new Date(nowMs).getUTCFullYear() : null;
   const { data: cal } = useQuery({ ...calendarQuery(relAoi, { start_year: yr ?? 0, end_year: yr ?? 0 }, mv), enabled: !!mv && yr != null });
   const months = cal && typeof cal === "object" ? cal.months : [];
@@ -383,9 +388,9 @@ export function TopBar() {
         onOpenChange={setPickOpen}
         anchorRect={anchorRect}
         device={device}
-        list={list}
+        list={pickList}
         current={iso3}
-        recent={recent()}
+        recent={recent().filter((c) => !pick || pick.has(c.iso3))}
         onPick={(c) => void setCountry(c)}
       />
       <LoginDialog open={loginOpen} onOpenChange={setLoginOpen} />

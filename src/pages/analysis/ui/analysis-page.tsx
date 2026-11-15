@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { Check, ChevronLeft, ChevronRight, Search, X } from "lucide-react";
-import { countryName, useCountry } from "@/entities/country";
+import { countryName, pickableAois, pickableIso3, useCountry } from "@/entities/country";
 import { methodQuery } from "@/entities/release";
 import { ApiError } from "@/shared/api";
 import { useT } from "@/shared/i18n";
@@ -566,7 +566,7 @@ function S1({ x, KOR, yr, setYr, inScope, iso3 }: { x: Ctx; KOR: boolean; yr: nu
         </div>
         {ramp ? <WorldReplay mv={x.M?.method_version ?? null} month={selectable(cal, x.y, x.m) ? monthIndex(x.y, x.m) : null} ramp={ramp} partialLine={(o) => T("g6.partial", o)} onCountry={onCountry} /> : null}
       </section>
-      <AoiPicker open={pickOpen} onOpenChange={setPickOpen} anchor={anchor} phone={x.device === "phone"} aois={aq.data ?? []} countries={countries} current={aoi} onPick={(id) => AOI_OK(id) && id !== "WORLD" && setAoi(id)} />
+      <AoiPicker open={pickOpen} onOpenChange={setPickOpen} anchor={anchor} phone={x.device === "phone"} aois={pickableAois(aq.data ?? [], pickableIso3(countries, aq.data))} countries={countries} current={aoi} onPick={(id) => AOI_OK(id) && id !== "WORLD" && setAoi(id)} />
     </div>
   );
 }

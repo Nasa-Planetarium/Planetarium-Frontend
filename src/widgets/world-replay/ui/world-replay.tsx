@@ -5,7 +5,8 @@ import type { CanvasSource, Map as MlMap } from "maplibre-gl";
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
 import { useLocale } from "next-intl";
 import { ChevronRight, Play, Square, X } from "lucide-react";
-import { countryName, useCountry } from "@/entities/country";
+import { countryName, pickableIso3, useCountry } from "@/entities/country";
+import { aoiIndexQuery } from "@/features/pick-aoi";
 import { worldGridQuery, type LatBand, type WorldMeta } from "@/entities/world-grid";
 import { useT } from "@/shared/i18n";
 import { aoiOfIso3 } from "@/shared/lib/adm0";
@@ -142,6 +143,13 @@ export function WorldReplay(o: WorldReplayProps) {
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(0);
   const [sel, setSel] = useState<string | null>(null);
+  /* 누를 수 있는 나라: release 에 자료 있는 나라 행이 있고 나라 색인에 있는 것(투발루·남극·애시모어 등은 커서·선택 없음) */
+  const { data: aoiIdx } = useQuery(aoiIndexQuery(o.mv));
+  const pick = useMemo(() => pickableIso3(countries, aoiIdx), [countries, aoiIdx]);
+  const pickRef = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    pickRef.current = pick;
+  }, [pick]);
   const cv = useMemo(() => {
     if (typeof document === "undefined") return null;
     const c = document.createElement("canvas");
@@ -209,14 +217,19 @@ export function WorldReplay(o: WorldReplayProps) {
         m.fitBounds([[-170, -50], [180, 72]], { padding: 4, duration: 0 });
         setMap(m);
       });
+      const isoAt = (pt: { x: number; y: number }) => {
+        const f = m.queryRenderedFeatures([pt.x, pt.y], { layers: ["land"] })[0];
+        const iso = (f?.properties as { iso3?: string } | undefined)?.iso3 ?? null;
+        return { hit: !!f, iso: iso && (!pickRef.current || pickRef.current.has(iso)) ? iso : null };
+      };
       m.on("mousemove", (ev) => {
-        const f = m.queryRenderedFeatures(ev.point, { layers: ["land"] })[0];
-        m.getCanvas().style.cursor = f ? "pointer" : "";
+        m.getCanvas().style.cursor = isoAt(ev.point).iso ? "pointer" : "";
       });
       m.on("click", (ev) => {
-        const f = m.queryRenderedFeatures(ev.point, { layers: ["land"] })[0];
-        const iso = (f?.properties as { iso3?: string } | undefined)?.iso3 ?? null;
-        setSel(iso);
+        const h = isoAt(ev.point);
+        /* 고를 수 없는 나라 땅을 누르면 아무것도 바꾸지 않는다(바다를 누르면 전체로) */
+        if (h.hit && !h.iso) return;
+        setSel(h.iso);
       });
       ro = new ResizeObserver(() => m.resize());
       ro.observe(mapEl.current);

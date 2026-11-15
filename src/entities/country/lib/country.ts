@@ -2,6 +2,7 @@
  * 나라 색인 순수 함수 — 목업 core.js countryName·countryShort·continentOf·searchCountries 이식.
  * 색인은 public/geo/countries.json(목업 geo/countries.js 변환, Natural Earth v5.1.2).
  */
+import { aoiOfIso3, iso3OfAdm0 } from "@/shared/lib/adm0";
 import { tzOffsetMin } from "@/shared/lib/time";
 
 export interface CountryInfo {
@@ -35,6 +36,29 @@ export function continentOf(c: CountryInfo | undefined): Continent {
   if (lat > 35 && lon < 45) return "EU";
   if (lon < 52 && lat < 37 && !(lon > 34 && lat > 12)) return "AF";
   return "AS";
+}
+
+/**
+ * 고를 수 있는 나라(ISO3) — 나라 색인에 있고(ISO2 있음 · 목록에 보이는 나라) release 에 자료 있는(has_data≠false) 나라 행이 있는 것.
+ * 색인에는 있지만 release 에 행이 없는 나라(투발루 TUV — 잰 것 2026-11-15)를 고르면 화면이 조용히 전 세계로 돌아가므로 고르기 목록·지도에서 뺀다.
+ * aois 를 아직 못 받았으면 null(모름 = 막지 않음).
+ */
+export function pickableIso3(list: readonly CountryInfo[], aois: readonly { aoi_id: string; has_data?: boolean | null }[] | null | undefined): Set<string> | null {
+  if (!aois || !aois.length) return null;
+  const ok = new Map(aois.map((a) => [a.aoi_id, a.has_data !== false] as const));
+  return new Set(list.filter((c) => c.iso2 && ok.get(aoiOfIso3(c.iso3))).map((c) => c.iso3));
+}
+
+/**
+ * 지역 고르기 목록에서 고를 수 없는 행을 뺀다: 자료 없음(has_data=false) · 나라 색인에 없는 나라와 그 1급
+ * (release 에만 있는 ADM0_ATA·GIB·BRI 등 10개 — 고르면 나라 칩이 받지 못해 한국으로 돌아간다). pick = null 이면 자료 없음만 뺀다.
+ */
+export function pickableAois<T extends { aoi_id: string; has_data?: boolean | null }>(aois: readonly T[], pick: Set<string> | null): T[] {
+  return aois.filter((a) => {
+    if (a.has_data === false) return false;
+    const m = /^ADM[01]_([A-Z]{3})/.exec(a.aoi_id);
+    return !pick || !m || pick.has(iso3OfAdm0(m[1] as string));
+  });
 }
 
 /** 악센트·대소문자·빈칸 무시 */
