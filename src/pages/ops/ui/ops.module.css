@@ -343,8 +343,9 @@
 .op-row-b small{word-break:keep-all}
 .op-legend .op-pip{width:10px;height:10px;min-width:10px;flex:none;border-radius:var(--r-2xs);animation:none}
 /* 범례 견본(데이터 램프라 그라데이션 허용) */
-.op-legend-fan::before{content:"";width:14px;height:10px;border-radius:0 var(--r-xs) var(--r-xs) 0;background:linear-gradient(90deg,var(--alert-4),color-mix(in srgb,var(--alert-3) 30%,transparent))}
-.op-legend-vil::before{content:"";width:10px;height:10px;border:var(--sp-half) solid var(--text-1);border-radius:var(--r-2xs);clip-path:polygon(50% 0,100% 40%,100% 100%,0 100%,0 40%)}
+/* 범례 견본 = 지도에 그린 모양 그대로(F14): 부채꼴은 땅 위 불투명도 .5 그러데이션 + 끝 고리 점선(map-warn-ink), 마을은 진한 집 + 흰 테(svg) */
+.op-legend-fan::before{content:"";width:14px;height:10px;border-radius:0 var(--r-xs) var(--r-xs) 0;background:linear-gradient(90deg,color-mix(in srgb,var(--alert-4) 50%,var(--map-land)),color-mix(in srgb,var(--alert-3) 22%,var(--map-land)));border-right:1.4px dashed var(--map-warn-ink)}
+.op-legend-vil svg{flex:none;display:block}
 .op-legend-heat::before{content:"";width:22px;height:6px;border-radius:var(--r-2xs);background:linear-gradient(90deg,var(--mh1),var(--mh3),var(--mh6));box-shadow:0 0 0 2px var(--map-land)}
 
 /* ── 상세 ── */

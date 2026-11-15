@@ -338,7 +338,7 @@ export function LandMap(p: LandMapProps) {
           </div>
         ) : null}
         {key.length ? (
-          <div className={cx("map-key")}>
+          <div className={cx("map-key")} data-tick-avoid="">
             {key.map((it) => (
               <span key={it.label}>
                 {it.f ? (
@@ -346,7 +346,7 @@ export function LandMap(p: LandMapProps) {
                     <FireMark f={it.f} sel={false} />
                   </i>
                 ) : (
-                  <i className={cx(it.kind === "dash" ? "k-dash" : it.kind === "ring" ? "k-ring" : it.kind === "dot" ? "k-dot" : "")} style={{ ["--c" as string]: it.c }} />
+                  <i className={cx(it.kind === "dash" ? "k-dash" : it.kind === "ring" ? "k-ring" : it.kind === "dot" ? "k-dot" : it.kind === "sq" ? "k-sq" : "")} style={{ ["--c" as string]: it.c }} />
                 )}
                 {it.label}
               </span>

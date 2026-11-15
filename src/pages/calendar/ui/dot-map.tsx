@@ -182,6 +182,7 @@ export function DotMap(o: DotMapProps) {
   }, [map, o.outlines, islands]);
 
   /* 칸 원: 반지름 = 칸 간격 비례(줌마다 2배) · 색 = 단계 */
+  /* 범례 견본도 같은 불투명도(점을 그릴 때 .45 · 땅 위 섞은 색)로 — 꽉 찬 진한 원 견본이 지도의 옅은 원과 달랐다(F14) */
   const { cells, size, rampAt, ptsWanted } = o;
   useEffect(() => {
     if (!map) return;
@@ -375,7 +376,7 @@ export function DotMap(o: DotMapProps) {
           <em>{T(o.ptsWanted ? "cells_month" : "cells")}</em>
           {lab.map((l, j) => (
             <span key={l}>
-              <i className={cx("cl-dot")} style={{ ["--d" as string]: `${6 + j * 3}px`, ["--c" as string]: o.rampAt(j) }} />
+              <i className={cx("cl-dot")} style={{ ["--d" as string]: `${6 + j * 3}px`, ["--c" as string]: o.ptsWanted ? `color-mix(in srgb,${o.rampAt(j)} 45%,var(--map-land))` : o.rampAt(j) }} />
               <span className={cx("num")}>{l}</span>
             </span>
           ))}
@@ -384,15 +385,15 @@ export function DotMap(o: DotMapProps) {
           <span className={cx("cl-dmlg")}>
             <em>{T("pts")}</em>
             <span>
-              <i className={cx("cl-dot")} style={{ ["--d" as string]: "9px", ["--c" as string]: `var(--${PT_AGE[0]})` }} />
+              <i className={cx("cl-dot cl-dot-pt")} style={{ ["--d" as string]: "9px", ["--c" as string]: `var(--${PT_AGE[0]})` }} />
               {T("age0")}
             </span>
             <span>
-              <i className={cx("cl-dot")} style={{ ["--d" as string]: "9px", ["--c" as string]: `var(--${PT_AGE[1]})` }} />
+              <i className={cx("cl-dot cl-dot-pt")} style={{ ["--d" as string]: "9px", ["--c" as string]: `var(--${PT_AGE[1]})` }} />
               {T("age1")}
             </span>
             <span>
-              <i className={cx("cl-dot")} style={{ ["--d" as string]: "9px", ["--c" as string]: `var(--${PT_AGE[2]})` }} />
+              <i className={cx("cl-dot cl-dot-pt")} style={{ ["--d" as string]: "9px", ["--c" as string]: `var(--${PT_AGE[2]})` }} />
               {T("age2")}
             </span>
           </span>

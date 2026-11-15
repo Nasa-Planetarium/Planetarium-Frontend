@@ -208,7 +208,7 @@ export function LabMap(c: LabCtx) {
           </>
         ) : null}
       </div>
-      <div className={cx("map-key")}>
+      <div className={cx("map-key")} data-tick-avoid="">
         {(["low", "normal", "high"] as const).map((k) => (
           <span key={k}>
             <i style={{ background: `var(--map-lv-${k})`, boxShadow: "0 0 0 1px var(--map-land)" }} />

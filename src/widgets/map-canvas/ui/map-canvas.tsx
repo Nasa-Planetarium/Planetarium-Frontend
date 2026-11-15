@@ -1291,6 +1291,23 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
     return { W: w + band * 2, H: h + band * 2, ln, tx };
   }, [tickOpt, geo, phone, map, size]);
 
+  /* 눈금 글자가 지도 위에 떠 있는 것(검색·바람·다음 위성·도구·확대 단추·출처·축척·상태 줄·범례 = [data-tick-avoid])에 깔리면 숨긴다(F14 B8).
+     밝은 지도에서는 반쯤 가려진 「126°E」 조각이 검색창 위아래로 삐져나와 보였다. 매 그리기 뒤 상자만 비교(글자 수십 개) */
+  const tickSvg = useRef<SVGSVGElement>(null);
+  useLayoutEffect(() => {
+    const root = wrap.current;
+    const svg = tickSvg.current;
+    if (!root || !svg) return;
+    const obs = Array.from(root.querySelectorAll<HTMLElement>(`[data-tick-avoid], .${s.attrib}, .${s.scale}, .${s.zoom}, .${s.mtools}, .${s.state}, .${s.passln}`))
+      .map((e) => e.getBoundingClientRect())
+      .filter((r) => r.width > 0 && r.height > 0);
+    svg.querySelectorAll("text").forEach((el) => {
+      const r = el.getBoundingClientRect();
+      const hit = obs.some((o) => r.left < o.right + 2 && r.right > o.left - 2 && r.top < o.bottom + 2 && r.bottom > o.top - 2);
+      el.style.visibility = hit ? "hidden" : "";
+    });
+  });
+
   const off = useMemo(() => {
     const m = map;
     const o = p.offView;
@@ -1336,7 +1353,7 @@ export const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(function Ma
       <div ref={glEl} className={s.gl} />
       <MapLoading show={!ready} />
       {ticks ? (
-        <svg className={s.mticks} aria-hidden="true" viewBox={`0 0 ${ticks.W} ${ticks.H}`}>
+        <svg ref={tickSvg} className={s.mticks} aria-hidden="true" viewBox={`0 0 ${ticks.W} ${ticks.H}`}>
           {ticks.ln.map((l, i) => (
             <line key={i} {...l} />
           ))}
