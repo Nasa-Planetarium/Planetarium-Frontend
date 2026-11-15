@@ -3,8 +3,9 @@
 import { useId } from "react";
 import { useLocale } from "next-intl";
 import { downloadBlob } from "@/shared/ui/download";
-import { cellFrame, cellRadius, ringsPath, type LandPart } from "../model/cell-frame";
-import { fmtAxis, fmtVal, niceMax, stepOf } from "../model/core";
+import { CELL_OPACITY, DOT_EDGE_TOKEN, DOT_TOKEN, F, RMAX, RMIN, stepOfCell, stepVar } from "@/shared/lib/display";
+import { cellFrame, ringsPath, type LandPart } from "../model/cell-frame";
+import { fmtAxis, fmtVal, niceMax } from "../model/core";
 import { VS_TRACK, ymK, type Pt, type Regime } from "../model/analysis";
 import { C, Tx } from "./cal-svg";
 import { cx } from "./cx";
@@ -232,8 +233,6 @@ export interface CellPt {
 }
 export function CellDots(o: {
   cells: CellDot[];
-  ramp: (t: number) => string;
-  scaleMax: number;
   width: number;
   label: string;
   points?: CellPt[];
@@ -257,11 +256,15 @@ export function CellDots(o: {
     <svg viewBox={`0 0 ${f.W} ${f.H}`} role="img" aria-label={o.label} data-an-cellmap="" data-land={land.length}>
       <rect x={0} y={0} width={f.W} height={f.H} fill="var(--map-sea)" data-an-sea="" />
       {land.length ? <path d={land.map((p) => ringsPath(f, p.rings)).join("")} fill="var(--map-land)" stroke="var(--map-boundary)" strokeOpacity={0.55} strokeWidth={0.6} strokeLinejoin="round" pointerEvents="none" data-an-land="" /> : null}
+      {/* 표시 규칙서 R3–R5: 색 = 0.1° 칸당 월 감지량 5단계(지역 최댓값 대비 상대 색 없음) · 반지름 = 칸 간격 px × 0.5 × F[k] 를 단계별 최소·최대로 */}
       {o.cells
-        .slice()
-        .sort((a, b) => a.value - b.value)
-        .map((c) => (
-          <circle key={`${c.lat},${c.lon}`} cx={X(c.lon)} cy={Y(c.lat)} r={cellRadius(f.cs, stepOf(c.value))} fill={o.ramp(Math.sqrt(Math.min(1, c.value / (o.scaleMax || 1))))} fillOpacity={0.88} stroke={C.bg} strokeWidth={0.6}>
+        .flatMap((c) => {
+          const k = stepOfCell(c.value, o.cellDeg ?? 0.1);
+          return k == null ? [] : [{ c, k }];
+        })
+        .sort((a, b) => a.k - b.k)
+        .map(({ c, k }) => (
+          <circle key={`${c.lat},${c.lon}`} data-k={k} cx={X(c.lon)} cy={Y(c.lat)} r={Math.max(RMIN[k] as number, Math.min(RMAX[k] as number, f.cs * 0.5 * (F[k] as number)))} fill={stepVar(k)} fillOpacity={CELL_OPACITY} stroke="var(--map-land)" strokeOpacity={0.7} strokeWidth={0.5}>
             <title>{c.title}</title>
           </circle>
         ))}
@@ -281,7 +284,7 @@ export function CellDots(o: {
       {(o.points ?? [])
         .filter((p) => p.lat >= s && p.lat <= n && f.wrap(p.lon) >= w && f.wrap(p.lon) <= e)
         .map((p, i) => (
-          <circle key={i} data-an-pt="" cx={X(p.lon)} cy={Y(p.lat)} r={1.8} fill="var(--surface-0)" stroke="var(--text-1)" strokeWidth={0.8}>
+          <circle key={i} data-an-pt="" cx={X(p.lon)} cy={Y(p.lat)} r={2.2} fill={`var(--${DOT_TOKEN})`} stroke={`var(--${DOT_EDGE_TOKEN})`} strokeWidth={0.75}>
             <title>{p.title}</title>
           </circle>
         ))}

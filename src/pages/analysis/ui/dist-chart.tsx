@@ -3,7 +3,7 @@
 import { useId, type KeyboardEvent } from "react";
 import { useLocale } from "next-intl";
 import { useT } from "@/shared/i18n";
-import { displayInterval, hasSpread } from "@/shared/lib/interval";
+import { displayInterval, hasSpread } from "@/shared/lib/display";
 import { fmtAxis, fmtNum, ticks } from "../model/core";
 import { C, Tx } from "./cal-svg";
 import { cx } from "./cx";

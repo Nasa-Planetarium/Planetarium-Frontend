@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { useCountry } from "@/entities/country";
 import { useCoarseCells } from "@/entities/world-grid";
+import { MapKey } from "@/shared/ui";
 import { ApiError, cellsTooMany } from "@/shared/api";
 import { API_BASE, DATA_MODE } from "@/shared/config";
 import { aoisQuery, cellsQuery, monthPointsQuery, summaryQuery, type CellsData } from "../api/queries";
@@ -35,7 +36,7 @@ import { cx } from "./cx";
 import { DistChart } from "./dist-chart";
 import { VdMark } from "./vd-mark";
 import type { Ctx } from "./types";
-import { displayInterval, hasSpread } from "@/shared/lib/interval";
+import { displayInterval, hasSpread } from "@/shared/lib/display";
 
 /** 보기 낱말 = 셸 사전 한 곳(shell.view.* — 캘린더 탭과 같은 낱말, 목업 g7 EM.viewWord) */
 export const viewWord = (x: Pick<Ctx, "W">, v: CalView) => x.W(`view.${v}`);
@@ -724,7 +725,7 @@ function StepChart({ x }: { x: Ctx }) {
    목(MSW)은 503 data_not_loaded → 「자료 준비 중」, 그 밖 오류는 통신 오류 낱말 */
 function CellPanel({ x }: { x: Ctx }) {
   const { T, W, view, y, m } = x;
-  const ramp = useRamp();
+  /* 칸 지도 색·크기·범례는 모든 지도와 같은 공통 규칙(shared/lib/display · MapKey, 표시 규칙서 R3–R7) */
   const ym = ymIso(y, m);
   const mv = x.M?.method_version ?? null;
   /* 칸 1만 개를 넘는 지역(/aois n_cells · level)은 /cells 를 보내지 않고 바로 1° 묶음으로 — 보냈다 400 을 받으면 콘솔 오류가 남았다(2026-11-15 운영 USA·BRA).
@@ -772,7 +773,6 @@ function CellPanel({ x }: { x: Ctx }) {
   });
   if (q.data?.features.length && !cells.length && view !== "value") noField = q.data.features.every((f) => (view === "raw_modis" ? f.properties.raw_modis : f.properties.raw_viirs) == null);
   const st = q.data?.properties?.month_status ?? (q.data ? "ok" : "out_of_range");
-  const vmax = Math.max(1, ...cells.map((c) => c.value));
   const err = q.error ? W(q.error instanceof ApiError && (q.error.code === "data_not_loaded" || q.error.code === "rate_limited") ? `err.${q.error.code}` : "err.network") : null;
   return (
     <section className={cx("panel an-cellp")} aria-busy={(wide ? false : q0.isPlaceholderData) || undefined}>
@@ -794,11 +794,9 @@ function CellPanel({ x }: { x: Ctx }) {
       </div>
       <div className={cx("panel-b an-cellb")}>
         <div className={cx("an-cellsvg")} ref={box}>
-          {ramp && cells.length ? (
+          {cells.length ? (
             <CellDots
               cells={cells}
-              ramp={ramp}
-              scaleMax={vmax}
               width={Math.min(wid, 640)}
               maxH={x.device === "phone" ? 420 : 520}
               cellDeg={q.data?.properties?.cell_size_deg ?? 0.1}
@@ -817,11 +815,7 @@ function CellPanel({ x }: { x: Ctx }) {
         </div>
         <div className={cx("an-cleg")}>
           <div className={cx("an-clr")}>
-            <span className={cx("an-ramp")}>
-              <em>{T("ui.low")}</em>
-              <span className={cx("an-rsw")}>{ramp ? Array.from({ length: 7 }, (_, i) => <i key={i} style={{ background: ramp(i / 6) }} />) : null}</span>
-              <em>{T("ui.high")}</em>
-            </span>
+            <MapKey level={(q.data?.properties?.cell_size_deg ?? 0.1) >= 1 ? "L1" : "L2"} win={ym} inline />
             <span className={cx("an-cmeta")}>
               {noField ? T("g6.no_field") : (
                 <>

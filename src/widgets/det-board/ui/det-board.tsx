@@ -60,7 +60,7 @@ export function DetBoard({ page, iso3, info, cx, testId, regions, renderMap }: {
   const coPrev = useCoarseSum({ aoiId, aois: null, months: ym?.prev ?? [], on: !!ym && coCur.data?.months === 0 });
   const co = coCur.data?.months ? coCur.data : coPrev.data;
   const coYm = ym ? (coCur.data?.months ? ym.cur[0] : ym.prev[0]) : null;
-  const cellsLabel = coYm ? t("shell.map.cells_month", { m: `${coYm[0]}.${String(coYm[1]).padStart(2, "0")}` }) : "";
+  const cellsLabel = coYm ? `${coYm[0]}.${String(coYm[1]).padStart(2, "0")}` : "";
   const cells = useMemo(() => co?.cells ?? [], [co]);
   /* 조각 무게 = 그 조각에 든 1° 칸 감지량 합 → 불이 잦은 땅부터 받는다(한도에 걸려 멈춰도) */
   const weight = useMemo(() => {
@@ -149,7 +149,7 @@ export function DetBoard({ page, iso3, info, cx, testId, regions, renderMap }: {
       </header>
       <div className={cx("dp-g")}>
         <section className={cx("dp-map")} aria-label={t("shell.det.title")}>
-          {renderMap({ view: bb, hotspots: hot, cells, cellsLabel, status: fail ? failWord : partial })}
+          {renderMap({ view: bb, hotspots: hot, cells, cellsLabel, status: fail ? failWord : (partial ?? (D && !hot.length && coSettled && !cells.length ? t("map.status.empty") : null)) })}
         </section>
         <section className={cx("panel dp-list")} aria-label={t("shell.det.title")}>
           <div className={cx("sechd")}>
