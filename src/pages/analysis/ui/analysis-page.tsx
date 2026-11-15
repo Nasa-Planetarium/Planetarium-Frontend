@@ -14,7 +14,7 @@ import { prefs } from "@/shared/lib/prefs";
 import { useDevice } from "@/shared/lib/use-device";
 import { aoisQuery, calendarAllQuery, comparisonQuery, type AoiRec } from "../api/queries";
 import { AOI_OK, KOR_AOIS, coverage, defaultAoi, isStep, monthRec, regimes, selectable, ymK, type Step } from "../model/analysis";
-import { iso3OfAoi, monthIndex, monthWord, nameEn, VIEWS, ymIso, ymOfIndex, type CalView } from "../model/core";
+import { iso3OfAoi, LAST, lastMonth, monthIndex, monthWord, nameEn, VIEWS, ymIso, ymOfIndex, type CalView } from "../model/core";
 import { AoiPicker } from "./aoi-picker";
 import { Status, StIcon, useRamp } from "./bits";
 import { Track, useNf } from "./charts";
@@ -88,7 +88,9 @@ function AnalysisScreen() {
   const inScope = !!rec && rec.has_data !== false && !!cal;
 
   const view: CalView = isView(sp.get("view")) ? (sp.get("view") as CalView) : "value";
-  const ymQ = /^\d{4}-\d{2}$/.test(sp.get("ym") ?? "") ? (sp.get("ym") as string) : "2025-03";
+  /* 주소 ym 이 없으면 고른 지역 캘린더의 마지막 관측 달(고정 사례 달 아님) */
+  const ymDef = cal ? ymIso(...lastMonth(cal)) : ymIso(LAST[0], LAST[1]);
+  const ymQ = /^\d{4}-\d{2}$/.test(sp.get("ym") ?? "") ? (sp.get("ym") as string) : ymDef;
   /* 연도 고르기는 달을 바꾸기 전까지 화면 안 상태(주소 ym 이 바뀌면 그 해로 돌아간다) */
   const [yrSt, setYrSt] = useState<{ k: string; y: number } | null>(null);
   const yr = yrSt && yrSt.k === ymQ ? yrSt.y : +ymQ.slice(0, 4);

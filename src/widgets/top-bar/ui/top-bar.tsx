@@ -243,7 +243,8 @@ export function TopBar() {
 
         {/* ② 상황 */}
         <div ref={sitRef} role="group" aria-label={t("shell.top.sit")} className="ml-auto flex min-w-0 flex-[0_1_auto] items-center overflow-hidden phone:h-[calc(var(--bar-h)-env(safe-area-inset-top,0px))] phone:flex-[1_1_0] phone:justify-end">
-          {KOR && sit ? (
+          {/* 위험 지수는 기관 자료(목) — 기관 역할 안에서만. 공개 화면은 나라와 같은 release 배수 */}
+          {KOR && sit && role ? (
             <span
               title={tl("risk", "basis", null, sit.risk_index.basis)}
               data-sc="risk"
@@ -259,7 +260,7 @@ export function TopBar() {
                 <i className="block h-full bg-(--c,var(--text-2))" style={{ width: `${sit.risk_index.value}%` }} />
               </span>
             </span>
-          ) : !KOR ? (
+          ) : !(KOR && role) ? (
             <span data-sc="risk" title={t("shell.anom.title", { ym: anomYm })} className={cn(SC, LV_C[anomLv], "rounded-xs bg-[color-mix(in_srgb,var(--c,var(--text-3))_16%,transparent)]")}>
               <span className="text-fs2 text-t2 tf5:hidden">
                 <span className="phone:hidden">{t("shell.top.anom")}</span>
