@@ -11,12 +11,15 @@ export class ApiError extends Error {
   readonly status: number;
   readonly code: ErrorCode | "network";
   readonly problem: Problem | null;
-  constructor(status: number, code: ErrorCode | "network", problem: Problem | null, message?: string) {
+  /** 429·503 의 Retry-After(초). 없으면 null */
+  readonly retryAfter: number | null;
+  constructor(status: number, code: ErrorCode | "network", problem: Problem | null, message?: string, retryAfter: number | null = null) {
     super(message ?? problem?.detail ?? code);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
     this.problem = problem;
+    this.retryAfter = retryAfter;
   }
 }
 

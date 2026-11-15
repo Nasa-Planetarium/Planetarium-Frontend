@@ -149,7 +149,7 @@ function AnalysisScreen() {
   const rule = M?.verdict_rule ?? null;
   const base = { from: rule?.baseline?.from ?? rule?.baseline_from ?? 2001, to: rule?.baseline?.to ?? rule?.baseline_to ?? 2025 };
   const fail = kq.error ?? cq.error ?? aq.error ?? mq.error;
-  const errWord = fail ? W(fail instanceof ApiError && fail.code === "data_not_loaded" ? "err.data_not_loaded" : "err.network") : null;
+  const errWord = fail ? W(fail instanceof ApiError && (fail.code === "data_not_loaded" || fail.code === "rate_limited") ? `err.${fail.code}` : "err.network") : null;
   const ready = !!aq.data && (!aoi || !!cal || !!cq.error) && (step === 1 || !!c || !!kq.error);
 
   /* em.an.v3: 주소에 분석 키가 없으면(메뉴로 들어옴) 지난 작업(단계·지역·달·보기)을 주소로 되살린다 — 한 번만 */

@@ -1,6 +1,7 @@
 {
  "_note": "목업 사전에 아직 없는 키만 둔다. 목업에 같은 키가 생기면 목업 값이 이긴다(src/shared/i18n/messages.ts). 쓰이는 키는 README 「사전」 절 참고.",
  "shell": {
+  "err": { "rate_limited": "요청이 많음 — 잠시 뒤 다시 시도" },
   "det": { "partial": "점 일부만 받음(조각 {n}/{m}) — 서버 요청 한도" },
   "nav": {
    "calendar": { "label": "캘린더", "short": "캘린더" },
