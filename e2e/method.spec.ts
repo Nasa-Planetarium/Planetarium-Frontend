@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * 방법·검증(method) 시험(aibox 전용) — MSW 스냅숏(release m2v_meta · korea.json)이 화면에 붙는지 잰다.
+ * 방법·검증(method) 시험(팀 시험 서버 전용) — MSW 스냅숏(release m2v_meta · korea.json)이 화면에 붙는지 잰다.
  * 잰다: 머리 개수 4칸(기간 4 · 검증 범위 11 · NRT 3 · 결측 1) · 절 5개 · 검증 표 채택 모델 MAE 42.1 · v1.1 진행 중인 달 102.3 · 주소 ?sec= 유지.
  */
 test.beforeEach(async ({ page }) => {

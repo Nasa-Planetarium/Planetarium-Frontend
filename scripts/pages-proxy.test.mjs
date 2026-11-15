@@ -90,7 +90,7 @@ describe("Pages API 프록시", () => {
 
   it("parseOrigin — 출처만, http/https 밖·빈 값은 null", () => {
     expect(parseOrigin("https://a.example/x/y")).toBe("https://a.example");
-    expect(parseOrigin("http://192.168.0.10:18490")).toBe("http://192.168.0.10:18490");
+    expect(parseOrigin("http://localhost:8080")).toBe("http://localhost:8080");
     expect(parseOrigin("ftp://a")).toBeNull();
     expect(parseOrigin("")).toBeNull();
     expect(parseOrigin(undefined)).toBeNull();

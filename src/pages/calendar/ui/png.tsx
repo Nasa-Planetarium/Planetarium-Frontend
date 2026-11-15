@@ -9,7 +9,7 @@ import { notifyImageSaved, saveFile } from "@/shared/ui/download";
 
 /**
  * 캘린더 이미지 PNG(목업 exportPNG · F10 ⑦): 연×월 격자(칸 30px, 기기와 무관하게 같은 판) + 제목 + 범례(램프·상태·값 출처 구간) + 진행 중 달 + 출처 줄.
- * SVG 를 그림(img)으로 그리면 웹 글꼴을 못 써 한글이 빈 네모가 된다(목업이 aibox 헤드리스에서 잼) → 글자는 캔버스로 따로 쓴다.
+ * SVG 를 그림(img)으로 그리면 웹 글꼴을 못 써 한글이 빈 네모가 된다(목업이 팀 시험 서버 헤드리스에서 잼) → 글자는 캔버스로 따로 쓴다.
  * 색은 토큰 var() → 지금 테마 값으로 바꿔 넣는다.
  */
 const NS = "http://www.w3.org/2000/svg";

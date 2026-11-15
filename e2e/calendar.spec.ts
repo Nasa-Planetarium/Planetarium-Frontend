@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * 캘린더(첫 탭) 시험(aibox 전용, MSW 스냅숏). 잰다: 개수 띠 4칸 값 · 칸 누르면 주소 ym · 보기 전환 눌림 · 상세 값(release 그대로) · 전 세계 재생 달 합계.
+ * 캘린더(첫 탭) 시험(팀 시험 서버 전용, MSW 스냅숏). 잰다: 개수 띠 4칸 값 · 칸 누르면 주소 ym · 보기 전환 눌림 · 상세 값(release 그대로) · 전 세계 재생 달 합계.
  */
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("em.lang", "ko"));

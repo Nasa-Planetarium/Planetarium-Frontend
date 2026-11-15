@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * 지도 불러오는 중 덮개는 처음 한 번만(F14 LF-1·2, aibox 전용 · MSW 스냅숏).
+ * 지도 불러오는 중 덮개는 처음 한 번만(F14 LF-1·2, 팀 시험 서버 전용 · MSW 스냅숏).
  * 잰다: 캘린더 점 지도가 뜬 뒤 달을 바꿔도 ① 덮개([data-map-loading])가 다시 생기지 않고 ② 지도 칸(MapLibre 캔버스)이 같은 요소로 남는다.
  * 예전에는 CalMap key 에 달이 들어 있어 달마다 지도를 새로 만들며 남색 덮개가 80–160ms 번쩍였다.
  */

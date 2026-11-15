@@ -28,7 +28,7 @@ const getCountries = () => (countries ??= load<CountriesSnap>(`${SNAP}/countries
 let meta: Promise<Record<string, unknown>> | null = null;
 const getMeta = () => (meta ??= load<Record<string, unknown>>(`${SNAP}/m2v_meta.json`).catch(() => ({})));
 
-/* 실서버 /methods/current 의 값 출처 표(2026-11-14 :18490 표본과 같은 모양 — from/to 는 달 YYYY-MM, label_ko 는 서버 문구) */
+/* 실서버 /methods/current 의 값 출처 표(2026-11-14 표본과 같은 모양 — from/to 는 달 YYYY-MM, label_ko 는 서버 문구) */
 const VALUE_SOURCES = [
   { value_source: "modis_m2v_terra", from: "2000-11", to: "2002-06", label_ko: "추정 (Terra)" },
   { value_source: "modis_m2v", from: "2002-07", to: "2012-01", label_ko: "추정 (MODIS → VIIRS)" },

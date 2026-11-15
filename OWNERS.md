@@ -29,4 +29,4 @@ FSD 규칙: 같은 층 슬라이스끼리 import 금지 → 화면끼리 같이 
 3. 목 데이터는 `src/shared/mock/**` 안에만, 화면은 포트(`useAgency`·`useAuth`)만 안다.
 4. 실제 데이터 값은 다시 계산하지 않는다(release 그대로). 경우 가르기는 `judgeMonth`.
 5. 키 문자열은 목업 그대로 `useT()`.
-6. `pnpm check` 전부 통과 + aibox 에서 `pnpm build && pnpm e2e`. 화면 시험은 `e2e/<화면>.spec.ts` 로 더한다.
+6. `pnpm check` 전부 통과 + 팀 시험 서버에서 `pnpm build && pnpm e2e`. 화면 시험은 `e2e/<화면>.spec.ts` 로 더한다.

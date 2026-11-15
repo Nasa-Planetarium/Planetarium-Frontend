@@ -13,7 +13,7 @@ export const VS_CLS: Record<string, string> = { modis_m2v_terra: "as", modis_m2v
 /** 값 성격: 추정 · 실측 · 연결 */
 export const VS_KIND: Record<string, string> = { modis_m2v_terra: "estimate", modis_m2v: "estimate", snpp_observed: "observed", n20_bridge: "bridged", n21_bridge: "bridged" };
 /**
- * 값 출처 코드 → 위성·센서·모델(표시용 정의). 실서버 value_sources 에는 이 세 칸이 없다(2026-11-14 :18490 표본 — E1 차이) →
+ * 값 출처 코드 → 위성·센서·모델(표시용 정의). 실서버 value_sources 에는 이 세 칸이 없다(2026-11-14 실서버 표본 — E1 차이) →
  * 목업 VALUE_SOURCES 의 정의를 코드에 붙여 보인다(값이 아니라 코드의 뜻).
  */
 export const VS_INFO: Record<string, { satellites: string[]; instrument: string; model: string | null }> = {
