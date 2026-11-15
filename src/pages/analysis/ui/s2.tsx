@@ -7,6 +7,7 @@ import { useCountry } from "@/entities/country";
 import { useCoarseCells } from "@/entities/world-grid";
 import { ApiError } from "@/shared/api";
 import { API_BASE, DATA_MODE } from "@/shared/config";
+import { MonthEvents } from "@/widgets/fire-events";
 import { aoisQuery, cellsQuery, monthPointsQuery, summaryQuery, type CellsData } from "../api/queries";
 import {
   TRMAX,
@@ -120,6 +121,10 @@ export function S2({ x }: { x: Ctx }) {
                   </div>
                   <Detail x={x} onBar={touch ? null : (yy) => pick(yy, m)} />
                   <DistLegend x={x} harm={view === "value"} />
+                  {/* 고른 달의 화재 사건 수(F15 fire_events — 한국·아르헨티나, 그 밖은 「이 지역 자료 없음」) */}
+                  <div className={cx("an-ev")}>
+                    <MonthEvents aoiId={x.aoi} year={y} month={m} mv={x.M?.method_version ?? null} testId="an-events" />
+                  </div>
                 </div>
               </section>
             </div>

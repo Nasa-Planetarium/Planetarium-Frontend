@@ -5,6 +5,7 @@ import { useLocale } from "next-intl";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { useCountry, countryName } from "@/entities/country";
 import { calendarQuery } from "@/entities/month-value";
+import { daysBack, eventPlace, fireEventsQuery, type FireEvent, type FireEventList } from "@/entities/fire-event";
 import { methodQuery } from "@/entities/release";
 import { useSession } from "@/entities/session";
 import { useAoiScope, type AoiScope, type Bbox } from "@/features/pick-aoi";
@@ -12,6 +13,7 @@ import { useAgency, useInbox, withRaised, type Alert, type Fire, type Unit } fro
 import { api, unwrap, qk } from "@/shared/api";
 import { useT, useTl } from "@/shared/i18n";
 import { prefs } from "@/shared/lib/prefs";
+import { evState, type EvState } from "@/widgets/fire-events";
 import { adm1RegionsQuery, approxRegions, childRegionsQuery, type DrawnAoi, type MapCanvasHandle, type MapRegion } from "@/widgets/map-canvas";
 import { outlookQuery } from "../api/queries";
 import { addDays, grid, partialOf, prevRange, rangeTxt, realAoi, regionOfAoi, SENSORS, sumMonths, worstMonth, type MonthRow, type Sensor } from "../model/home";
@@ -161,6 +163,11 @@ function HomeScreen() {
   const partial = useMemo(() => partialOf(months), [months]);
   const outlook = useQuery(outlookQuery());
 
+  /* 실제 화재 사건(F15 fire_events — 한국·아르헨티나): 고른 지역 · 고른 기간과 겹치는 사건(계약 기간 한도 3,700일 안으로) */
+  const [evSel, setEvSel] = useState<string | null>(null);
+  const evStart = range ? (range.start < daysBack(range.end, 3700) ? daysBack(range.end, 3700) : range.start) : "";
+  const evQ = useQuery({ ...fireEventsQuery({ aoi_id: aoi, start: evStart, end: range?.end ?? "", sort: "sum_weight", limit: 500 }, range ? mv : null) });
+
   /* 나라·고른 지역이 바뀌면 지도 도구로 고른 시군·달을 비운다 */
   const seenKey = `${iso3}|${S.chosen}`;
   const [isoSeen, setIsoSeen] = useState(seenKey);
@@ -298,6 +305,10 @@ function HomeScreen() {
     partial,
     worst,
     outlook: outlook.data ?? null,
+    events: { state: evState(evQ), data: evQ.data ?? null },
+    evSel,
+    setEvSel,
+    evPlace: (e) => (e.region === "ARG" && e.adm1_code ? S.nameOf(`ADM1_${e.adm1_code}`) || eventPlace(e) : eventPlace(e)),
   };
 
   return (
@@ -389,6 +400,11 @@ export type Ctx = {
   partial: MonthRow | null;
   worst: { year: number; month: number; v: number } | null;
   outlook: { method?: { targets?: string[] }; aoi?: { id: string; p?: (number | null)[] }[] } | null;
+  /** 실제 화재 사건(F15) — 고른 지역·기간. 지도 상자·중심 원 + 상황 패널 줄 */
+  events: { state: EvState; data: FireEventList | null };
+  evSel: string | null;
+  setEvSel: (id: string | null) => void;
+  evPlace: (e: FireEvent) => string;
 };
 
 /** 시계: 원장 시각 + 실제 경과(목업 EM.nowMs) — 1초마다 */

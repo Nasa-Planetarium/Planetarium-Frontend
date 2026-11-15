@@ -17,6 +17,7 @@ import {
   type CountriesSnap,
   type KoreaSnap,
 } from "./snapshot";
+import { createFireEventHandlers } from "./fire-events";
 
 const SNAP = "/data/snap";
 let korea: Promise<KoreaSnap> | null = null;
@@ -78,6 +79,9 @@ export function createHandlers(base: string) {
   }
 
   return [
+    /* v1.2 화재 사건(F15) — fire-events.ts */
+    ...createFireEventHandlers(base, () => getKorea().then((k) => k.method_version)),
+
     http.get(at("/aois"), async ({ request }) => {
       const [k, c] = await Promise.all([getKorea(), getCountries()]);
       const u = new URL(request.url);

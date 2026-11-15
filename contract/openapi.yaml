@@ -21,11 +21,26 @@ info:
     - 예시 숫자는 release 실값(aibox 시제품 서버가 release 를 읽어 2026-11-14 19:12 KST 에 낸 응답에서 옮김). 점(`/hotspots`)·위성 상태는 release 에 없어 가짜 예시이며 그렇게 표시했다.
 
     알려진 결함·열린 것: `contract/ASSUMPTIONS.md`, `CONFLICTS.md`. 대응표: `contract/MAPPING.md`.
+
+    v1.2 갱신 (2026-11-15, F15)
+    - 정본 데이터 = release `data-v1.2-2026-11-15`(모델팀 확정, v1.1 쓰지 않음). method_version 은 그대로 `v1-m2v-2026-11-14`(FireBridge 재학습 없음).
+    - 모델팀 확정 계약 = `product/team/v1.2/api_contract.md`(sha256 9e3c8292…, aibox 사본과 같음을 잼). 파라미터 이름은 그쪽을 따르고 별칭(`x-handoff-alias`)으로 받는다.
+    - 새 경로(태그 outlook·fire-info, 그리고 `/cells/frp`): 아래 operation 의 `x-release-file` 이 읽는 파일.
+    - 「자료 없음」은 오류가 아니다: 200 + 빈 배열/null + `coverage.available=false` (스키마 `Coverage`). 화면은 「이 지역 자료 없음」 한 줄.
+    - 앞선 경로들의 예시 숫자는 v1 값이다(예 KR 2025-03 2,764 → v1.2 는 2,731, 고정 열원 제외). 새 경로 예시는 v1.2 실값(2026-11-15 aibox 에서 파일을 읽어 옮김, 소수 5자리 안팎 반올림).
   license:
     name: 내부 초안 (Team Planetarium)
     identifier: LicenseRef-Planetarium-Internal
-  x-data-release: data-v1-m2v-2026-11-14
+  x-data-release: data-v1.2-2026-11-15
+  x-data-release-history: [data-v1-m2v-2026-11-14, data-v1.1-m2v-2026-11-14, data-v1.2-2026-11-15]
   x-method-version: v1-m2v-2026-11-14
+  x-display-names:
+    description: 화면 표시 이름만. 코드·파일·응답 값은 내부 id 그대로(F15, 모델팀 v1.2 노트).
+    m2v_xgb: FireBridge (MODIS-to-VIIRS Harmonizer)
+    m2v_xgb_terra: FireBridge-Terra
+    m2v_q10_q90: FireBridge Uncertainty Band
+    n20_bridge: N20 Bridge
+    performance_copy: 총량 오차 1~2%, 월별 상관 0.97
 servers:
   - url: /api/v1
     description: 정본. 핸드오프 별칭은 /api/<경로> (각 operation 의 x-handoff-alias)
@@ -40,12 +55,27 @@ tags:
     description: 방법·판·위성 상태
   - name: external
     description: FIRMS 대리
+  - name: outlook
+    description: 다음 달 열원 발생 확률(모델팀, F15 예측 화면 — 우리 A안 전망 대체)
+  - name: fire-info
+    description: v1.2 새 층 — 화재 사건·연소 면적·FWI·확산 nowcast·불 유형 (대부분 한국·아르헨티나)
 x-header-sets:
   cached: &cached
     ETag:
       $ref: '#/components/headers/ETag'
     Cache-Control:
       $ref: '#/components/headers/CacheControlData'
+    X-Method-Version:
+      $ref: '#/components/headers/XMethodVersion'
+    X-Data-Version:
+      $ref: '#/components/headers/XDataVersion'
+    Vary:
+      $ref: '#/components/headers/Vary'
+  layer_cached: &layer_cached
+    ETag:
+      $ref: '#/components/headers/ETag'
+    Cache-Control:
+      $ref: '#/components/headers/CacheControlLayer'
     X-Method-Version:
       $ref: '#/components/headers/XMethodVersion'
     X-Data-Version:
@@ -594,9 +624,13 @@ paths:
     get:
       tags: [provenance]
       operationId: getSatelliteStatus
-      summary: 위성별 자료 상태·최신 갱신 시각
-      description: '`satellite_day_status` 는 release 에 없다(R1) → 503. 열 모양은 가정(G1).'
-      x-status: release-absent
+      summary: 위성별 자료 상태 (일·월)
+      description: |
+        v1.2 부터 release 에 있다: `satellite_day_status.parquet`(28,316행, 위성 × UTC 날) · `satellite_month_status.parquet`(934행) — 2026-11-15 잼.
+        - `freq=day` (기본) → `days[]`, 기간 ≤ 366일. `freq=month` → `months[]`, 기간 제한 없음(934행).
+        - 날짜 기준은 **UTC**(`date_utc`) — 감지량의 `date_local` 과 다르다.
+        - 경로 이름은 v1 계약 그대로 둔다(지휘 과제 후보 `/satellites/status` 는 쓰지 않음 — 쟁점 F15-Q6).
+      x-release-file: [satellite_day_status.parquet, satellite_month_status.parquet]
       x-handoff-alias:
         path: /status
         served_at: /api/status
@@ -610,14 +644,23 @@ paths:
         - name: end
           in: query
           schema: {type: string, format: date}
+        - name: freq
+          in: query
+          schema: {type: string, enum: [day, month], default: day}
+        - name: satellite
+          in: query
+          description: 쉼표 구분. 없으면 전부.
+          schema: {type: string, maxLength: 64}
       responses:
         '200':
           description: 위성 상태
-          headers: *cached
+          headers: *layer_cached
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SatelliteStatus'
+        '304':
+          $ref: '#/components/responses/NotModified'
         '400':
           $ref: '#/components/responses/BadRequest'
         '503':
@@ -709,6 +752,520 @@ paths:
           $ref: '#/components/responses/BadGateway'
         '503':
           $ref: '#/components/responses/Unavailable'
+  /occurrence/grid:
+    get:
+      tags: [outlook]
+      operationId: getGridOccurrence
+      summary: 다음 달 열원 1건 이상 확률 — 전 세계 0.5° 격자 (F15 예측 화면)
+      description: |
+        `grid_occurrence_nextmonth_latest.parquet` 그대로(52,855칸, 대상 달 2026-12, 2026-11-15 잼). 값은 다시 계산하지 않는다(A1).
+        - 파일에 없는 칸 = 2012-02 이후 감지가 한 번도 없던 칸(남극·공해 포함). 「0%」가 아니라 「대상 아님」으로 그린다.
+        - `persistent_source=true`(259칸) 는 순위·강조에서 빼고 회색. 값은 툴팁·상세에서만.
+        - `vs_normal` 은 모델팀 표시 규칙(`p_any − baseline_p` ≥ +0.10 높음, ≤ −0.10 낮음, 그 사이 예년 수준)을 서버가 붙인 것 — 확률 자체는 파일 값.
+        - bbox 없이 부르면 전 세계 52,855칸. 크기(2026-11-15 aibox 에서 파일로 직렬화해 잼): `fields=full`(아래 칸 필드 전부, 소수 5자리) 11.34 MB / gzip 0.65 MB,
+          `fields=map`(cell_id·lat·lon·p_any·baseline_p·vs_normal·persistent_source, 소수 4자리) 6.58 MB / gzip 0.47 MB. 반올림 없이 float32 → double 로 내보내면 12.56 MB / gzip 0.93 MB 라 **소수 5자리로 반올림해 낸다**(표시 정밀도 1%p 보다 충분히 작음).
+          전 세계 응답은 gzip/br 압축 필수. 적재 때 `fields` 별로 한 번 직렬화해 판 단위로 캐시한다.
+        - 잰 분포: `p_model` 열 = `p_any` (52,855/52,855 같음, 싣지 않음) · `p_any + p_none = 1` (오차 0) · vs_normal higher 4,941 / similar 42,772 / lower 5,142 ·
+          단계 < 10% 25,844 / 10~40% 9,632 / 40~70% 5,739 / ≥ 70% 11,640 · `cell_id = floor((lat+90)/0.5)×720 + floor((lon+180)/0.5)` 52,855/52,855 일치.
+        - `model` 이 `baseline_same_month_rate` 로 바뀌는 판이 있다(모델팀: 기준선을 못 이기면 `p_any = baseline_p`). 화면은 `model` 을 툴팁 출처에 그대로 쓴다.
+        - 색 단계(화면): < 10% / 10~40% / 40~70% / ≥ 70%.
+      x-handoff-alias:
+        path: /occurrence
+        served_at: /api/occurrence
+        params:
+          unit: "grid (고정)"
+          bbox: bbox
+      x-release-file: grid_occurrence_nextmonth_latest.parquet
+      parameters:
+        - $ref: '#/components/parameters/BboxOptional'
+        - name: min_p_any
+          in: query
+          description: 이 값 미만 칸은 뺀다(지도 성능용, 확장). 0~1. 0.1 이면 27,011칸(잼).
+          schema: {type: number, minimum: 0, maximum: 1, default: 0}
+        - name: fields
+          in: query
+          description: '확장. `map` = 지도 그리기에 드는 7필드만(전 세계 gzip 0.47 MB), `full` = 칸 필드 전부(gzip 0.65 MB). 잰 값은 위 설명.'
+          schema: {type: string, enum: [map, full], default: full}
+        - $ref: '#/components/parameters/Format'
+      responses:
+        '200':
+          description: 격자 확률
+          headers: *layer_cached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GridOccurrence'
+              examples:
+                arg_tip:
+                  summary: GET /occurrence/grid?bbox=-68.5,-55,-67.5,-54.5 (release 실값, 2026-11-15 잼)
+                  value:
+                    target_month: '2026-12'
+                    as_of_date: '2026-11-14'
+                    model: grid_occurrence_xgb+isotonic
+                    cell_size_deg: 0.5
+                    bbox: [-68.5, -55.0, -67.5, -54.5]
+                    count: 2
+                    cells:
+                      - {cell_id: 50623, lat: -54.75, lon: -68.25, p_any: 0.01173, p_none: 0.98827, baseline_p: 0.0, vs_normal: similar, persistent_source: false, adm0: ARG, continent: South America, rate_5y: 0.0, lag1_projected: true}
+                      - {cell_id: 50624, lat: -54.75, lon: -67.75, p_any: 0.01173, p_none: 0.98827, baseline_p: 0.0, vs_normal: similar, persistent_source: false, adm0: ARG, continent: South America, rate_5y: 0.0, lag1_projected: true}
+                    coverage: {available: true, scope: world_land_detected, reason: null}
+                    notice: 과거 감지 기록과 최근 활동으로 본 확률입니다. 날씨 예보가 아닙니다. 회색 격자는 공장·가스 플레어 같은 지속 열원 의심 지역입니다.
+                    data_release: data-v1.2-2026-11-15
+            text/csv:
+              schema:
+                type: string
+                x-csv-columns: [cell_id, lat, lon, target_month, p_any, p_none, baseline_p, vs_normal, persistent_source, adm0, continent, model, as_of_date]
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /occurrence/aois:
+    get:
+      tags: [outlook]
+      operationId: listAoiOccurrence
+      summary: 한국 시군구 다음 달 발생 확률 목록 (순위·지도용, 확장)
+      description: |
+        `aoi_occurrence_nextmonth_latest.parquet` 252행. `parent_id` = `KR` 또는 `SIDO_*` (그 밖 → 200 빈 목록 + `coverage.available=false`).
+        순위(`rank`)는 `suspected_industrial=false` 인 행만 `p_any` 내림차순으로 매기고, 의심 행(4곳)은 `rank: null` + 회색.
+        모델팀 계약에 목록 경로는 없다(단건 `/occurrence?aoi` 만) — 화면의 시군구 순위·색칠에 필요해 둔 확장.
+      x-handoff-alias: null
+      x-release-file: aoi_occurrence_nextmonth_latest.parquet
+      parameters:
+        - name: parent_id
+          in: query
+          required: true
+          schema: {$ref: '#/components/schemas/AoiId'}
+          examples:
+            korea: {value: KR}
+            gyeongbuk: {value: SIDO_47}
+        - $ref: '#/components/parameters/Format'
+      responses:
+        '200':
+          description: 시군구 확률 목록
+          headers: *layer_cached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AoiOccurrenceList'
+            text/csv:
+              schema:
+                type: string
+                x-csv-columns: [aoi_id, name_ko, target_month, p_any, p_none, baseline_p, vs_normal, suspected_industrial, rank, model, as_of_date]
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /aois/{aoiId}/occurrence:
+    get:
+      tags: [outlook]
+      operationId: getAoiOccurrence
+      summary: 한 지역의 다음 달 발생 확률 (시군구 = 모델 값 · 그 밖 = 격자 요약)
+      description: |
+        - `kr_sgg` (252개): 파일 행 그대로, `unit: aoi`.
+        - 그 밖 AOI(나라·1급·시도·대륙·WORLD): 지역 확률은 **만들지 않는다**(칸 확률을 묶어 지역 확률로 바꾸려면 칸 사이 독립 가정이 필요 — 모델 값 재계산이라 A1 위반).
+          대신 칸 중심이 AOI 경계 안인 0.5° 격자의 **요약**(`unit: grid_summary`: 칸 수·단계별 칸 수·최대·중앙값, 지속 열원 제외)을 준다. `p_any` 는 null.
+        - 격자가 하나도 없는 AOI → `coverage.available=false`, `reason: no_cells` → 화면 「이 지역 자료 없음」.
+      x-handoff-alias:
+        path: /occurrence
+        served_at: /api/occurrence
+        params:
+          aoi: "path {aoiId} (모델 api_contract 이름 aoi, quickstart 이름 aoi_id — 별칭은 둘 다 받고 둘 다 오면 400)"
+      x-release-file: [aoi_occurrence_nextmonth_latest.parquet, grid_occurrence_nextmonth_latest.parquet, aoi_boundaries.geojson]
+      parameters:
+        - $ref: '#/components/parameters/AoiIdPath'
+      responses:
+        '200':
+          description: 지역 확률 또는 격자 요약
+          headers: *layer_cached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AoiOccurrence'
+              examples:
+                sgg_industrial:
+                  summary: GET /aois/SGG_31140/occurrence (release 실값, 산업 열원 의심)
+                  value:
+                    aoi_id: SGG_31140
+                    unit: aoi
+                    target_month: '2026-12'
+                    as_of_date: '2026-11-14'
+                    model: aoi_occurrence_xgb+platt
+                    p_any: 0.41973
+                    p_none: 0.58027
+                    baseline_p: 0.42857
+                    vs_normal: similar
+                    suspected_industrial: true
+                    rate_5y: 0.6
+                    n_years: 14
+                    lag1_projected: true
+                    grid_summary: null
+                    coverage: {available: true, scope: kr_sgg, reason: null}
+                    notice: 과거 감지 기록과 최근 활동으로 본 확률입니다. 날씨 예보가 아니며, 공장 등 산업 열원으로 보이는 감지가 일부 섞여 있을 수 있습니다.
+                    data_release: data-v1.2-2026-11-15
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /fire-events:
+    get:
+      tags: [fire-info]
+      operationId: listFireEvents
+      summary: 화재 사건·위성 확인 연소 면적 (한국·아르헨티나)
+      description: |
+        `fire_events.parquet`(1,240,978행: region KR 12,397 · ARG 1,228,581, 2026-11-15 잼). 감지 점을 시공간으로 이은 사건(≤750 m VIIRS / 2 km MODIS, 하루).
+        - 기간 필터 = 겹침(`start_date ≤ end` 그리고 `end_date ≥ start`), 모델팀 규칙.
+        - 날짜(`start_date`·`end_date`, `start`·`end`)는 **현지 날짜**(모델팀 연결 규칙 「현지 날짜 차 ≤ 1일」). 위성 상태의 UTC 날과 다르다.
+        - `aoi_id` 대응(2026-11-15 잼):
+          - 나라 `KR` = `country == 'KOR'`(11,943건) · `ADM0_ARG` = `country == 'ARG'`(1,223,123건). AOI id 와 `country` 값이 다르다(KR ↔ KOR).
+          - 시도 `SIDO_*` = `sido_nm == aoi_list.name`(17개 이름 전부 일치).
+          - 아르헨티나 1급 `ADM1_ARG-*` = `'ADM1_' + adm1_code`(사건의 adm1_code 52종 전부 aoi_list 에 있음, 이웃 나라 1급 포함).
+          - 시군구 `SGG_*` = `sgg_all` 의 이름을 aoi_list 시군구로 **풀어서** 고른다: 전국에 하나뿐인 이름 → 그 시군구, 동명 이름(강서구·고성군·남구·동구·북구·서구·중구 7개) → 부모 시도 이름이 `sido_nm` 과 같은 것, 그래도 못 풀면 버린다.
+            잰 결과: 이름 기준 소속 12,047건 중 못 푼 것 2건. 모델팀 규칙(이름만)은 14,314건으로 동명 구가 섞이고, 앞 판 규칙(이름 + `sido_nm`)은 시·도 경계를 넘는 사건 25건 중 24건을 놓쳤다(12,022건).
+            `sgg_cd` 는 쓰지 않는다: 230종 전부 `SGG_<cd>` 로 있지만 `sgg_nm` 과 어긋난 행 16건(예 41800 ↔ 파주시)·`sido_nm` 과 어긋난 행 4건이 있다(대표 시군구 하나만 담음, 쟁점 F15-Q3).
+        - 나라 열의 이웃 행(잼): KR region 의 PRK 453건·null 1건, ARG region 의 PRY 3,557·BOL 721·BRA 699·URY 232·CHL 221·null 28건. 이 행들은 `aoi_id` 로는 안 나오고 `bbox` 로만 나온다.
+        - `bbox`: `centroid_lat/lon` 이 상자 안(확장 — 모델팀 계약은 aoi 만). 상자가 아래 범위 상자와 안 겹치면 `coverage.available=false`.
+          범위 상자(사건 감지 점 상자에서 잰 값): KR 위도 33.21~38.60 · 경도 124.63~130.90, ARG 위도 −54.90~−21.81 · 경도 −73.18~−53.70.
+          판정 상자는 KR `[124.5, 33.0, 132.0, 38.7]`(모델팀 quickstart 예시 상자 — 「한국 상자」 정의라는 것은 추론, 쟁점 F15-Q5) · ARG `[-73.5, -55.2, -53.4, -21.5]`(잰 범위 + 여유 약 0.3°, 우리가 정한 값).
+          이웃 나라 땅(파라과이 등)은 상자 안이어도 일부만 담겨 있다 — 화면은 그 나라 AOI 를 「자료 없음」으로 둔다.
+        - 정렬 기본 `sum_weight` 내림차순(모델팀). 한국 사건의 79.6% 가 감지 1개, 92.4% 가 3개 미만(잼; 모델팀 문서는 81%) → 목록 화면은 `min_det=3` 을 보낸다(권장, 모델팀).
+        - 범위 밖(위 AOI 가 아닌 AOI, 상자가 두 범위 상자와 안 겹침) → 200 `events: []` + `coverage.available=false`.
+        - `burned_area_km2` = 「위성 확인 연소 면적(하한)」(MCD64A1, 의성 2025-03 ≈ 공식 면적의 64%). null = 「자료 없음」, 0 = 「확인 안 됨」, 양수 = 확인.
+          잰 대응: null 379,349건(시작이 2012~2025 밖 379,343 + 안 6) · 0 ⇔ `burn_confirmed=false` 741,204건 · 양수 ⇔ `true` 120,425건(어긋남 0). 시작이 2011 이전인데 값이 있는 9건(해를 넘긴 사건으로 추정)도 파일 값 그대로.
+          `burned_area_km2_near`·`pixel_area_*` 는 싣지 않는다.
+        - `instrument` 값은 `MODIS`(348,949)·`VIIRS`(892,029) 둘뿐, 두 센서가 섞인 사건 0건(잼).
+        - `frp_sum`·`frp_max` 는 원 FRP(위성 섞임, S-NPP 환산 아님 — 추론: 파일 열 이름이 `frp_*` 이고 `frp_snpp_equiv` 가 아님).
+        - 크기(잼): 사건 1,000건 JSON 0.53 MB / gzip 0.06 MB.
+      x-handoff-alias:
+        path: /events
+        served_at: /api/events
+        params:
+          aoi: "aoi_id (모델 api_contract 이름 aoi)"
+          start: start
+          end: end
+          limit: limit
+      x-release-file: fire_events.parquet
+      parameters:
+        - $ref: '#/components/parameters/AoiIdQuery'
+        - $ref: '#/components/parameters/Bbox'
+        - $ref: '#/components/parameters/Start'
+        - $ref: '#/components/parameters/End'
+        - name: min_det
+          in: query
+          description: '`n_det` 하한(확장). 목록 화면 권장 3.'
+          schema: {type: integer, minimum: 1, maximum: 100000, default: 1}
+        - name: sort
+          in: query
+          schema: {type: string, enum: [sum_weight, start_date, burned_area_km2], default: sum_weight}
+        - name: limit
+          in: query
+          description: 모델팀 기본 100.
+          schema: {type: integer, minimum: 1, maximum: 1000, default: 100}
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Format'
+      responses:
+        '200':
+          description: 사건 목록
+          headers: *layer_cached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FireEventList'
+            text/csv:
+              schema:
+                type: string
+                x-csv-columns: [event_id, region, start_date, end_date, duration_days, n_det, sum_weight, frp_sum, frp_max, centroid_lat, centroid_lon, lat_min, lat_max, lon_min, lon_max, burned_area_km2, burn_confirmed, instrument, n_viirs, n_modis, country, adm1_code, sido_nm, sgg_cd, sgg_nm, sgg_all]
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /fire-events/{eventId}:
+    get:
+      tags: [fire-info]
+      operationId: getFireEvent
+      summary: 화재 사건 하나 (불 유형 배지 top_event_id 에서 연결)
+      x-handoff-alias: null
+      x-release-file: fire_events.parquet
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: {$ref: '#/components/schemas/FireEventId'}
+          example: KR_20001102_0001
+      responses:
+        '200':
+          description: 사건
+          headers: *layer_cached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FireEventDetail'
+              examples:
+                first_kr:
+                  summary: GET /fire-events/KR_20001102_0001 (release 실값)
+                  value:
+                    event:
+                      {event_id: KR_20001102_0001, region: KR, start_date: '2000-11-02', end_date: '2000-11-02', duration_days: 1, n_det: 2, sum_weight: 0.92701, frp_sum: 12.0, frp_max: 6.5, centroid_lat: 37.619, centroid_lon: 126.6005, lat_min: 37.6166, lat_max: 37.6214, lon_min: 126.5967, lon_max: 126.6043, burned_area_km2: null, burn_confirmed: null, instrument: MODIS, n_viirs: 0, n_modis: 2, country: KOR, adm1_code: KOR-2498, sido_nm: 경기도, sgg_cd: '41570', sgg_nm: 김포시, sgg_all: 김포시}
+                    burned_area_label: 위성 확인 연소 면적(하한)
+                    data_release: data-v1.2-2026-11-15
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /aois/{aoiId}/fwi:
+    get:
+      tags: [fire-info]
+      operationId: getAoiFwi
+      summary: 산불 기상 위험도 FWI (한국·아르헨티나, 기준일 표시)
+      description: |
+        `fwi_aoi_day.parquet`(295 AOI = KR·시도 17·시군구 252·ADM0_ARG·ARG 1급, 2012-01-01 ~ 2026-11-11, 2026-11-15 잼).
+        - 기본 배지 = 상대 등급 `fwi_rel_class`, 절대 등급 `fwi_class` 는 상세에(모델팀 `fwi_meta.app_default_badge`). 아르헨티나는 절대 등급이 잘 안 맞음.
+          (참고: `fwi_meta` 검증에서 한국은 절대 FWI 의 AUC 0.634 가 상대 백분위 0.596 보다 높다 — 봄철 건조기가 절대값에만 담김. 배지는 모델팀 기본대로 두고 상세에 절대 등급을 같이 보인다.)
+        - 상대 등급 화면 문구(모델팀 `fwi_meta.relative_classes.labels_ko`): below_normal 「평년보다 낮음」 · normal 「평년」 · above_normal 「높음」 · well_above_normal 「매우 높음」.
+        - 날짜 = NASA POWER **LST(현지 태양시) 날**. UTC 날이 아니다.
+        - `as_of_date` = 그 AOI 의 마지막 날. 295 AOI 전부 2026-11-11(잼), 오늘(11-15)보다 4일 늦음. 화면에 「산불 기상 위험도 · 11월 11일 기준」을 꼭 쓴다.
+        - `date` 없음 → 마지막 날. `date > as_of_date` → `day: null` + `as_of_date`(모델팀 규칙, 오류 아님).
+        - `start`·`end` (확장) → 일별 `series`(≤ 366일). `date` 와 함께 쓰면 400.
+        - 2026년 날짜는 `fwi_pct` 가 null(파일 그대로, 92,925행 = 2026년 행 전부이고 그 밖 null 0 — 잼) — 상대 등급 `fwi_rel_class` 는 null 0, 파일이 이미 `fwi_clim_aoi_month` q25·q75·q90 으로 정해 둠.
+        - 대상 AOI(잼): `KR` · `ADM0_ARG` · 시도 17 · 시군구 252 · 아르헨티나 1급 24 = 295. 나라 AOI 는 `KR`(level kr)과 `ADM0_ARG`(level country) 두 개뿐.
+        - 범위 밖 AOI → 200 `day: null`, `series: []`, `coverage.available=false`.
+      x-handoff-alias:
+        path: /fwi
+        served_at: /api/fwi
+        params:
+          aoi: "path {aoiId}"
+          date: date
+      x-release-file: [fwi_aoi_day.parquet, fwi_clim_aoi_month.parquet]
+      parameters:
+        - $ref: '#/components/parameters/AoiIdPath'
+        - name: date
+          in: query
+          schema: {type: string, format: date}
+        - name: start
+          in: query
+          schema: {type: string, format: date}
+        - name: end
+          in: query
+          schema: {type: string, format: date}
+        - $ref: '#/components/parameters/Format'
+      responses:
+        '200':
+          description: FWI
+          headers: *layer_cached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FwiResponse'
+              examples:
+                arg_first_day:
+                  summary: GET /aois/ADM0_ARG/fwi?date=2012-01-01 (release 실값)
+                  value:
+                    aoi_id: ADM0_ARG
+                    name: Argentina
+                    as_of_date: '2026-11-11'
+                    badge: fwi_rel_class
+                    date: '2012-01-01'
+                    day: {date: '2012-01-01', fwi_mean: 16.9439, fwi_max: 37.1296, fwi_class: high, fwi_pct: 1.2673, fwi_rel_class: below_normal, isi_mean: 18.6068, bui_mean: 11.2531, ffmc_mean: 93.5269, dc_mean: 24.4007, n_cells: 1219}
+                    series: []
+                    coverage: {available: true, scope: kr_arg_fwi, reason: null}
+                    notice: 기상으로 본 산불 위험도(캐나다 FWI, NASA POWER 일 자료 근사). 실제 발화·확산을 예측하지 않음.
+                    data_release: data-v1.2-2026-11-15
+            text/csv:
+              schema:
+                type: string
+                x-csv-columns: [aoi_id, date, fwi_mean, fwi_max, fwi_class, fwi_pct, fwi_rel_class, isi_mean, bui_mean, ffmc_mean, dc_mean, n_cells, as_of_date]
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /spread-nowcast:
+    get:
+      tags: [fire-info]
+      operationId: getSpreadNowcast
+      summary: 내일 확산 가능성 nowcast (0.025° 후보 칸, 한국 상자·아르헨티나)
+      description: |
+        `spread_nowcast_latest.parquet`(10,189칸 = KR 147 · ARG 10,042, 기준일 2026-11-13 → 목표 2026-11-14, 모델 v1.2-ops 기상 없음, 2026-11-15 잼).
+        - 칸 = 오늘 활성 칸 + 반경 3칸(≈7.5 km) 후보만. **파일에 없는 칸 = 「대상 아님」(0% 아님).** 오늘 활성 칸 346 · 후보 9,843(잼).
+        - 날짜(`as_of_date`·`target_date`)는 **현지 날짜**(모델팀 meta 「다음 현지 날짜」). 기준 위성 NOAA-20(S-NPP 는 11-02 정지).
+        - `aoi_id` = 칸 중심이 AOI 경계 안, `bbox` = 칸 중심이 상자 안(모델팀). 둘 중 정확히 하나.
+        - **`region=KR` 은 「한국 상자」라 일본 칸이 섞인다**(잼, 칸 중심의 나라 `cand_adm0`): KR 147 = KOR 98 · JPN 47 · null(바다) 2, ARG 10,042 = ARG 9,941 · PRY 39 · BRA 27 · URY 21 · BOL 14.
+          `aoi_id=KR` 은 경계 안 98칸 이하만 나오고, 한국 근처 `bbox` 는 일본 칸도 낸다(모델 출력이라 그대로 그리고 `cand_adm0` 를 툴팁에 쓴다).
+          모델 검증도 「한국 상자」(PR-AUC 0.147)와 「한국만」(0.210)을 따로 잰다 — 화면 성능 문구는 한국만 값.
+        - coverage: AOI 는 `KR`·`SIDO_*`·`SGG_*`·`ADM0_ARG`·`ADM1_ARG-*` 만 범위 안. 일본·파라과이 등 이웃 AOI 는 칸이 일부 있어도 `available=false`(일부만 담김 — 「자료 없음」으로 둔다).
+          bbox 는 범위 상자(KR `[124.5, 33.0, 132.0, 38.7]` 추론 · ARG `[-73.5, -55.2, -53.4, -21.5]`, `/fire-events` 와 같음)와 겹치면 범위 안. 지금 KR 칸의 실제 범위는 위도 33.19~36.11 · 경도 129.29~131.71(그날 불 위치일 뿐 상자 정의가 아님, 쟁점 F15-Q5).
+        - `level`: `low` < 0.05 ≤ `moderate` ≤ 0.20 < `high` (모델팀 규칙을 서버가 붙임 — quickstart 코드 `> 0.20` high · `≥ 0.05` moderate 와 같음). 잰 분포 low 9,708 · moderate 338 · high 143. 확률 숫자는 툴팁에만.
+        - 크기(잼): 전체 10,189칸 JSON 1.57 MB / gzip 0.13 MB.
+        - 필수 문구 `notice` 를 범례에 항상.
+        - 범위 밖 → 200 `cells: []` + `coverage.available=false`. 범위 안인데 후보 칸이 없음 → `cells: []` + `coverage.available=true`(「오늘 감지 없음」, 자료 없음과 다름).
+      x-handoff-alias:
+        path: /spread
+        served_at: /api/spread
+        params:
+          aoi: "aoi_id (모델 api_contract 이름 aoi)"
+          bbox: bbox
+      x-release-file: spread_nowcast_latest.parquet
+      parameters:
+        - $ref: '#/components/parameters/AoiIdQuery'
+        - $ref: '#/components/parameters/Bbox'
+        - name: min_level
+          in: query
+          description: 확장. 이 단계 이상만.
+          schema: {type: string, enum: [low, moderate, high], default: low}
+        - $ref: '#/components/parameters/Format'
+      responses:
+        '200':
+          description: 확산 가능성 칸
+          headers: *layer_cached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpreadNowcast'
+              examples:
+                arg_top:
+                  summary: GET /spread-nowcast?bbox=-62,-26.5,-61,-25.5 (release 실값 1칸만 남김)
+                  value:
+                    as_of_date: '2026-11-13'
+                    target_date: '2026-11-14'
+                    model: spread_nowcast_xgb v1.2-ops (2026-11-15) no_weather
+                    source_satellite: NOAA-20
+                    weather_available: false
+                    weather_lag_days: null
+                    bbox: [-62.0, -26.5, -61.0, -25.5]
+                    count: 1
+                    cells:
+                      - {region: ARG, cand_adm0: ARG, cell_lat: -25.9125, cell_lon: -61.4625, cell_size_deg: 0.025, p_spread: 0.97484, level: high, active_today: true, fire_event_days: 1, n_det_today_7x7: 32}
+                    coverage: {available: true, scope: kr_box_arg_spread, reason: null}
+                    notice: 위성 감지 기반 단기 확산 가능성입니다. 물리 시뮬레이션이 아니며, 오늘 감지 지점에서 반경 약 7.5 km 밖으로 번지는 경우와 새로 발생하는 불은 예측 대상이 아닙니다.
+                    data_release: data-v1.2-2026-11-15
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /aois/{aoiId}/fire-regime:
+    get:
+      tags: [fire-info]
+      operationId: getAoiFireRegime
+      summary: 불 유형 배지 (AOI × 월, 한국·아르헨티나)
+      description: |
+        `aoi_month_fire_regime.parquet`(92,335행, 295 AOI, 2000~2026, 2026-11-15 잼). `fire_regime` ∈ large_fire / many_small / mixed / none.
+        - 캘린더 값(`aoi_month`)과 다를 수 있다 — 배지는 감지 점 위치로 지역을 정함(모델팀). 캘린더 숫자는 계속 `aoi_month`.
+        - `top_event_id` → `/fire-events/{eventId}`(14,916종 전부 fire_events 에 있음 — 잼). `fire_regime=none` 인데 `top_event_id` 가 있는 달 52개(W = 0 인 사건만 있던 달, 잼) — 화면은 none 이면 사건 연결을 그리지 않는다.
+        - 행 = 295 AOI × 313달(2000-11 ~ 2026-11, AOI 마다 313행 — 잼). 2026-11 은 진행 중인 달이다. `share_large` null ⇔ none(74,170행).
+        - `start`·`end` = YYYY-MM (확장, 모델팀 경로엔 기간 없음). 없으면 전체.
+        - 범위 밖 AOI → 200 `months: []` + `coverage.available=false`.
+      x-handoff-alias:
+        path: /regime
+        served_at: /api/regime
+        params:
+          aoi: "path {aoiId}"
+      x-release-file: aoi_month_fire_regime.parquet
+      parameters:
+        - $ref: '#/components/parameters/AoiIdPath'
+        - name: start
+          in: query
+          schema: {$ref: '#/components/schemas/YearMonth'}
+        - name: end
+          in: query
+          schema: {$ref: '#/components/schemas/YearMonth'}
+        - $ref: '#/components/parameters/Format'
+      responses:
+        '200':
+          description: 월별 불 유형
+          headers: *layer_cached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FireRegime'
+              examples:
+                arg_2000:
+                  summary: GET /aois/ADM0_ARG/fire-regime?start=2000-11&end=2000-12 (release 실값)
+                  value:
+                    aoi_id: ADM0_ARG
+                    name: Argentina
+                    months:
+                      - {year: 2000, month: 11, fire_regime: many_small, W: 5509.714, W_large: 815.517, share_large: 0.14801, n_events: 532, n_large_events: 4, top_event_id: ARG_20001120_0003, top_event_w: 268.308}
+                      - {year: 2000, month: 12, fire_regime: large_fire, W: 33444.527, W_large: 18247.289, share_large: 0.5456, n_events: 1122, n_large_events: 84, top_event_id: ARG_20001210_0006, top_event_w: 808.511}
+                    coverage: {available: true, scope: kr_arg_regime, reason: null}
+                    data_release: data-v1.2-2026-11-15
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /cells/frp:
+    get:
+      tags: [observation]
+      operationId: listCellFrp
+      summary: 불 세기 FRP (S-NPP 환산, 0.1° 칸 × 일 또는 월)
+      description: |
+        `harmonized_cell_day_frp.parquet`(97,791,096행, 800 row group — 2026-11-15 aibox 에서 parquet 메타로 잼). 전 세계, `date_local` 2000-11-01 ~ 2026-11-15.
+        - 파일 열(잼): `cell_id` int64 · `date_local` date32 · `frp_sum` double · `frp_snpp_equiv_sum` double · `frp_snpp_equiv_max` float · `n_points` int32 (6열, null 0).
+          **위경도 열이 없다** → `cell_lat/lon` 은 서버가 CellId 식으로 붙인다(칸 중심). 응답 `date` = `date_local`(현지 날짜, 2026-11-15 은 UTC 보다 앞선 시간대의 날).
+        - 화면 값 = `frp_snpp_equiv_sum` / `frp_snpp_equiv_max`. `frp_sum` 은 원 FRP(참고). 기준 점(고정 열원 제외)만으로 만든 값.
+        - 파일 통계에 `-0.0` 이 있다(최솟값) → 직렬화는 0 으로 낸다. 첫 5행 표본에 `frp_sum` 0.0 · `n_points` 1 인 행이 있었다(작은 값이 표시만 0 인지는 안 쟀다) — 값 0 인 행은 「행 없음」과 다르게 그린다.
+        - 파일은 `cell_id` 순이고 row group 마다 날짜가 전 기간에 걸친다(잼) → 날짜·상자 조회는 파일 직접 읽기로 못 하고 적재 때 (date_local, cell_id) 색인이 필요하다.
+        - 전 세계 하루 ≈ 14,896행(2025-03-20~31 평균, 잼) — bbox 없이 하루치를 주는 것도 50,000행 한도 안이지만, 넓이 한도로 막는다(아래).
+        - `freq=day` = 파일 행 그대로. `freq=month` = 칸·달로 묶음(합 = Σ, 최대 = max, `n_points` = Σ) — 우리가 묶는 집계(값 재계산 아님).
+        - 행 없는 칸·날 = 기준 점 감지 없음(FRP 없음). 「0 MW」로 칠하지 않고 비운다.
+        - 한도: 응답 행(칸 × 기간 추정) ≤ 50,000, 일 단위 기간 ≤ 31일, 월 단위 ≤ 24개월, bbox 넓이 ≤ 100 deg² — 넘으면 400 `range_too_large`.
+        - 한계 문구(모델팀): Terra 밤 비율(2.41) 신뢰 낮음, 2000~2011 MODIS 는 2012 이후 비율 사용(가정).
+      x-handoff-alias: null
+      x-release-file: harmonized_cell_day_frp.parquet
+      parameters:
+        - $ref: '#/components/parameters/Bbox'
+        - $ref: '#/components/parameters/AoiIdQuery'
+        - $ref: '#/components/parameters/Start'
+        - $ref: '#/components/parameters/End'
+        - name: freq
+          in: query
+          schema: {type: string, enum: [day, month], default: day}
+        - $ref: '#/components/parameters/Format'
+      responses:
+        '200':
+          description: 칸 FRP
+          headers: *layer_cached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CellFrpList'
+            text/csv:
+              schema:
+                type: string
+                x-csv-columns: [cell_id, cell_lat, cell_lon, date, frp_sum, frp_snpp_equiv_sum, frp_snpp_equiv_max, n_points]
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/Unavailable'
 components:
   headers:
     ETag:
@@ -734,6 +1291,16 @@ components:
       schema:
         type: string
         const: Accept, Accept-Language
+    CacheControlLayer:
+      description: |
+        v1.2 새 층(release 고정 자료) = `public, max-age=0, s-maxage=3600, must-revalidate`.
+        - 브라우저는 매번 재검증(ETag → 304, 판 교체가 바로 보임 — 데이터 경로 규칙과 같음).
+        - 공유 캐시(Cloudflare 무료 플랜 엣지·nginx proxy_cache)는 1시간 보관 → 원 서버(aibox K3s) 부하를 줄인다. 판 교체 때 캐시 키에 `X-Data-Version` 을 넣거나 퍼지.
+        - 서버 안: Redis 캐시 키 = data_version + 정규화 질의, TTL 없음(판이 바뀌면 키가 바뀜). `/occurrence/grid` 전 세계·`/occurrence/aois?parent_id=KR` 는 적재 때 미리 직렬화.
+        - 오류는 `no-store`.
+      schema:
+        type: string
+        examples: ['public, max-age=0, s-maxage=3600, must-revalidate']
     RetryAfter:
       description: 초 단위 정수
       schema: {type: integer, minimum: 1}
@@ -772,6 +1339,14 @@ components:
       in: query
       required: true
       description: '서,남,동,북 (WGS84)'
+      style: form
+      explode: false
+      schema:
+        $ref: '#/components/schemas/Bbox'
+    BboxOptional:
+      name: bbox
+      in: query
+      description: '서,남,동,북 (WGS84). 없으면 전체. 날짜 변경선을 넘는 상자(서 > 동)는 받는다(모델팀 store 규칙).'
       style: form
       explode: false
       schema:
@@ -1412,38 +1987,23 @@ components:
               properties: {cell_id: 4549889, value: 107.0, value_lo: 107.0, value_hi: 107.0, raw_modis: 29, raw_viirs: 107, value_source: snpp_observed, data_source: SP, status: ok}
     SatelliteStatus:
       type: object
-      x-status: assumed
-      description: 열 모양 가정(G1). release 에 파일 없음(R1).
-      required: [start, end, updated_at, satellites, method_version]
+      additionalProperties: false
+      description: v1.2 release 파일 모양(앞선 가정 G1 모양은 버림).
+      required: [freq, days, months, data_release]
       properties:
-        start: {type: string, format: date}
-        end: {type: string, format: date}
-        updated_at: {type: string, format: date-time}
-        through: {type: string, format: date}
-        satellites:
-          type: array
-          items:
-            type: object
-            required: [satellite]
-            properties:
-              satellite: {type: string, enum: [N, N20, N21, Terra, Aqua]}
-              instrument: {type: string, enum: [VIIRS, MODIS]}
-              first_date: {type: string, format: date}
-              last_date: {type: string, format: date}
-              days: {type: object, additionalProperties: {type: integer}}
-              missing_dates: {type: array, items: {type: string, format: date}}
-              nrt_from: {type: [string, 'null'], format: date}
+        start: {type: [string, 'null'], format: date}
+        end: {type: [string, 'null'], format: date}
+        freq: {type: string, enum: [day, month]}
+        through: {type: [string, 'null'], format: date, description: 파일의 마지막 date_utc}
         days:
           type: array
-          items:
-            type: object
-            properties:
-              date: {type: string, format: date}
-              value_source: {$ref: '#/components/schemas/ValueSource'}
-              satellites: {type: array, items: {type: string}}
-              status: {$ref: '#/components/schemas/MonthStatus'}
-              data_source: {oneOf: [{$ref: '#/components/schemas/DataSource'}, {type: 'null'}]}
+          maxItems: 2196
+          items: {$ref: '#/components/schemas/SatelliteDayStatus'}
+        months:
+          type: array
+          items: {$ref: '#/components/schemas/SatelliteMonthStatus'}
         method_version: {$ref: '#/components/schemas/MethodVersion'}
+        data_release: {$ref: '#/components/schemas/DataRelease'}
     Method:
       type: object
       required: [method_version, unit, meta]
@@ -1464,6 +2024,11 @@ components:
           description: 출처 표시(FIRMS 인정 문구·경계 CC BY)
           items: {type: object}
         data_version: {type: string}
+        display_names:
+          type: object
+          description: 'v1.2 — 화면 표시 이름(내부 id → 이름). info.x-display-names 와 같다.'
+          additionalProperties: {type: string}
+        performance_copy: {type: string, description: '「총량 오차 1~2%, 월별 상관 0.97」 (모델팀 발표·화면 문구)'}
         files: {type: object}
         ingest:
           type: object
@@ -1491,6 +2056,16 @@ components:
             polygon_vertices: {type: integer, examples: [5000]}
             cells_max: {type: integer, examples: [10000]}
             csv_rows: {type: integer, examples: [100000]}
+            fire_events_limit_max: {type: integer, examples: [1000]}
+            fire_events_days: {type: integer, examples: [3700]}
+            layer_bbox_area_deg2: {type: number, examples: [400]}
+            frp_rows: {type: integer, examples: [50000]}
+            frp_day_days: {type: integer, examples: [31]}
+            frp_month_months: {type: integer, examples: [24]}
+            frp_bbox_area_deg2: {type: number, examples: [100]}
+            fwi_series_days: {type: integer, examples: [366]}
+            status_day_days: {type: integer, examples: [366]}
+            spread_cells_max: {type: integer, examples: [20000]}
     ErrorCode:
       type: string
       description: 문자열 code (프런트 분기용). 여러 번호가 같은 code 를 공유한다.
@@ -1519,6 +2094,15 @@ components:
         - {'no': 40102, name: POLYGON_TOO_COMPLEX, code: polygon_too_complex, http: 400}
         - {'no': 40103, name: CELLS_TOO_MANY, code: range_too_large, http: 400}
         - {'no': 40201, name: CURSOR_STALE, code: cursor_stale, http: 409}
+        - {'no': 40002, name: INVALID_EVENT_ID, code: invalid_param, http: 400}
+        - {'no': 40003, name: AOI_AND_BBOX, code: invalid_param, http: 400}
+        - {'no': 40004, name: DATE_AND_RANGE, code: invalid_param, http: 400}
+        - {'no': 40104, name: FRP_RANGE_TOO_LARGE, code: range_too_large, http: 400}
+        - {'no': 40105, name: BBOX_AREA_TOO_LARGE, code: range_too_large, http: 400}
+        - {'no': 40106, name: EVENTS_RANGE_TOO_LARGE, code: range_too_large, http: 400}
+        - {'no': 40107, name: SERIES_RANGE_TOO_LARGE, code: range_too_large, http: 400}
+        - {'no': 40402, name: UNKNOWN_FIRE_EVENT, code: not_found, http: 404}
+        - {'no': 50502, name: LAYER_NOT_LOADED, code: data_not_loaded, http: 503}
         - {'no': 50001, name: RELEASE_INVALID, code: invalid_param, http: null, cli_exit: 3}
         - {'no': 50002, name: RELEASE_HASH_MISMATCH, code: release_hash_mismatch, http: null, cli_exit: 4}
         - {'no': 50003, name: RELEASE_KEY_INVALID, code: invalid_param, http: null, cli_exit: 3}
@@ -1558,3 +2142,349 @@ components:
             properties:
               param: {type: string}
               detail: {type: string}
+    DataRelease:
+      type: string
+      description: 적재한 모델 release 태그. v1.1 이하는 쓰지 않는다(F15).
+      examples: [data-v1.2-2026-11-15]
+    Coverage:
+      type: object
+      additionalProperties: false
+      description: |
+        「자료 없음」 표현(F15). 오류가 아니라 200 + 빈 배열/null 값 + 이 객체.
+        화면은 `available=false` 일 때 「이 지역 자료 없음」 한 줄만 쓰고 가짜 값·0 을 그리지 않는다.
+        `available=true` 인데 배열이 비면 「자료는 있으나 해당 없음」(예 오늘 감지 없음)이다 — 둘을 섞지 않는다.
+      required: [available, scope, reason]
+      properties:
+        available: {type: boolean}
+        scope:
+          type: string
+          description: 그 층이 자료를 가진 범위
+          enum: [world_land_detected, kr_sgg, kr_arg_events, kr_arg_fwi, kr_box_arg_spread, kr_arg_regime, world_frp]
+        reason:
+          type: [string, 'null']
+          enum: [out_of_coverage, no_cells, not_sgg_level, null]
+          description: available=false 일 때만. not_sgg_level 은 쓰지 않고 grid_summary 로 답한다(예약).
+        regions:
+          type: array
+          items: {type: string, enum: [WORLD, KR, KR_BOX, ARG]}
+    VsNormal:
+      type: string
+      enum: [higher, similar, lower]
+      description: '`p_any − baseline_p` ≥ +0.10 → higher, ≤ −0.10 → lower, 그 사이 similar (모델팀 표시 규칙). 화면 문구 「예년보다 높음 / 예년 수준 / 예년보다 낮음」.'
+    GridOccurrenceCell:
+      type: object
+      additionalProperties: false
+      description: '`fields=map` 이면 required 7필드만, `full` 이면 전부(파일 값은 결측 0 — 잼).'
+      required: [cell_id, lat, lon, p_any, baseline_p, vs_normal, persistent_source]
+      properties:
+        cell_id: {type: integer, minimum: 0, description: '0.5° 격자 id = floor((lat+90)/0.5) × 720 + floor((lon+180)/0.5) (0.1° CellId 와 다른 체계, 52,855/52,855 일치 잼)'}
+        lat: {type: number, description: 격자 중심}
+        lon: {type: number}
+        p_any: {type: number, minimum: 0, maximum: 1, description: 다음 달 기준 감지 ≥ 1건 확률(고정 열원 제외)}
+        p_none: {type: number, minimum: 0, maximum: 1}
+        baseline_p: {type: number, minimum: 0, maximum: 1, description: 예년 같은 달 발생 비율}
+        vs_normal: {$ref: '#/components/schemas/VsNormal'}
+        persistent_source: {type: boolean, description: 지속 열원 의심 → 회색, 순위·강조 제외}
+        adm0: {type: [string, 'null'], description: ISO3}
+        continent: {type: [string, 'null']}
+        rate_5y: {type: [number, 'null']}
+        lag1_projected: {type: [boolean, 'null'], description: 직전 달(진행 중) 월말 추정값을 특성으로 썼는지}
+    GridOccurrence:
+      type: object
+      additionalProperties: false
+      required: [target_month, as_of_date, model, cell_size_deg, count, cells, coverage, notice, data_release]
+      properties:
+        target_month: {$ref: '#/components/schemas/YearMonth'}
+        as_of_date: {type: string, format: date}
+        model: {type: string, examples: [grid_occurrence_xgb+isotonic, baseline_same_month_rate]}
+        cell_size_deg: {const: 0.5}
+        bbox: {$ref: '#/components/schemas/Bbox'}
+        count: {type: integer, minimum: 0}
+        cells:
+          type: array
+          items: {$ref: '#/components/schemas/GridOccurrenceCell'}
+        coverage: {$ref: '#/components/schemas/Coverage'}
+        notice: {type: string}
+        data_release: {$ref: '#/components/schemas/DataRelease'}
+    GridSummary:
+      type: object
+      additionalProperties: false
+      description: AOI 안 0.5° 격자(칸 중심 기준) 요약. 지역 확률이 아니다.
+      required: [n_cells, n_persistent, bands, p_any_max, p_any_median]
+      properties:
+        n_cells: {type: integer, minimum: 0}
+        n_persistent: {type: integer, minimum: 0}
+        bands:
+          type: object
+          additionalProperties: false
+          description: 지속 열원 뺀 칸 수
+          properties:
+            lt10: {type: integer}
+            p10_40: {type: integer}
+            p40_70: {type: integer}
+            ge70: {type: integer}
+        p_any_max: {type: [number, 'null']}
+        p_any_median: {type: [number, 'null']}
+        top_cells:
+          type: array
+          maxItems: 10
+          items: {$ref: '#/components/schemas/GridOccurrenceCell'}
+    AoiOccurrence:
+      type: object
+      additionalProperties: false
+      required: [aoi_id, unit, target_month, as_of_date, model, p_any, p_none, baseline_p, vs_normal, suspected_industrial, grid_summary, coverage, notice, data_release]
+      properties:
+        aoi_id: {$ref: '#/components/schemas/AoiId'}
+        name_ko: {type: [string, 'null'], x-release-column: aoi_list.name}
+        unit: {type: string, enum: [aoi, grid_summary]}
+        target_month: {oneOf: [{$ref: '#/components/schemas/YearMonth'}, {type: 'null'}]}
+        as_of_date: {type: [string, 'null'], format: date}
+        model: {type: [string, 'null']}
+        p_any: {type: [number, 'null'], minimum: 0, maximum: 1}
+        p_none: {type: [number, 'null'], minimum: 0, maximum: 1}
+        baseline_p: {type: [number, 'null'], minimum: 0, maximum: 1}
+        vs_normal: {oneOf: [{$ref: '#/components/schemas/VsNormal'}, {type: 'null'}]}
+        suspected_industrial: {type: [boolean, 'null'], description: 산업 열원 의심(4곳) → 회색, 순위·강조·알림 제외, 값은 상세에서만}
+        rank: {type: [integer, 'null'], description: 목록 응답에서만. 의심 행은 null}
+        rate_5y: {type: [number, 'null']}
+        n_years: {type: [integer, 'null']}
+        lag1_projected: {type: [boolean, 'null']}
+        grid_summary: {oneOf: [{$ref: '#/components/schemas/GridSummary'}, {type: 'null'}]}
+        coverage: {$ref: '#/components/schemas/Coverage'}
+        notice: {type: string}
+        data_release: {$ref: '#/components/schemas/DataRelease'}
+    AoiOccurrenceList:
+      type: object
+      additionalProperties: false
+      required: [parent_id, target_month, as_of_date, count, items, coverage, notice, data_release]
+      properties:
+        parent_id: {$ref: '#/components/schemas/AoiId'}
+        target_month: {oneOf: [{$ref: '#/components/schemas/YearMonth'}, {type: 'null'}]}
+        as_of_date: {type: [string, 'null'], format: date}
+        count: {type: integer}
+        items:
+          type: array
+          maxItems: 252
+          items: {$ref: '#/components/schemas/AoiOccurrence'}
+        coverage: {$ref: '#/components/schemas/Coverage'}
+        notice: {type: string}
+        data_release: {$ref: '#/components/schemas/DataRelease'}
+    FireEventId:
+      type: string
+      pattern: '^(KR|ARG)_\d{8}_\d{4,6}$'
+      description: '`<region>_<시작 YYYYMMDD>_<일련>` (release 실값 KR_20001102_0001 · ARG_20001120_0003). 이번 release 일련은 1,240,978건 전부 4자리(잼) — 패턴은 다음 판 여유로 4~6자리.'
+    FireEvent:
+      type: object
+      additionalProperties: false
+      required: [event_id, region, start_date, end_date, duration_days, n_det, sum_weight, centroid_lat, centroid_lon, lat_min, lat_max, lon_min, lon_max, burned_area_km2, burn_confirmed]
+      properties:
+        event_id: {$ref: '#/components/schemas/FireEventId'}
+        region: {type: string, enum: [KR, ARG]}
+        start_date: {type: string, format: date, description: 현지 날짜}
+        end_date: {type: string, format: date, description: 현지 날짜}
+        duration_days: {type: integer, minimum: 1}
+        n_det: {type: integer, minimum: 1, description: 감지 수}
+        sum_weight: {type: number, description: VIIRS(S-NPP) 상당 감지 수}
+        frp_sum: {type: [number, 'null'], description: 원 FRP 합(MW)}
+        frp_max: {type: [number, 'null']}
+        centroid_lat: {type: number}
+        centroid_lon: {type: number}
+        lat_min: {type: number}
+        lat_max: {type: number}
+        lon_min: {type: number}
+        lon_max: {type: number}
+        burned_area_km2: {type: [number, 'null'], minimum: 0, description: '「위성 확인 연소 면적(하한)」. null = 자료 없음(2012~2025 밖), 0 = 확인 안 됨'}
+        burn_confirmed: {type: [boolean, 'null']}
+        instrument: {type: [string, 'null'], enum: [MODIS, VIIRS, null], description: 'release 값은 MODIS·VIIRS 둘뿐(잼, 섞인 사건 0)'}
+        n_viirs: {type: [integer, 'null']}
+        n_modis: {type: [integer, 'null']}
+        country: {type: [string, 'null'], description: 'ISO3(KR 사건은 KOR — AOI id KR 과 다름). 이웃 나라 행: KR region PRK 453·null 1, ARG region PRY 3,557·BOL 721·BRA 699·URY 232·CHL 221·null 28 (잼)'}
+        adm1_code: {type: [string, 'null'], description: "'ADM1_' + adm1_code = aoi_list id (예 KOR-2498, ARG-1271)"}
+        sido_nm: {type: [string, 'null']}
+        sgg_cd: {type: [string, 'null'], description: '대표 시군구 코드 하나(SGG_<cd> 로 aoi_list 에 230종 전부 있음). sgg_nm 과 어긋난 행 16건이 있어 AOI 거르기에는 쓰지 않는다(잼, 쟁점 F15-Q3)'}
+        sgg_nm: {type: [string, 'null']}
+        sgg_all: {type: [string, 'null'], description: 쉼표 구분 시군구 이름(파일 그대로)}
+    FireEventList:
+      type: object
+      additionalProperties: false
+      required: [start, end, count, truncated, events, coverage, notice, data_release]
+      properties:
+        aoi_id: {$ref: '#/components/schemas/AoiId'}
+        bbox: {$ref: '#/components/schemas/Bbox'}
+        start: {type: string, format: date}
+        end: {type: string, format: date}
+        min_det: {type: integer}
+        sort: {type: string}
+        count: {type: integer}
+        total: {type: [integer, 'null'], description: 조건에 맞는 전체 수(비싸면 null)}
+        truncated: {type: boolean}
+        next_cursor: {type: [string, 'null']}
+        events:
+          type: array
+          items: {$ref: '#/components/schemas/FireEvent'}
+        coverage: {$ref: '#/components/schemas/Coverage'}
+        notice: {type: string, description: '연소 면적 하한 문구'}
+        data_release: {$ref: '#/components/schemas/DataRelease'}
+    FireEventDetail:
+      type: object
+      additionalProperties: false
+      required: [event, burned_area_label, data_release]
+      properties:
+        event: {$ref: '#/components/schemas/FireEvent'}
+        burned_area_label: {const: 위성 확인 연소 면적(하한)}
+        data_release: {$ref: '#/components/schemas/DataRelease'}
+    FwiDay:
+      type: object
+      additionalProperties: false
+      required: [date, fwi_mean, fwi_class, fwi_rel_class]
+      properties:
+        date: {type: string, format: date}
+        fwi_mean: {type: [number, 'null']}
+        fwi_max: {type: [number, 'null']}
+        fwi_class: {type: [string, 'null'], enum: [low, moderate, high, very_high, extreme, null], description: '절대(캐나다): low <5.2≤ moderate <11.2≤ high <21.3≤ very_high <38≤ extreme'}
+        fwi_pct: {type: [number, 'null'], minimum: 0, maximum: 100, description: 2026년 날짜는 null(파일 그대로)}
+        fwi_rel_class: {type: [string, 'null'], enum: [below_normal, normal, above_normal, well_above_normal, null], description: '상대(기본 배지): <25 / 25~75 / 75~90 / ≥90 백분위. 화면 문구 평년보다 낮음 / 평년 / 높음 / 매우 높음 (fwi_meta labels_ko)'}
+        isi_mean: {type: [number, 'null']}
+        bui_mean: {type: [number, 'null']}
+        ffmc_mean: {type: [number, 'null']}
+        dc_mean: {type: [number, 'null']}
+        n_cells: {type: [integer, 'null']}
+    FwiResponse:
+      type: object
+      additionalProperties: false
+      required: [aoi_id, as_of_date, badge, day, series, coverage, notice, data_release]
+      properties:
+        aoi_id: {$ref: '#/components/schemas/AoiId'}
+        name: {type: [string, 'null'], x-release-column: fwi_aoi_day.name}
+        as_of_date: {type: [string, 'null'], format: date, description: 마지막 NASA POWER 자료일(그 AOI). 화면에 꼭 표시}
+        badge: {const: fwi_rel_class}
+        date: {type: [string, 'null'], format: date, description: 요청한 날(없으면 as_of_date)}
+        day: {oneOf: [{$ref: '#/components/schemas/FwiDay'}, {type: 'null'}]}
+        series:
+          type: array
+          maxItems: 366
+          items: {$ref: '#/components/schemas/FwiDay'}
+        coverage: {$ref: '#/components/schemas/Coverage'}
+        notice: {type: string}
+        data_release: {$ref: '#/components/schemas/DataRelease'}
+    SpreadCell:
+      type: object
+      additionalProperties: false
+      required: [cell_lat, cell_lon, cell_size_deg, p_spread, level, active_today]
+      properties:
+        region: {type: string, enum: [KR, ARG], description: '모델 상자. KR 상자는 일본 칸을 포함한다'}
+        cand_adm0: {type: [string, 'null'], description: '칸 중심의 나라 ISO3(파일 열 그대로). null = 바다. KR 상자의 JPN 칸 구분에 쓴다'}
+        cell_lat: {type: number}
+        cell_lon: {type: number}
+        cell_size_deg: {const: 0.025}
+        p_spread: {type: number, minimum: 0, maximum: 1, description: 툴팁에만}
+        level: {type: string, enum: [low, moderate, high]}
+        active_today: {type: boolean}
+        fire_event_days: {type: [integer, 'null']}
+        n_det_today_7x7: {type: [integer, 'null']}
+    SpreadNowcast:
+      type: object
+      additionalProperties: false
+      required: [as_of_date, target_date, model, weather_available, count, cells, coverage, notice, data_release]
+      properties:
+        as_of_date: {type: [string, 'null'], format: date}
+        target_date: {type: [string, 'null'], format: date}
+        model: {type: [string, 'null']}
+        source_satellite: {type: [string, 'null']}
+        weather_available: {type: boolean}
+        weather_lag_days: {type: [integer, 'null'], description: v1.2-ops 는 null}
+        aoi_id: {$ref: '#/components/schemas/AoiId'}
+        bbox: {$ref: '#/components/schemas/Bbox'}
+        count: {type: integer}
+        cells:
+          type: array
+          maxItems: 20000
+          items: {$ref: '#/components/schemas/SpreadCell'}
+        coverage: {$ref: '#/components/schemas/Coverage'}
+        notice: {type: string}
+        data_release: {$ref: '#/components/schemas/DataRelease'}
+    FireRegimeMonth:
+      type: object
+      additionalProperties: false
+      required: [year, month, fire_regime]
+      properties:
+        year: {type: integer}
+        month: {type: integer, minimum: 1, maximum: 12}
+        fire_regime: {type: string, enum: [large_fire, many_small, mixed, none]}
+        W: {type: [number, 'null'], description: 그 달 Σ가중치}
+        W_large: {type: [number, 'null']}
+        share_large: {type: [number, 'null']}
+        n_events: {type: [integer, 'null']}
+        n_large_events: {type: [integer, 'null']}
+        top_event_id: {oneOf: [{$ref: '#/components/schemas/FireEventId'}, {type: 'null'}]}
+        top_event_w: {type: [number, 'null']}
+    FireRegime:
+      type: object
+      additionalProperties: false
+      required: [aoi_id, months, coverage, data_release]
+      properties:
+        aoi_id: {$ref: '#/components/schemas/AoiId'}
+        name: {type: [string, 'null']}
+        months:
+          type: array
+          items: {$ref: '#/components/schemas/FireRegimeMonth'}
+        coverage: {$ref: '#/components/schemas/Coverage'}
+        data_release: {$ref: '#/components/schemas/DataRelease'}
+    CellFrp:
+      type: object
+      additionalProperties: false
+      required: [cell_id, date, frp_snpp_equiv_sum, frp_snpp_equiv_max, n_points]
+      properties:
+        cell_id: {$ref: '#/components/schemas/CellId'}
+        cell_lat: {type: number, description: 파일에 없음 — 서버가 CellId 식으로 붙인 칸 중심}
+        cell_lon: {type: number, description: 파일에 없음 — 서버가 CellId 식으로 붙인 칸 중심}
+        date: {type: string, format: date, x-release-column: harmonized_cell_day_frp.date_local, description: 일 = date_local(현지 날짜), 월 = 그 달 1일}
+        frp_sum: {type: [number, 'null'], description: 원 FRP(MW), 참고}
+        frp_snpp_equiv_sum: {type: [number, 'null'], description: S-NPP 환산 FRP 합(MW) — 화면 값}
+        frp_snpp_equiv_max: {type: [number, 'null']}
+        n_points: {type: integer, minimum: 0}
+    CellFrpList:
+      type: object
+      additionalProperties: false
+      required: [start, end, freq, count, cells, coverage, notice, data_release]
+      properties:
+        aoi_id: {$ref: '#/components/schemas/AoiId'}
+        bbox: {$ref: '#/components/schemas/Bbox'}
+        start: {type: string, format: date}
+        end: {type: string, format: date}
+        freq: {type: string, enum: [day, month]}
+        count: {type: integer}
+        cells:
+          type: array
+          maxItems: 50000
+          items: {$ref: '#/components/schemas/CellFrp'}
+        coverage: {$ref: '#/components/schemas/Coverage'}
+        notice: {type: string, description: '「불 세기(FRP, S-NPP 기준)」 + Terra 밤 비율 신뢰 낮음 문구'}
+        data_release: {$ref: '#/components/schemas/DataRelease'}
+    SatelliteDayStatus:
+      type: object
+      additionalProperties: false
+      required: [satellite, date_utc, status]
+      properties:
+        satellite: {type: string, enum: [Terra, Aqua, S-NPP, NOAA-20, NOAA-21], description: '파일 값 5종(잼). date_utc 범위 Terra 2000-11-01~ · Aqua 2002-07-04~ · S-NPP 2012-01-20~2026-11-02 · NOAA-20 2018-04-01~ · NOAA-21 2023-03-01~ (나머지 끝 2026-11-14)'}
+        date_utc: {type: string, format: date}
+        status: {type: string, enum: [ok, low, missing, partial], description: 'release 28,316행: ok 28,052 · low 120 · missing 140 · partial 4 (잼)'}
+        n_det_global: {type: [integer, 'null']}
+        coverage: {type: [string, 'null'], description: 'release 값은 global 하나(잼)'}
+        ratio_to_seasonal: {type: [number, 'null']}
+        note: {type: [string, 'null'], description: '파일 값: seasonal_decline 138 · low_multi_sat_reception_outage 23 · earlier_nrt_gap_refilled 5 · partial_current_day 4 · partial_last_day 1 · null 28,145 (잼)'}
+    SatelliteMonthStatus:
+      type: object
+      additionalProperties: false
+      required: [satellite, year, month, month_status]
+      properties:
+        satellite: {type: string}
+        year: {type: integer}
+        month: {type: integer, minimum: 1, maximum: 12}
+        obs_days: {type: [integer, 'null']}
+        low_days: {type: [integer, 'null']}
+        missing_days: {type: [integer, 'null']}
+        days_in_month: {type: [integer, 'null']}
+        first_day: {type: [string, 'null'], format: date}
+        last_day: {type: [string, 'null'], format: date}
+        month_status: {type: string, enum: [complete, partial], description: 'release 934행: complete 927 · partial 7 (잼)'}

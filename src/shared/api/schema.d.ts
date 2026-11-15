@@ -219,8 +219,11 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * 위성별 자료 상태·최신 갱신 시각
-         * @description `satellite_day_status` 는 release 에 없다(R1) → 503. 열 모양은 가정(G1).
+         * 위성별 자료 상태 (일·월)
+         * @description v1.2 부터 release 에 있다: `satellite_day_status.parquet`(28,316행, 위성 × UTC 날) · `satellite_month_status.parquet`(934행) — 2026-11-15 잼.
+         *     - `freq=day` (기본) → `days[]`, 기간 ≤ 366일. `freq=month` → `months[]`, 기간 제한 없음(934행).
+         *     - 날짜 기준은 **UTC**(`date_utc`) — 감지량의 `date_local` 과 다르다.
+         *     - 경로 이름은 v1 계약 그대로 둔다(지휘 과제 후보 `/satellites/status` 는 쓰지 않음 — 쟁점 F15-Q6).
          */
         get: operations["getSatelliteStatus"];
         put?: never;
@@ -294,6 +297,257 @@ export interface paths {
          * @description `FIRMS_MAP_KEY` 는 서버 환경에만. 응답·로그·오류에 키가 없다(핸드오프 §4.5). 허용 목록 밖 파라미터는 400. 15분 캐시, 상류 예산.
          */
         get: operations["getFirmsWmsTile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/occurrence/grid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 다음 달 열원 1건 이상 확률 — 전 세계 0.5° 격자 (F15 예측 화면)
+         * @description `grid_occurrence_nextmonth_latest.parquet` 그대로(52,855칸, 대상 달 2026-12, 2026-11-15 잼). 값은 다시 계산하지 않는다(A1).
+         *     - 파일에 없는 칸 = 2012-02 이후 감지가 한 번도 없던 칸(남극·공해 포함). 「0%」가 아니라 「대상 아님」으로 그린다.
+         *     - `persistent_source=true`(259칸) 는 순위·강조에서 빼고 회색. 값은 툴팁·상세에서만.
+         *     - `vs_normal` 은 모델팀 표시 규칙(`p_any − baseline_p` ≥ +0.10 높음, ≤ −0.10 낮음, 그 사이 예년 수준)을 서버가 붙인 것 — 확률 자체는 파일 값.
+         *     - bbox 없이 부르면 전 세계 52,855칸. 크기(2026-11-15 aibox 에서 파일로 직렬화해 잼): `fields=full`(아래 칸 필드 전부, 소수 5자리) 11.34 MB / gzip 0.65 MB,
+         *       `fields=map`(cell_id·lat·lon·p_any·baseline_p·vs_normal·persistent_source, 소수 4자리) 6.58 MB / gzip 0.47 MB. 반올림 없이 float32 → double 로 내보내면 12.56 MB / gzip 0.93 MB 라 **소수 5자리로 반올림해 낸다**(표시 정밀도 1%p 보다 충분히 작음).
+         *       전 세계 응답은 gzip/br 압축 필수. 적재 때 `fields` 별로 한 번 직렬화해 판 단위로 캐시한다.
+         *     - 잰 분포: `p_model` 열 = `p_any` (52,855/52,855 같음, 싣지 않음) · `p_any + p_none = 1` (오차 0) · vs_normal higher 4,941 / similar 42,772 / lower 5,142 ·
+         *       단계 < 10% 25,844 / 10~40% 9,632 / 40~70% 5,739 / ≥ 70% 11,640 · `cell_id = floor((lat+90)/0.5)×720 + floor((lon+180)/0.5)` 52,855/52,855 일치.
+         *     - `model` 이 `baseline_same_month_rate` 로 바뀌는 판이 있다(모델팀: 기준선을 못 이기면 `p_any = baseline_p`). 화면은 `model` 을 툴팁 출처에 그대로 쓴다.
+         *     - 색 단계(화면): < 10% / 10~40% / 40~70% / ≥ 70%.
+         */
+        get: operations["getGridOccurrence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/occurrence/aois": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 한국 시군구 다음 달 발생 확률 목록 (순위·지도용, 확장)
+         * @description `aoi_occurrence_nextmonth_latest.parquet` 252행. `parent_id` = `KR` 또는 `SIDO_*` (그 밖 → 200 빈 목록 + `coverage.available=false`).
+         *     순위(`rank`)는 `suspected_industrial=false` 인 행만 `p_any` 내림차순으로 매기고, 의심 행(4곳)은 `rank: null` + 회색.
+         *     모델팀 계약에 목록 경로는 없다(단건 `/occurrence?aoi` 만) — 화면의 시군구 순위·색칠에 필요해 둔 확장.
+         */
+        get: operations["listAoiOccurrence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/aois/{aoiId}/occurrence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 한 지역의 다음 달 발생 확률 (시군구 = 모델 값 · 그 밖 = 격자 요약)
+         * @description - `kr_sgg` (252개): 파일 행 그대로, `unit: aoi`.
+         *     - 그 밖 AOI(나라·1급·시도·대륙·WORLD): 지역 확률은 **만들지 않는다**(칸 확률을 묶어 지역 확률로 바꾸려면 칸 사이 독립 가정이 필요 — 모델 값 재계산이라 A1 위반).
+         *       대신 칸 중심이 AOI 경계 안인 0.5° 격자의 **요약**(`unit: grid_summary`: 칸 수·단계별 칸 수·최대·중앙값, 지속 열원 제외)을 준다. `p_any` 는 null.
+         *     - 격자가 하나도 없는 AOI → `coverage.available=false`, `reason: no_cells` → 화면 「이 지역 자료 없음」.
+         */
+        get: operations["getAoiOccurrence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fire-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 화재 사건·위성 확인 연소 면적 (한국·아르헨티나)
+         * @description `fire_events.parquet`(1,240,978행: region KR 12,397 · ARG 1,228,581, 2026-11-15 잼). 감지 점을 시공간으로 이은 사건(≤750 m VIIRS / 2 km MODIS, 하루).
+         *     - 기간 필터 = 겹침(`start_date ≤ end` 그리고 `end_date ≥ start`), 모델팀 규칙.
+         *     - 날짜(`start_date`·`end_date`, `start`·`end`)는 **현지 날짜**(모델팀 연결 규칙 「현지 날짜 차 ≤ 1일」). 위성 상태의 UTC 날과 다르다.
+         *     - `aoi_id` 대응(2026-11-15 잼):
+         *       - 나라 `KR` = `country == 'KOR'`(11,943건) · `ADM0_ARG` = `country == 'ARG'`(1,223,123건). AOI id 와 `country` 값이 다르다(KR ↔ KOR).
+         *       - 시도 `SIDO_*` = `sido_nm == aoi_list.name`(17개 이름 전부 일치).
+         *       - 아르헨티나 1급 `ADM1_ARG-*` = `'ADM1_' + adm1_code`(사건의 adm1_code 52종 전부 aoi_list 에 있음, 이웃 나라 1급 포함).
+         *       - 시군구 `SGG_*` = `sgg_all` 의 이름을 aoi_list 시군구로 **풀어서** 고른다: 전국에 하나뿐인 이름 → 그 시군구, 동명 이름(강서구·고성군·남구·동구·북구·서구·중구 7개) → 부모 시도 이름이 `sido_nm` 과 같은 것, 그래도 못 풀면 버린다.
+         *         잰 결과: 이름 기준 소속 12,047건 중 못 푼 것 2건. 모델팀 규칙(이름만)은 14,314건으로 동명 구가 섞이고, 앞 판 규칙(이름 + `sido_nm`)은 시·도 경계를 넘는 사건 25건 중 24건을 놓쳤다(12,022건).
+         *         `sgg_cd` 는 쓰지 않는다: 230종 전부 `SGG_<cd>` 로 있지만 `sgg_nm` 과 어긋난 행 16건(예 41800 ↔ 파주시)·`sido_nm` 과 어긋난 행 4건이 있다(대표 시군구 하나만 담음, 쟁점 F15-Q3).
+         *     - 나라 열의 이웃 행(잼): KR region 의 PRK 453건·null 1건, ARG region 의 PRY 3,557·BOL 721·BRA 699·URY 232·CHL 221·null 28건. 이 행들은 `aoi_id` 로는 안 나오고 `bbox` 로만 나온다.
+         *     - `bbox`: `centroid_lat/lon` 이 상자 안(확장 — 모델팀 계약은 aoi 만). 상자가 아래 범위 상자와 안 겹치면 `coverage.available=false`.
+         *       범위 상자(사건 감지 점 상자에서 잰 값): KR 위도 33.21~38.60 · 경도 124.63~130.90, ARG 위도 −54.90~−21.81 · 경도 −73.18~−53.70.
+         *       판정 상자는 KR `[124.5, 33.0, 132.0, 38.7]`(모델팀 quickstart 예시 상자 — 「한국 상자」 정의라는 것은 추론, 쟁점 F15-Q5) · ARG `[-73.5, -55.2, -53.4, -21.5]`(잰 범위 + 여유 약 0.3°, 우리가 정한 값).
+         *       이웃 나라 땅(파라과이 등)은 상자 안이어도 일부만 담겨 있다 — 화면은 그 나라 AOI 를 「자료 없음」으로 둔다.
+         *     - 정렬 기본 `sum_weight` 내림차순(모델팀). 한국 사건의 79.6% 가 감지 1개, 92.4% 가 3개 미만(잼; 모델팀 문서는 81%) → 목록 화면은 `min_det=3` 을 보낸다(권장, 모델팀).
+         *     - 범위 밖(위 AOI 가 아닌 AOI, 상자가 두 범위 상자와 안 겹침) → 200 `events: []` + `coverage.available=false`.
+         *     - `burned_area_km2` = 「위성 확인 연소 면적(하한)」(MCD64A1, 의성 2025-03 ≈ 공식 면적의 64%). null = 「자료 없음」, 0 = 「확인 안 됨」, 양수 = 확인.
+         *       잰 대응: null 379,349건(시작이 2012~2025 밖 379,343 + 안 6) · 0 ⇔ `burn_confirmed=false` 741,204건 · 양수 ⇔ `true` 120,425건(어긋남 0). 시작이 2011 이전인데 값이 있는 9건(해를 넘긴 사건으로 추정)도 파일 값 그대로.
+         *       `burned_area_km2_near`·`pixel_area_*` 는 싣지 않는다.
+         *     - `instrument` 값은 `MODIS`(348,949)·`VIIRS`(892,029) 둘뿐, 두 센서가 섞인 사건 0건(잼).
+         *     - `frp_sum`·`frp_max` 는 원 FRP(위성 섞임, S-NPP 환산 아님 — 추론: 파일 열 이름이 `frp_*` 이고 `frp_snpp_equiv` 가 아님).
+         *     - 크기(잼): 사건 1,000건 JSON 0.53 MB / gzip 0.06 MB.
+         */
+        get: operations["listFireEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fire-events/{eventId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 화재 사건 하나 (불 유형 배지 top_event_id 에서 연결) */
+        get: operations["getFireEvent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/aois/{aoiId}/fwi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 산불 기상 위험도 FWI (한국·아르헨티나, 기준일 표시)
+         * @description `fwi_aoi_day.parquet`(295 AOI = KR·시도 17·시군구 252·ADM0_ARG·ARG 1급, 2012-01-01 ~ 2026-11-11, 2026-11-15 잼).
+         *     - 기본 배지 = 상대 등급 `fwi_rel_class`, 절대 등급 `fwi_class` 는 상세에(모델팀 `fwi_meta.app_default_badge`). 아르헨티나는 절대 등급이 잘 안 맞음.
+         *       (참고: `fwi_meta` 검증에서 한국은 절대 FWI 의 AUC 0.634 가 상대 백분위 0.596 보다 높다 — 봄철 건조기가 절대값에만 담김. 배지는 모델팀 기본대로 두고 상세에 절대 등급을 같이 보인다.)
+         *     - 상대 등급 화면 문구(모델팀 `fwi_meta.relative_classes.labels_ko`): below_normal 「평년보다 낮음」 · normal 「평년」 · above_normal 「높음」 · well_above_normal 「매우 높음」.
+         *     - 날짜 = NASA POWER **LST(현지 태양시) 날**. UTC 날이 아니다.
+         *     - `as_of_date` = 그 AOI 의 마지막 날. 295 AOI 전부 2026-11-11(잼), 오늘(11-15)보다 4일 늦음. 화면에 「산불 기상 위험도 · 11월 11일 기준」을 꼭 쓴다.
+         *     - `date` 없음 → 마지막 날. `date > as_of_date` → `day: null` + `as_of_date`(모델팀 규칙, 오류 아님).
+         *     - `start`·`end` (확장) → 일별 `series`(≤ 366일). `date` 와 함께 쓰면 400.
+         *     - 2026년 날짜는 `fwi_pct` 가 null(파일 그대로, 92,925행 = 2026년 행 전부이고 그 밖 null 0 — 잼) — 상대 등급 `fwi_rel_class` 는 null 0, 파일이 이미 `fwi_clim_aoi_month` q25·q75·q90 으로 정해 둠.
+         *     - 대상 AOI(잼): `KR` · `ADM0_ARG` · 시도 17 · 시군구 252 · 아르헨티나 1급 24 = 295. 나라 AOI 는 `KR`(level kr)과 `ADM0_ARG`(level country) 두 개뿐.
+         *     - 범위 밖 AOI → 200 `day: null`, `series: []`, `coverage.available=false`.
+         */
+        get: operations["getAoiFwi"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/spread-nowcast": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 내일 확산 가능성 nowcast (0.025° 후보 칸, 한국 상자·아르헨티나)
+         * @description `spread_nowcast_latest.parquet`(10,189칸 = KR 147 · ARG 10,042, 기준일 2026-11-13 → 목표 2026-11-14, 모델 v1.2-ops 기상 없음, 2026-11-15 잼).
+         *     - 칸 = 오늘 활성 칸 + 반경 3칸(≈7.5 km) 후보만. **파일에 없는 칸 = 「대상 아님」(0% 아님).** 오늘 활성 칸 346 · 후보 9,843(잼).
+         *     - 날짜(`as_of_date`·`target_date`)는 **현지 날짜**(모델팀 meta 「다음 현지 날짜」). 기준 위성 NOAA-20(S-NPP 는 11-02 정지).
+         *     - `aoi_id` = 칸 중심이 AOI 경계 안, `bbox` = 칸 중심이 상자 안(모델팀). 둘 중 정확히 하나.
+         *     - **`region=KR` 은 「한국 상자」라 일본 칸이 섞인다**(잼, 칸 중심의 나라 `cand_adm0`): KR 147 = KOR 98 · JPN 47 · null(바다) 2, ARG 10,042 = ARG 9,941 · PRY 39 · BRA 27 · URY 21 · BOL 14.
+         *       `aoi_id=KR` 은 경계 안 98칸 이하만 나오고, 한국 근처 `bbox` 는 일본 칸도 낸다(모델 출력이라 그대로 그리고 `cand_adm0` 를 툴팁에 쓴다).
+         *       모델 검증도 「한국 상자」(PR-AUC 0.147)와 「한국만」(0.210)을 따로 잰다 — 화면 성능 문구는 한국만 값.
+         *     - coverage: AOI 는 `KR`·`SIDO_*`·`SGG_*`·`ADM0_ARG`·`ADM1_ARG-*` 만 범위 안. 일본·파라과이 등 이웃 AOI 는 칸이 일부 있어도 `available=false`(일부만 담김 — 「자료 없음」으로 둔다).
+         *       bbox 는 범위 상자(KR `[124.5, 33.0, 132.0, 38.7]` 추론 · ARG `[-73.5, -55.2, -53.4, -21.5]`, `/fire-events` 와 같음)와 겹치면 범위 안. 지금 KR 칸의 실제 범위는 위도 33.19~36.11 · 경도 129.29~131.71(그날 불 위치일 뿐 상자 정의가 아님, 쟁점 F15-Q5).
+         *     - `level`: `low` < 0.05 ≤ `moderate` ≤ 0.20 < `high` (모델팀 규칙을 서버가 붙임 — quickstart 코드 `> 0.20` high · `≥ 0.05` moderate 와 같음). 잰 분포 low 9,708 · moderate 338 · high 143. 확률 숫자는 툴팁에만.
+         *     - 크기(잼): 전체 10,189칸 JSON 1.57 MB / gzip 0.13 MB.
+         *     - 필수 문구 `notice` 를 범례에 항상.
+         *     - 범위 밖 → 200 `cells: []` + `coverage.available=false`. 범위 안인데 후보 칸이 없음 → `cells: []` + `coverage.available=true`(「오늘 감지 없음」, 자료 없음과 다름).
+         */
+        get: operations["getSpreadNowcast"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/aois/{aoiId}/fire-regime": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 불 유형 배지 (AOI × 월, 한국·아르헨티나)
+         * @description `aoi_month_fire_regime.parquet`(92,335행, 295 AOI, 2000~2026, 2026-11-15 잼). `fire_regime` ∈ large_fire / many_small / mixed / none.
+         *     - 캘린더 값(`aoi_month`)과 다를 수 있다 — 배지는 감지 점 위치로 지역을 정함(모델팀). 캘린더 숫자는 계속 `aoi_month`.
+         *     - `top_event_id` → `/fire-events/{eventId}`(14,916종 전부 fire_events 에 있음 — 잼). `fire_regime=none` 인데 `top_event_id` 가 있는 달 52개(W = 0 인 사건만 있던 달, 잼) — 화면은 none 이면 사건 연결을 그리지 않는다.
+         *     - 행 = 295 AOI × 313달(2000-11 ~ 2026-11, AOI 마다 313행 — 잼). 2026-11 은 진행 중인 달이다. `share_large` null ⇔ none(74,170행).
+         *     - `start`·`end` = YYYY-MM (확장, 모델팀 경로엔 기간 없음). 없으면 전체.
+         *     - 범위 밖 AOI → 200 `months: []` + `coverage.available=false`.
+         */
+        get: operations["getAoiFireRegime"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cells/frp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 불 세기 FRP (S-NPP 환산, 0.1° 칸 × 일 또는 월)
+         * @description `harmonized_cell_day_frp.parquet`(97,791,096행, 800 row group — 2026-11-15 aibox 에서 parquet 메타로 잼). 전 세계, `date_local` 2000-11-01 ~ 2026-11-15.
+         *     - 파일 열(잼): `cell_id` int64 · `date_local` date32 · `frp_sum` double · `frp_snpp_equiv_sum` double · `frp_snpp_equiv_max` float · `n_points` int32 (6열, null 0).
+         *       **위경도 열이 없다** → `cell_lat/lon` 은 서버가 CellId 식으로 붙인다(칸 중심). 응답 `date` = `date_local`(현지 날짜, 2026-11-15 은 UTC 보다 앞선 시간대의 날).
+         *     - 화면 값 = `frp_snpp_equiv_sum` / `frp_snpp_equiv_max`. `frp_sum` 은 원 FRP(참고). 기준 점(고정 열원 제외)만으로 만든 값.
+         *     - 파일 통계에 `-0.0` 이 있다(최솟값) → 직렬화는 0 으로 낸다. 첫 5행 표본에 `frp_sum` 0.0 · `n_points` 1 인 행이 있었다(작은 값이 표시만 0 인지는 안 쟀다) — 값 0 인 행은 「행 없음」과 다르게 그린다.
+         *     - 파일은 `cell_id` 순이고 row group 마다 날짜가 전 기간에 걸친다(잼) → 날짜·상자 조회는 파일 직접 읽기로 못 하고 적재 때 (date_local, cell_id) 색인이 필요하다.
+         *     - 전 세계 하루 ≈ 14,896행(2025-03-20~31 평균, 잼) — bbox 없이 하루치를 주는 것도 50,000행 한도 안이지만, 넓이 한도로 막는다(아래).
+         *     - `freq=day` = 파일 행 그대로. `freq=month` = 칸·달로 묶음(합 = Σ, 최대 = max, `n_points` = Σ) — 우리가 묶는 집계(값 재계산 아님).
+         *     - 행 없는 칸·날 = 기준 점 감지 없음(FRP 없음). 「0 MW」로 칠하지 않고 비운다.
+         *     - 한도: 응답 행(칸 × 기간 추정) ≤ 50,000, 일 단위 기간 ≤ 31일, 월 단위 ≤ 24개월, bbox 넓이 ≤ 100 deg² — 넘으면 400 `range_too_large`.
+         *     - 한계 문구(모델팀): Terra 밤 비율(2.41) 신뢰 낮음, 2000~2011 MODIS 는 2012 이후 비율 사용(가정).
+         */
+        get: operations["listCellFrp"];
         put?: never;
         post?: never;
         delete?: never;
@@ -747,41 +1001,23 @@ export interface components {
             };
             features: components["schemas"]["CellFeature"][];
         };
-        /** @description 열 모양 가정(G1). release 에 파일 없음(R1). */
+        /** @description v1.2 release 파일 모양(앞선 가정 G1 모양은 버림). */
         SatelliteStatus: {
             /** Format: date */
-            start: string;
+            start?: string | null;
             /** Format: date */
-            end: string;
-            /** Format: date-time */
-            updated_at: string;
-            /** Format: date */
-            through?: string;
-            satellites: {
-                /** @enum {string} */
-                satellite: "N" | "N20" | "N21" | "Terra" | "Aqua";
-                /** @enum {string} */
-                instrument?: "VIIRS" | "MODIS";
-                /** Format: date */
-                first_date?: string;
-                /** Format: date */
-                last_date?: string;
-                days?: {
-                    [key: string]: number;
-                };
-                missing_dates?: string[];
-                /** Format: date */
-                nrt_from?: string | null;
-            }[];
-            days?: {
-                /** Format: date */
-                date?: string;
-                value_source?: components["schemas"]["ValueSource"];
-                satellites?: string[];
-                status?: components["schemas"]["MonthStatus"];
-                data_source?: components["schemas"]["DataSource"] | null;
-            }[];
-            method_version: components["schemas"]["MethodVersion"];
+            end?: string | null;
+            /** @enum {string} */
+            freq: "day" | "month";
+            /**
+             * Format: date
+             * @description 파일의 마지막 date_utc
+             */
+            through?: string | null;
+            days: components["schemas"]["SatelliteDayStatus"][];
+            months: components["schemas"]["SatelliteMonthStatus"][];
+            method_version?: components["schemas"]["MethodVersion"];
+            data_release: components["schemas"]["DataRelease"];
         };
         Method: {
             method_version: components["schemas"]["MethodVersion"];
@@ -797,6 +1033,12 @@ export interface components {
             /** @description 출처 표시(FIRMS 인정 문구·경계 CC BY) */
             sources?: Record<string, never>[];
             data_version?: string;
+            /** @description v1.2 — 화면 표시 이름(내부 id → 이름). info.x-display-names 와 같다. */
+            display_names?: {
+                [key: string]: string;
+            };
+            /** @description 「총량 오차 1~2%, 월별 상관 0.97」 (모델팀 발표·화면 문구) */
+            performance_copy?: string;
             files?: Record<string, never>;
             ingest?: {
                 loaded_at?: string;
@@ -830,6 +1072,26 @@ export interface components {
                 cells_max?: number;
                 /** @example 100000 */
                 csv_rows?: number;
+                /** @example 1000 */
+                fire_events_limit_max?: number;
+                /** @example 3700 */
+                fire_events_days?: number;
+                /** @example 400 */
+                layer_bbox_area_deg2?: number;
+                /** @example 50000 */
+                frp_rows?: number;
+                /** @example 31 */
+                frp_day_days?: number;
+                /** @example 24 */
+                frp_month_months?: number;
+                /** @example 100 */
+                frp_bbox_area_deg2?: number;
+                /** @example 366 */
+                fwi_series_days?: number;
+                /** @example 366 */
+                status_day_days?: number;
+                /** @example 20000 */
+                spread_cells_max?: number;
             };
         };
         /**
@@ -867,6 +1129,378 @@ export interface components {
                 param?: string;
                 detail?: string;
             }[];
+        };
+        /**
+         * @description 적재한 모델 release 태그. v1.1 이하는 쓰지 않는다(F15).
+         * @example data-v1.2-2026-11-15
+         */
+        DataRelease: string;
+        /**
+         * @description 「자료 없음」 표현(F15). 오류가 아니라 200 + 빈 배열/null 값 + 이 객체.
+         *     화면은 `available=false` 일 때 「이 지역 자료 없음」 한 줄만 쓰고 가짜 값·0 을 그리지 않는다.
+         *     `available=true` 인데 배열이 비면 「자료는 있으나 해당 없음」(예 오늘 감지 없음)이다 — 둘을 섞지 않는다.
+         */
+        Coverage: {
+            available: boolean;
+            /**
+             * @description 그 층이 자료를 가진 범위
+             * @enum {string}
+             */
+            scope: "world_land_detected" | "kr_sgg" | "kr_arg_events" | "kr_arg_fwi" | "kr_box_arg_spread" | "kr_arg_regime" | "world_frp";
+            /**
+             * @description available=false 일 때만. not_sgg_level 은 쓰지 않고 grid_summary 로 답한다(예약).
+             * @enum {string|null}
+             */
+            reason: "out_of_coverage" | "no_cells" | "not_sgg_level" | null;
+            regions?: ("WORLD" | "KR" | "KR_BOX" | "ARG")[];
+        };
+        /**
+         * @description `p_any − baseline_p` ≥ +0.10 → higher, ≤ −0.10 → lower, 그 사이 similar (모델팀 표시 규칙). 화면 문구 「예년보다 높음 / 예년 수준 / 예년보다 낮음」.
+         * @enum {string}
+         */
+        VsNormal: "higher" | "similar" | "lower";
+        /** @description `fields=map` 이면 required 7필드만, `full` 이면 전부(파일 값은 결측 0 — 잼). */
+        GridOccurrenceCell: {
+            /** @description 0.5° 격자 id = floor((lat+90)/0.5) × 720 + floor((lon+180)/0.5) (0.1° CellId 와 다른 체계, 52,855/52,855 일치 잼) */
+            cell_id: number;
+            /** @description 격자 중심 */
+            lat: number;
+            lon: number;
+            /** @description 다음 달 기준 감지 ≥ 1건 확률(고정 열원 제외) */
+            p_any: number;
+            p_none?: number;
+            /** @description 예년 같은 달 발생 비율 */
+            baseline_p: number;
+            vs_normal: components["schemas"]["VsNormal"];
+            /** @description 지속 열원 의심 → 회색 */
+            persistent_source: boolean;
+            /** @description ISO3 */
+            adm0?: string | null;
+            continent?: string | null;
+            rate_5y?: number | null;
+            /** @description 직전 달(진행 중) 월말 추정값을 특성으로 썼는지 */
+            lag1_projected?: boolean | null;
+        };
+        GridOccurrence: {
+            target_month: components["schemas"]["YearMonth"];
+            /** Format: date */
+            as_of_date: string;
+            /**
+             * @example grid_occurrence_xgb+isotonic
+             * @example baseline_same_month_rate
+             */
+            model: string;
+            /** @constant */
+            cell_size_deg: 0.5;
+            bbox?: components["schemas"]["Bbox"];
+            count: number;
+            cells: components["schemas"]["GridOccurrenceCell"][];
+            coverage: components["schemas"]["Coverage"];
+            notice: string;
+            data_release: components["schemas"]["DataRelease"];
+        };
+        /** @description AOI 안 0.5° 격자(칸 중심 기준) 요약. 지역 확률이 아니다. */
+        GridSummary: {
+            n_cells: number;
+            n_persistent: number;
+            /** @description 지속 열원 뺀 칸 수 */
+            bands: {
+                lt10?: number;
+                p10_40?: number;
+                p40_70?: number;
+                ge70?: number;
+            };
+            p_any_max: number | null;
+            p_any_median: number | null;
+            top_cells?: components["schemas"]["GridOccurrenceCell"][];
+        };
+        AoiOccurrence: {
+            aoi_id: components["schemas"]["AoiId"];
+            name_ko?: string | null;
+            /** @enum {string} */
+            unit: "aoi" | "grid_summary";
+            target_month: components["schemas"]["YearMonth"] | null;
+            /** Format: date */
+            as_of_date: string | null;
+            model: string | null;
+            p_any: number | null;
+            p_none: number | null;
+            baseline_p: number | null;
+            vs_normal: components["schemas"]["VsNormal"] | null;
+            /** @description 산업 열원 의심(4곳) → 회색 */
+            suspected_industrial: boolean | null;
+            /** @description 목록 응답에서만. 의심 행은 null */
+            rank?: number | null;
+            rate_5y?: number | null;
+            n_years?: number | null;
+            lag1_projected?: boolean | null;
+            grid_summary: components["schemas"]["GridSummary"] | null;
+            coverage: components["schemas"]["Coverage"];
+            notice: string;
+            data_release: components["schemas"]["DataRelease"];
+        };
+        AoiOccurrenceList: {
+            parent_id: components["schemas"]["AoiId"];
+            target_month: components["schemas"]["YearMonth"] | null;
+            /** Format: date */
+            as_of_date: string | null;
+            count: number;
+            items: components["schemas"]["AoiOccurrence"][];
+            coverage: components["schemas"]["Coverage"];
+            notice: string;
+            data_release: components["schemas"]["DataRelease"];
+        };
+        /** @description `<region>_<시작 YYYYMMDD>_<일련>` (release 실값 KR_20001102_0001 · ARG_20001120_0003). 이번 release 일련은 1,240,978건 전부 4자리(잼) — 패턴은 다음 판 여유로 4~6자리. */
+        FireEventId: string;
+        FireEvent: {
+            event_id: components["schemas"]["FireEventId"];
+            /** @enum {string} */
+            region: "KR" | "ARG";
+            /**
+             * Format: date
+             * @description 현지 날짜
+             */
+            start_date: string;
+            /**
+             * Format: date
+             * @description 현지 날짜
+             */
+            end_date: string;
+            duration_days: number;
+            /** @description 감지 수 */
+            n_det: number;
+            /** @description VIIRS(S-NPP) 상당 감지 수 */
+            sum_weight: number;
+            /** @description 원 FRP 합(MW) */
+            frp_sum?: number | null;
+            frp_max?: number | null;
+            centroid_lat: number;
+            centroid_lon: number;
+            lat_min: number;
+            lat_max: number;
+            lon_min: number;
+            lon_max: number;
+            /** @description 「위성 확인 연소 면적(하한)」. null = 자료 없음(2012~2025 밖), 0 = 확인 안 됨 */
+            burned_area_km2: number | null;
+            burn_confirmed: boolean | null;
+            /**
+             * @description release 값은 MODIS·VIIRS 둘뿐(잼, 섞인 사건 0)
+             * @enum {string|null}
+             */
+            instrument?: "MODIS" | "VIIRS" | null;
+            n_viirs?: number | null;
+            n_modis?: number | null;
+            /** @description ISO3(KR 사건은 KOR — AOI id KR 과 다름). 이웃 나라 행: KR region PRK 453·null 1, ARG region PRY 3,557·BOL 721·BRA 699·URY 232·CHL 221·null 28 (잼) */
+            country?: string | null;
+            /** @description 'ADM1_' + adm1_code = aoi_list id (예 KOR-2498, ARG-1271) */
+            adm1_code?: string | null;
+            sido_nm?: string | null;
+            /** @description 대표 시군구 코드 하나(SGG_<cd> 로 aoi_list 에 230종 전부 있음). sgg_nm 과 어긋난 행 16건이 있어 AOI 거르기에는 쓰지 않는다(잼, 쟁점 F15-Q3) */
+            sgg_cd?: string | null;
+            sgg_nm?: string | null;
+            /** @description 쉼표 구분 시군구 이름(파일 그대로) */
+            sgg_all?: string | null;
+        };
+        FireEventList: {
+            aoi_id?: components["schemas"]["AoiId"];
+            bbox?: components["schemas"]["Bbox"];
+            /** Format: date */
+            start: string;
+            /** Format: date */
+            end: string;
+            min_det?: number;
+            sort?: string;
+            count: number;
+            /** @description 조건에 맞는 전체 수(비싸면 null) */
+            total?: number | null;
+            truncated: boolean;
+            next_cursor?: string | null;
+            events: components["schemas"]["FireEvent"][];
+            coverage: components["schemas"]["Coverage"];
+            /** @description 연소 면적 하한 문구 */
+            notice: string;
+            data_release: components["schemas"]["DataRelease"];
+        };
+        FireEventDetail: {
+            event: components["schemas"]["FireEvent"];
+            /** @constant */
+            burned_area_label: "위성 확인 연소 면적(하한)";
+            data_release: components["schemas"]["DataRelease"];
+        };
+        FwiDay: {
+            /** Format: date */
+            date: string;
+            fwi_mean: number | null;
+            fwi_max?: number | null;
+            /**
+             * @description 절대(캐나다): low <5.2≤ moderate <11.2≤ high <21.3≤ very_high <38≤ extreme
+             * @enum {string|null}
+             */
+            fwi_class: "low" | "moderate" | "high" | "very_high" | "extreme" | null;
+            /** @description 2026년 날짜는 null(파일 그대로) */
+            fwi_pct?: number | null;
+            /**
+             * @description 상대(기본 배지): <25 / 25~75 / 75~90 / ≥90 백분위. 화면 문구 평년보다 낮음 / 평년 / 높음 / 매우 높음 (fwi_meta labels_ko)
+             * @enum {string|null}
+             */
+            fwi_rel_class: "below_normal" | "normal" | "above_normal" | "well_above_normal" | null;
+            isi_mean?: number | null;
+            bui_mean?: number | null;
+            ffmc_mean?: number | null;
+            dc_mean?: number | null;
+            n_cells?: number | null;
+        };
+        FwiResponse: {
+            aoi_id: components["schemas"]["AoiId"];
+            name?: string | null;
+            /**
+             * Format: date
+             * @description 마지막 NASA POWER 자료일(그 AOI). 화면에 꼭 표시
+             */
+            as_of_date: string | null;
+            /** @constant */
+            badge: "fwi_rel_class";
+            /**
+             * Format: date
+             * @description 요청한 날(없으면 as_of_date)
+             */
+            date?: string | null;
+            day: components["schemas"]["FwiDay"] | null;
+            series: components["schemas"]["FwiDay"][];
+            coverage: components["schemas"]["Coverage"];
+            notice: string;
+            data_release: components["schemas"]["DataRelease"];
+        };
+        SpreadCell: {
+            /**
+             * @description 모델 상자. KR 상자는 일본 칸을 포함한다
+             * @enum {string}
+             */
+            region?: "KR" | "ARG";
+            /** @description 칸 중심의 나라 ISO3(파일 열 그대로). null = 바다. KR 상자의 JPN 칸 구분에 쓴다 */
+            cand_adm0?: string | null;
+            cell_lat: number;
+            cell_lon: number;
+            /** @constant */
+            cell_size_deg: 0.025;
+            /** @description 툴팁에만 */
+            p_spread: number;
+            /** @enum {string} */
+            level: "low" | "moderate" | "high";
+            active_today: boolean;
+            fire_event_days?: number | null;
+            n_det_today_7x7?: number | null;
+        };
+        SpreadNowcast: {
+            /** Format: date */
+            as_of_date: string | null;
+            /** Format: date */
+            target_date: string | null;
+            model: string | null;
+            source_satellite?: string | null;
+            weather_available: boolean;
+            /** @description v1.2-ops 는 null */
+            weather_lag_days?: number | null;
+            aoi_id?: components["schemas"]["AoiId"];
+            bbox?: components["schemas"]["Bbox"];
+            count: number;
+            cells: components["schemas"]["SpreadCell"][];
+            coverage: components["schemas"]["Coverage"];
+            notice: string;
+            data_release: components["schemas"]["DataRelease"];
+        };
+        FireRegimeMonth: {
+            year: number;
+            month: number;
+            /** @enum {string} */
+            fire_regime: "large_fire" | "many_small" | "mixed" | "none";
+            /** @description 그 달 Σ가중치 */
+            W?: number | null;
+            W_large?: number | null;
+            share_large?: number | null;
+            n_events?: number | null;
+            n_large_events?: number | null;
+            top_event_id?: components["schemas"]["FireEventId"] | null;
+            top_event_w?: number | null;
+        };
+        FireRegime: {
+            aoi_id: components["schemas"]["AoiId"];
+            name?: string | null;
+            months: components["schemas"]["FireRegimeMonth"][];
+            coverage: components["schemas"]["Coverage"];
+            data_release: components["schemas"]["DataRelease"];
+        };
+        CellFrp: {
+            cell_id: components["schemas"]["CellId"];
+            /** @description 파일에 없음 — 서버가 CellId 식으로 붙인 칸 중심 */
+            cell_lat?: number;
+            /** @description 파일에 없음 — 서버가 CellId 식으로 붙인 칸 중심 */
+            cell_lon?: number;
+            /**
+             * Format: date
+             * @description 일 = date_local(현지 날짜)
+             */
+            date: string;
+            /** @description 원 FRP(MW) */
+            frp_sum?: number | null;
+            /** @description S-NPP 환산 FRP 합(MW) — 화면 값 */
+            frp_snpp_equiv_sum: number | null;
+            frp_snpp_equiv_max: number | null;
+            n_points: number;
+        };
+        CellFrpList: {
+            aoi_id?: components["schemas"]["AoiId"];
+            bbox?: components["schemas"]["Bbox"];
+            /** Format: date */
+            start: string;
+            /** Format: date */
+            end: string;
+            /** @enum {string} */
+            freq: "day" | "month";
+            count: number;
+            cells: components["schemas"]["CellFrp"][];
+            coverage: components["schemas"]["Coverage"];
+            /** @description 「불 세기(FRP, S-NPP 기준)」 + Terra 밤 비율 신뢰 낮음 문구 */
+            notice: string;
+            data_release: components["schemas"]["DataRelease"];
+        };
+        SatelliteDayStatus: {
+            /**
+             * @description 파일 값 5종(잼). date_utc 범위 Terra 2000-11-01~ · Aqua 2002-07-04~ · S-NPP 2012-01-20~2026-11-02 · NOAA-20 2018-04-01~ · NOAA-21 2023-03-01~ (나머지 끝 2026-11-14)
+             * @enum {string}
+             */
+            satellite: "Terra" | "Aqua" | "S-NPP" | "NOAA-20" | "NOAA-21";
+            /** Format: date */
+            date_utc: string;
+            /**
+             * @description release 28,316행: ok 28,052 · low 120 · missing 140 · partial 4 (잼)
+             * @enum {string}
+             */
+            status: "ok" | "low" | "missing" | "partial";
+            n_det_global?: number | null;
+            /** @description release 값은 global 하나(잼) */
+            coverage?: string | null;
+            ratio_to_seasonal?: number | null;
+            /** @description 파일 값: seasonal_decline 138 · low_multi_sat_reception_outage 23 · earlier_nrt_gap_refilled 5 · partial_current_day 4 · partial_last_day 1 · null 28,145 (잼) */
+            note?: string | null;
+        };
+        SatelliteMonthStatus: {
+            satellite: string;
+            year: number;
+            month: number;
+            obs_days?: number | null;
+            low_days?: number | null;
+            missing_days?: number | null;
+            days_in_month?: number | null;
+            /** Format: date */
+            first_day?: string | null;
+            /** Format: date */
+            last_day?: string | null;
+            /**
+             * @description release 934행: complete 927 · partial 7 (잼)
+             * @enum {string}
+             */
+            month_status: "complete" | "partial";
         };
     };
     responses: {
@@ -996,6 +1630,8 @@ export interface components {
         Bbox: components["schemas"]["Bbox"];
         /** @description 서,남,동,북 (WGS84) */
         BboxRequired: components["schemas"]["Bbox"];
+        /** @description 서,남,동,북 (WGS84). 없으면 전체. 날짜 변경선을 넘는 상자(서 > 동)는 받는다(모델팀 store 규칙). */
+        BboxOptional: components["schemas"]["Bbox"];
         Level: components["schemas"]["AoiLevel"];
         /** @description 없는 id 면 404 unknown_aoi */
         ParentId: components["schemas"]["AoiId"];
@@ -1032,6 +1668,14 @@ export interface components {
         /** @description 적재한 파일 묶음의 식별자(적재 시각 + 해시 앞 12자리). 예 `2026-11-14T10:11:40Z#726b884a5ec1`. */
         XDataVersion: string;
         Vary: "Accept, Accept-Language";
+        /**
+         * @description v1.2 새 층(release 고정 자료) = `public, max-age=0, s-maxage=3600, must-revalidate`.
+         *     - 브라우저는 매번 재검증(ETag → 304, 판 교체가 바로 보임 — 데이터 경로 규칙과 같음).
+         *     - 공유 캐시(Cloudflare 무료 플랜 엣지·nginx proxy_cache)는 1시간 보관 → 원 서버(aibox K3s) 부하를 줄인다. 판 교체 때 캐시 키에 `X-Data-Version` 을 넣거나 퍼지.
+         *     - 서버 안: Redis 캐시 키 = data_version + 정규화 질의, TTL 없음(판이 바뀌면 키가 바뀜). `/occurrence/grid` 전 세계·`/occurrence/aois?parent_id=KR` 는 적재 때 미리 직렬화.
+         *     - 오류는 `no-store`.
+         */
+        CacheControlLayer: string;
         /** @description 초 단위 정수 */
         RetryAfter: number;
         CacheControlNoStore: "no-store";
@@ -1374,6 +2018,9 @@ export interface operations {
             query?: {
                 start?: string;
                 end?: string;
+                freq?: "day" | "month";
+                /** @description 쉼표 구분. 없으면 전부. */
+                satellite?: string;
             };
             header?: never;
             path?: never;
@@ -1385,7 +2032,7 @@ export interface operations {
             200: {
                 headers: {
                     ETag: components["headers"]["ETag"];
-                    "Cache-Control": components["headers"]["CacheControlData"];
+                    "Cache-Control": components["headers"]["CacheControlLayer"];
                     "X-Method-Version": components["headers"]["XMethodVersion"];
                     "X-Data-Version": components["headers"]["XDataVersion"];
                     Vary: components["headers"]["Vary"];
@@ -1395,6 +2042,7 @@ export interface operations {
                     "application/json": components["schemas"]["SatelliteStatus"];
                 };
             };
+            304: components["responses"]["NotModified"];
             400: components["responses"]["BadRequest"];
             503: components["responses"]["Unavailable"];
         };
@@ -1474,6 +2122,343 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             502: components["responses"]["BadGateway"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getGridOccurrence: {
+        parameters: {
+            query?: {
+                /** @description 서,남,동,북 (WGS84). 없으면 전체. 날짜 변경선을 넘는 상자(서 > 동)는 받는다(모델팀 store 규칙). */
+                bbox?: components["parameters"]["BboxOptional"];
+                /** @description 이 값 미만 칸은 뺀다(지도 성능용, 확장). 0~1. 0.1 이면 27,011칸(잼). */
+                min_p_any?: number;
+                /** @description 확장. `map` = 지도 그리기에 드는 7필드만(전 세계 gzip 0.47 MB), `full` = 칸 필드 전부(gzip 0.65 MB). 잰 값은 위 설명. */
+                fields?: "map" | "full";
+                /** @description 브라우저 링크용. csv = `Accept: text/csv` 와 같다. 동기 CSV ≤ 100,000행(넘으면 400 range_too_large 30102). */
+                format?: components["parameters"]["Format"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 격자 확률 */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    "Cache-Control": components["headers"]["CacheControlLayer"];
+                    "X-Method-Version": components["headers"]["XMethodVersion"];
+                    "X-Data-Version": components["headers"]["XDataVersion"];
+                    Vary: components["headers"]["Vary"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GridOccurrence"];
+                    "text/csv": string;
+                };
+            };
+            304: components["responses"]["NotModified"];
+            400: components["responses"]["BadRequest"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listAoiOccurrence: {
+        parameters: {
+            query: {
+                parent_id: components["schemas"]["AoiId"];
+                /** @description 브라우저 링크용. csv = `Accept: text/csv` 와 같다. 동기 CSV ≤ 100,000행(넘으면 400 range_too_large 30102). */
+                format?: components["parameters"]["Format"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 시군구 확률 목록 */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    "Cache-Control": components["headers"]["CacheControlLayer"];
+                    "X-Method-Version": components["headers"]["XMethodVersion"];
+                    "X-Data-Version": components["headers"]["XDataVersion"];
+                    Vary: components["headers"]["Vary"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AoiOccurrenceList"];
+                    "text/csv": string;
+                };
+            };
+            304: components["responses"]["NotModified"];
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getAoiOccurrence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description `aoi_list.aoi_id`. 핸드오프 쿼리 이름은 `aoi_id`. */
+                aoiId: components["parameters"]["AoiIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 지역 확률 또는 격자 요약 */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    "Cache-Control": components["headers"]["CacheControlLayer"];
+                    "X-Method-Version": components["headers"]["XMethodVersion"];
+                    "X-Data-Version": components["headers"]["XDataVersion"];
+                    Vary: components["headers"]["Vary"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AoiOccurrence"];
+                };
+            };
+            304: components["responses"]["NotModified"];
+            404: components["responses"]["NotFound"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listFireEvents: {
+        parameters: {
+            query: {
+                /** @description `bbox` 와 정확히 하나(둘 다·둘 다 없음 → 400 invalid_param). 점은 그 점의 cell_id 가 AOI 칸인지로 거른다(G5). */
+                aoi_id?: components["parameters"]["AoiIdQuery"];
+                /** @description 서,남,동,북 (WGS84). `aoi_id` 와 정확히 하나. */
+                bbox?: components["parameters"]["Bbox"];
+                /** @description YYYY-MM-DD (date_local 기준). start > end → 400. */
+                start: components["parameters"]["Start"];
+                end: components["parameters"]["End"];
+                /** @description `n_det` 하한(확장). 목록 화면 권장 3. */
+                min_det?: number;
+                sort?: "sum_weight" | "start_date" | "burned_area_km2";
+                /** @description 모델팀 기본 100. */
+                limit?: number;
+                /** @description 불투명 keyset 커서. 판이 바뀐 커서는 409 cursor_stale. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description 브라우저 링크용. csv = `Accept: text/csv` 와 같다. 동기 CSV ≤ 100,000행(넘으면 400 range_too_large 30102). */
+                format?: components["parameters"]["Format"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 사건 목록 */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    "Cache-Control": components["headers"]["CacheControlLayer"];
+                    "X-Method-Version": components["headers"]["XMethodVersion"];
+                    "X-Data-Version": components["headers"]["XDataVersion"];
+                    Vary: components["headers"]["Vary"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FireEventList"];
+                    "text/csv": string;
+                };
+            };
+            304: components["responses"]["NotModified"];
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getFireEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @example KR_20001102_0001 */
+                eventId: components["schemas"]["FireEventId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 사건 */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    "Cache-Control": components["headers"]["CacheControlLayer"];
+                    "X-Method-Version": components["headers"]["XMethodVersion"];
+                    "X-Data-Version": components["headers"]["XDataVersion"];
+                    Vary: components["headers"]["Vary"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FireEventDetail"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getAoiFwi: {
+        parameters: {
+            query?: {
+                date?: string;
+                start?: string;
+                end?: string;
+                /** @description 브라우저 링크용. csv = `Accept: text/csv` 와 같다. 동기 CSV ≤ 100,000행(넘으면 400 range_too_large 30102). */
+                format?: components["parameters"]["Format"];
+            };
+            header?: never;
+            path: {
+                /** @description `aoi_list.aoi_id`. 핸드오프 쿼리 이름은 `aoi_id`. */
+                aoiId: components["parameters"]["AoiIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description FWI */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    "Cache-Control": components["headers"]["CacheControlLayer"];
+                    "X-Method-Version": components["headers"]["XMethodVersion"];
+                    "X-Data-Version": components["headers"]["XDataVersion"];
+                    Vary: components["headers"]["Vary"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FwiResponse"];
+                    "text/csv": string;
+                };
+            };
+            304: components["responses"]["NotModified"];
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getSpreadNowcast: {
+        parameters: {
+            query?: {
+                /** @description `bbox` 와 정확히 하나(둘 다·둘 다 없음 → 400 invalid_param). 점은 그 점의 cell_id 가 AOI 칸인지로 거른다(G5). */
+                aoi_id?: components["parameters"]["AoiIdQuery"];
+                /** @description 서,남,동,북 (WGS84). `aoi_id` 와 정확히 하나. */
+                bbox?: components["parameters"]["Bbox"];
+                /** @description 확장. 이 단계 이상만. */
+                min_level?: "low" | "moderate" | "high";
+                /** @description 브라우저 링크용. csv = `Accept: text/csv` 와 같다. 동기 CSV ≤ 100,000행(넘으면 400 range_too_large 30102). */
+                format?: components["parameters"]["Format"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 확산 가능성 칸 */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    "Cache-Control": components["headers"]["CacheControlLayer"];
+                    "X-Method-Version": components["headers"]["XMethodVersion"];
+                    "X-Data-Version": components["headers"]["XDataVersion"];
+                    Vary: components["headers"]["Vary"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpreadNowcast"];
+                };
+            };
+            304: components["responses"]["NotModified"];
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getAoiFireRegime: {
+        parameters: {
+            query?: {
+                start?: components["schemas"]["YearMonth"];
+                end?: components["schemas"]["YearMonth"];
+                /** @description 브라우저 링크용. csv = `Accept: text/csv` 와 같다. 동기 CSV ≤ 100,000행(넘으면 400 range_too_large 30102). */
+                format?: components["parameters"]["Format"];
+            };
+            header?: never;
+            path: {
+                /** @description `aoi_list.aoi_id`. 핸드오프 쿼리 이름은 `aoi_id`. */
+                aoiId: components["parameters"]["AoiIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 월별 불 유형 */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    "Cache-Control": components["headers"]["CacheControlLayer"];
+                    "X-Method-Version": components["headers"]["XMethodVersion"];
+                    "X-Data-Version": components["headers"]["XDataVersion"];
+                    Vary: components["headers"]["Vary"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FireRegime"];
+                };
+            };
+            304: components["responses"]["NotModified"];
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listCellFrp: {
+        parameters: {
+            query: {
+                /** @description 서,남,동,북 (WGS84). `aoi_id` 와 정확히 하나. */
+                bbox?: components["parameters"]["Bbox"];
+                /** @description `bbox` 와 정확히 하나(둘 다·둘 다 없음 → 400 invalid_param). 점은 그 점의 cell_id 가 AOI 칸인지로 거른다(G5). */
+                aoi_id?: components["parameters"]["AoiIdQuery"];
+                /** @description YYYY-MM-DD (date_local 기준). start > end → 400. */
+                start: components["parameters"]["Start"];
+                end: components["parameters"]["End"];
+                freq?: "day" | "month";
+                /** @description 브라우저 링크용. csv = `Accept: text/csv` 와 같다. 동기 CSV ≤ 100,000행(넘으면 400 range_too_large 30102). */
+                format?: components["parameters"]["Format"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 칸 FRP */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    "Cache-Control": components["headers"]["CacheControlLayer"];
+                    "X-Method-Version": components["headers"]["XMethodVersion"];
+                    "X-Data-Version": components["headers"]["XDataVersion"];
+                    Vary: components["headers"]["Vary"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CellFrpList"];
+                    "text/csv": string;
+                };
+            };
+            304: components["responses"]["NotModified"];
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
             503: components["responses"]["Unavailable"];
         };
     };

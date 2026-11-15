@@ -338,3 +338,5 @@
 .cl-dmz .iconbtn svg{width:var(--ic-map);height:var(--ic-map)}
 /* 목업 index.html 의 옛 크기 별칭(셸 tokens.css 에 없음) — 이 화면 안에서만 */
 .cl,.cpick{--fs-5:var(--fs-page);--fs-num-l:var(--fs-count)}
+/* 고른 달 화재 사건(F15) */
+.cl-ev{margin-top:var(--sp-4);border-top:var(--hair) solid var(--line-soft);padding-top:var(--sp-3)}

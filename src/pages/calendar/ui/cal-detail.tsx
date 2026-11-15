@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useT } from "@/shared/i18n";
 import { useQueryParams } from "@/shared/lib/nav";
+import { MonthEvents } from "@/widgets/fire-events";
 import { comparisonQuery } from "../api/queries";
 import type { CalendarData, CalView, MonthRow } from "../model/calendar";
 import { caseOf, fmtVal, inRange, monthWord, partialOf, Y0, Y1, ymIso } from "../model/calendar";
@@ -224,6 +225,10 @@ export function CalDetail({ cal, aoi, view, y, m, mv, onPick, touch }: { cal: Ca
               ) : null}
             </div>
           ) : null}
+        </div>
+        {/* 고른 달의 화재 사건 수(F15 fire_events — 한국·아르헨티나, 그 밖은 「이 지역 자료 없음」) */}
+        <div className={cx("cl-ev")}>
+          <MonthEvents aoiId={aoi} year={y} month={m} mv={mv} testId="cal-events" />
         </div>
         <button type="button" className={cx("btn primary cl-go")} onClick={toAnalysis}>
           {T("act.to_analysis")}
