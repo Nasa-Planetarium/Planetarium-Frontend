@@ -115,10 +115,10 @@
    "excl_base": "excluded from baseline",
    "excl_eval": "evaluation year excluded,",
    "fires": "{n} ledger fires",
-   "hold": "uncertain (MODIS 0, small fires may be missed)",
+   "hold": "Verdict withheld (MODIS 0, small fires may be missed)",
    "less": "Fewer",
    "lg_future": "Before operation · future",
-   "lg_hold": "Uncertain (MODIS 0)",
+   "lg_hold": "Verdict withheld (MODIS 0)",
    "lg_missing": "Missing (with reason)",
    "lg_partial": "Month in progress",
    "lg_zero": "0 detections",
@@ -267,7 +267,7 @@
   },
   "lim": {
    "cell_sum_ne_aoi": "Summed 0.1° cells differ from the regional value · regional value is aoi_month",
-   "group_sum_rule": "North Gyeongbuk = sum of 11 counties · verdict computed with the same rule (80/20 · n≥10 · baseline 2001–2025)",
+   "group_sum_rule": "North Gyeongbuk = sum of 11 counties · verdict computed with the same rule as other regions (percentile 80/20 · minimum baseline years · the region's baseline period)",
    "hotspots_not_fire_counts": "Burning-activity detections are observed activity, not fire counts · not burned area either",
    "korea_small_sample": "Small Korean sample · wide uncertainty in validation figures",
    "n20_bridge_from_2026_11_03": "From 2026-11-03, NOAA-20 (N20) values × bridge ratio (n20_bridge)",
@@ -509,7 +509,7 @@
    "above": "Above usual",
    "below": "Below usual",
    "similar": "Near usual",
-   "uncertain": "Withheld"
+   "uncertain": "Verdict withheld"
   },
   "view": {
    "raw_modis": "Raw MODIS",

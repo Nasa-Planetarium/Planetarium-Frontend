@@ -37,7 +37,7 @@
   "ui": {
    "2": "2배",
    "00": "시",
-   "0_is_0_missing_is_an_empty_h": "0은 0, 결측은 빈 칸(빗금)과 이유, 2012년 이전 MODIS 0 칸은 판단 보류",
+   "0_is_0_missing_is_an_empty_h": "0은 0, 결측은 빈 칸(빗금)과 이유, 2012년 이전 MODIS 0 칸은 판정 보류",
    "0_no_detections": "0 = 관측 0",
    "0_records": "기록 0건",
    "119_call_match": "119 신고 대조",
@@ -239,7 +239,7 @@
    "now2": "지금",
    "observed": "관측",
    "off_axis": "축 밖",
-   "on_hold_modis_0": "판단 보류(MODIS 0) ",
+   "on_hold_modis_0": "판정 보류(MODIS 0) ",
    "on_scene_report": "(현장 도착 보고)",
    "one_side_missing": "한쪽 값 없음",
    "onward": "부터",
