@@ -60,8 +60,9 @@ jobs:
       - name: 설치(lock 그대로)
         run: pnpm install --frozen-lockfile
 
-      - name: pnpm check
-        run: pnpm check
+      # 테스트(vitest)는 로컬에서 돌리고 올린다 — 여기서는 정적 검사만
+      - name: 정적 검사 (typecheck · eslint · steiger · check:isolation)
+        run: pnpm typecheck && pnpm lint && pnpm steiger && pnpm check:isolation
 
       - name: 빌드 — http
         run: pnpm build
