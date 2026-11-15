@@ -8,7 +8,7 @@ import { expect, test } from "@playwright/test";
  */
 const login = (r: string) => {
   localStorage.setItem("em.lang", "ko");
-  localStorage.setItem("em.role", r);
+  sessionStorage.setItem("em.role", r);
 };
 
 test("경보·출동: 레일 · 목록 ↓ · 자원 묶음 · 화면 밖 칩", async ({ page }, info) => {
