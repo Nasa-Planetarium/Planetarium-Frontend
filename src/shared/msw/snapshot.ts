@@ -25,6 +25,10 @@ export interface KoreaAoiRaw {
   vs?: Arr; ds?: Arr; st?: Arr;
   /** v1.1 진행 중인 달 달 전체 추정(value_projected ×10) — snap.partial 순서와 같은 자리 */
   vp?: Arr;
+  /** v1.2 비교 기준 기간(지역마다 하나, aoi_month_compare 새 판 값 그대로): baseline_period · continuity_ratio · continuity_source */
+  bp?: string;
+  cr?: number;
+  cs?: string;
 }
 export interface KoreaSnap {
   release: string;
@@ -156,6 +160,9 @@ export function koreaComparison(snap: KoreaSnap, a: KoreaAoiRaw, m: number): Com
     status: row.status,
     value_source: row.value_source,
     low_sample: row.low_sample,
+    ...(a.bp ? { baseline_period: a.bp as Comparison["baseline_period"] } : {}),
+    ...(a.cr != null ? { continuity_ratio: a.cr } : {}),
+    ...(a.cs ? { continuity_source: a.cs } : {}),
     method_version: snap.method_version,
   };
 }

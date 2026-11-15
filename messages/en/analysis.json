@@ -6,6 +6,10 @@
   "g3": {
    "base_n": "baseline {n} yrs · {a}–{b}",
    "baseline_fixed": "baseline {a}–{b} same month (evaluated year excluded)",
+   "cont": "continuity ratio {r} (0.85–1.15 → 2001–2025, otherwise 2012–2025)",
+   "cont_parent": " · too few records, uses the ratio of parent region {id}",
+   "cont_pre": " · months before {a}: verdict withheld",
+   "m_cont": "Baseline period basis",
    "c_bias": "Bias ratio",
    "c_data": "Data",
    "c_mae": "Monthly-total MAE",
@@ -57,7 +61,7 @@
    "range_lohi": "range {lo}–{hi}",
    "raw_csv": "Raw hotspot CSV",
    "raw_none": "No point file in this release",
-   "rule": "percentile ≥ {a} above usual · ≤ {b} below usual · fewer than {n} baseline years withheld",
+   "rule": "percentile ≥ {a} above usual · ≤ {b} below usual · fewer than {n} baseline years: verdict withheld",
    "sc": {
     "coef": "Fixed coefficient",
     "east_asia": "East Asia",
@@ -130,7 +134,7 @@
    "vd_above": "above",
    "vd_below": "below",
    "vd_similar": "similar",
-   "vd_uncertain": "undecided"
+   "vd_uncertain": "verdict withheld"
   },
   "ui": {
    "0_detections": "0 detections",

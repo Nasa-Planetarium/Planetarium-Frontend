@@ -32,6 +32,17 @@ describe.skipIf(!snap)("스냅숏 → 계약 모양(public/data/snap/korea.json)
     expect(r.verdict).toBe(kr.vd[i] == null ? null : S.codes.vd[kr.vd[i]!]);
   });
 
+  it("v1.2 비교 기준 기간(새 aoi_month_compare 값 그대로): KR 2012-2025 · 연속성 비율 · 출처", () => {
+    const c = koreaComparison(S, kr, indexOf(S.months.start, 2025, 3));
+    expect(c.baseline_period).toBe("2012-2025");
+    expect(c.continuity_ratio).toBeCloseTo(0.6814, 4);
+    expect(c.continuity_source).toBe("own");
+    const sido11 = S.aoi.find((a) => a.id === "SIDO_11")!;
+    expect(koreaComparison(S, sido11, indexOf(S.months.start, 2025, 3)).continuity_source).toBe("parent:KR");
+    const sido26 = S.aoi.find((a) => a.id === "SIDO_26")!;
+    expect(koreaComparison(S, sido26, indexOf(S.months.start, 2025, 3)).baseline_period).toBe("2001-2025");
+  });
+
   it("값 출처 경계: 2002-07 modis_m2v · 2012-02 snpp_observed · 2026-11 n20_bridge", () => {
     expect(koreaMonth(S, kr, indexOf(S.months.start, 2002, 6)).value_source).toBe("modis_m2v_terra");
     expect(koreaMonth(S, kr, indexOf(S.months.start, 2002, 7)).value_source).toBe("modis_m2v");
